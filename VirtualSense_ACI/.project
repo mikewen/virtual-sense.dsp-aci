@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<projectDescription>
+	<name>VirtualSense_ACI</name>
+	<comment></comment>
+	<projects>
+		<project>dma_bios_drv_lib</project>
+		<project>i2c_bios_drv_lib</project>
+		<project>i2s_bios_drv_lib</project>
+		<project>palos_bios_lib</project>
+		<project>pal_sys_bios_lib</project>
+		<project>cslVC5505</project>
+	</projects>
+	<buildSpec>
+		<buildCommand>
+			<name>org.eclipse.cdt.managedbuilder.core.genmakebuilder</name>
+			<arguments>
+			</arguments>
+		</buildCommand>
+		<buildCommand>
+			<name>org.eclipse.cdt.managedbuilder.core.ScannerConfigBuilder</name>
+			<triggers>full,incremental,</triggers>
+			<arguments>
+			</arguments>
+		</buildCommand>
+	</buildSpec>
+	<natures>
+		<nature>org.eclipse.rtsc.xdctools.buildDefinitions.XDC.xdcNature</nature>
+		<nature>org.eclipse.cdt.core.cnature</nature>
+		<nature>org.eclipse.cdt.core.ccnature</nature>
+		<nature>org.eclipse.cdt.managedbuilder.core.managedBuildNature</nature>
+		<nature>com.ti.ccstudio.core.ccsNature</nature>
+		<nature>org.eclipse.cdt.managedbuilder.core.ScannerConfigNature</nature>
+	</natures>
+	<variableList>
+		<variable>
+			<name>COMMON_ROOT</name>
+			<value>$%7BPARENT-2-ORIGINAL_PROJECT_ROOT%7D</value>
+		</variable>
+		<variable>
+			<name>ORIGINAL_PROJECT_ROOT</name>
+			<value>file:/C:/c55_lp/c55_caf_02.00.02.04/build/ccsv5</value>
+		</variable>
+	</variableList>
+</projectDescription>
