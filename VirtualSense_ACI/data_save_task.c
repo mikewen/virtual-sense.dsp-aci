@@ -62,6 +62,7 @@ void DataSaveTask(void)
         	bufferOutIdx = ((bufferOutIdx + (RXBUFF_SZ_ADCSAMPS *2)) % PROCESS_BUFFER_SIZE);
         	//LOG_printf(&trace,  "consuming %d buffer \n",SEM_count(&SEM_BufferFull));
         	//printstring(".!");
+        	
         }
         step++;
         if(step == (SECONDS * STEP_PER_SECOND)){
