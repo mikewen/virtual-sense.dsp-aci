@@ -12,6 +12,7 @@
 
 #include <std.h>
 #include <stdio.h>
+#include <csl_rtc.h>
 #include "app_asrc.h"
 #include "VC5505_CSL_BIOS_cfg.h"
 #include "psp_i2s.h"
@@ -45,6 +46,9 @@ void DataSaveTask(void)
 {
     // display the play audio message
     //print_playaudio();
+	//CSL_RtcTime 	 GetTime;
+	CSL_RtcDate 	 GetDate;
+	CSL_Status    status;
 
     LOG_printf(&trace, "\nMount a volume.\n");
     rc = f_mount(0, &fatfs);
@@ -54,7 +58,13 @@ void DataSaveTask(void)
     {
     	//wait on semaphore released from a timer function
     	SEM_pend(&SEM_TimerSave, SYS_FOREVER);
-    	sprintf(name, "test%d.wav",file_counter);
+    	//status = RTC_getTime(&GetTime);
+    	status |= RTC_getDate(&GetDate);
+
+    	if(!status)
+    		sprintf(name, "%d%d%d%d.wav",GetDate.day,GetDate.month,GetDate.year,file_counter);
+    	else
+    		sprintf(name, "test%d.wav",file_counter);
     	clear_lcd();
     	printstring("Creating   ");
     	printstring(name);

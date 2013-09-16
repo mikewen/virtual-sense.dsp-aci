@@ -3,6 +3,7 @@
 #include <csl_mmcsd.h>
 #include <csl_types.h>
 #include <csl_intc.h>
+#include <csl_rtc.h>
 #include "diskio.h"		/* FatFs lower layer API */
 
 //#include <csl_mmcsd.h>
@@ -42,6 +43,10 @@ CSL_DMA_Handle        dmaRdHandle;
 CSL_DMA_ChannelObj    dmaWrChanObj;
 CSL_DMA_ChannelObj    dmaRdChanObj;
 CSL_DMA_Handle        dmaHandle;
+
+/* CSL RTC data structures */
+CSL_RtcTime 	 GetTime;
+CSL_RtcDate 	 GetDate;
 
 
 
@@ -649,10 +654,25 @@ Uint32 getSysClk(void)
 
 DWORD get_fattime ()
 {
-	return	  ((DWORD)(2012 - 1980) << 25)	/* Year = 2012 */
+	CSL_Status    status;
+	status = RTC_getTime(&GetTime);
+	status |= RTC_getDate(&GetDate);
+	if(!status){
+		    //printf("Time and Date is : %02d:%02d:%02d:%04d, %02d-%02d-%02d\n",
+			//GetTime.hours,GetTime.mins,GetTime.secs,GetTime.mSecs,GetDate.day,GetDate.month,GetDate.year);
+			return	  ((DWORD)(2000 + GetDate.year - 1980) << 25)	/* Year = 2012 */
+						| ((DWORD)GetDate.month << 21)				/* Month = 1 */
+						| ((DWORD)GetDate.day << 16)				/* Day_m = 1*/
+						| ((DWORD)(GetTime.hours + 1) << 11)				/* Hour = 0 */
+						| ((DWORD)GetTime.mins << 5)				/* Min = 0 */
+						| ((DWORD)GetTime.secs >> 1);				/* Sec = 0 */
+	}else {
+
+		return	  ((DWORD)(2012 - 1980) << 25)	/* Year = 2012 */
 				| ((DWORD)1 << 21)				/* Month = 1 */
 				| ((DWORD)1 << 16)				/* Day_m = 1*/
 				| ((DWORD)0 << 11)				/* Hour = 0 */
 				| ((DWORD)0 << 5)				/* Min = 0 */
 				| ((DWORD)0 >> 1);				/* Sec = 0 */
+	}
 }

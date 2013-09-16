@@ -111,6 +111,7 @@ void CSL_acTest(void);
 /* Resets C5515 */
 void C5515_reset(void);
 
+extern void initRTC(void);
 /**
  *  \brief  CSL Audio Class main function
  *
@@ -228,6 +229,7 @@ void CSL_acTest(void)
         /* Initialize the OLED display */
         oled_init();
 #endif
+       initRTC();
         
 #ifdef SAMPLE_RATE_TX_48kHz
         /* Initialize I2S Tx ping/pong buffer size */
