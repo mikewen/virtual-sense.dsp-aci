@@ -466,6 +466,7 @@ bios.PRD.instance("createnewfile").period = 10000;
 bios.PRD.instance("createnewfile").fxn = prog.extern("CreateNewFile");
 bios.PRD.instance("createnewfile").period = 32000;
 bios.SEM.instance("SEM_TimerSave").count = 1;
+bios.TSK.instance("TSK_DataSave").priority = 14;
 // !GRAPHICAL_CONFIG_TOOL_SCRIPT_INSERT_POINT!
 
 prog.gen();

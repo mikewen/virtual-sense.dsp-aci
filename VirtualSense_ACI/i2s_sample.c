@@ -47,6 +47,8 @@
 #include "main_config.h"
 #include "circular_buffer.h"
 
+//extern Uint16 bufferInIdx; //logical pointer
+
 /* I2S handles */
 PSP_Handle       i2sHandleTx;
 PSP_Handle       i2sHandleRx;
@@ -699,6 +701,7 @@ void I2S_DmaRxLChCallBack(
     	    bufferInIdx = (bufferInIdx+1) % PROCESS_BUFFER_SIZE; */
     	}
     	SEM_post(&SEM_BufferFull);
+    	//LOG_printf(&trace, "IN log %d\n",bufferInIdx);
     }
     else
     {

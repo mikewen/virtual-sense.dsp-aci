@@ -31,8 +31,8 @@ Uint16 step = 0;
 Uint16 file_counter = 0;
 char name[12];
 extern unsigned char circular_buffer[PROCESS_BUFFER_SIZE];
-extern Uint32 bufferInIdx; //logical pointer
-extern Uint32 bufferOutIdx; //logical pointer
+extern Uint16 bufferInIdx; //logical pointer
+extern Uint16 bufferOutIdx; //logical pointer
 
 // PRD function. Runs every 10 minutes to start sampling a new file
 void CreateNewFile(void){
@@ -71,7 +71,7 @@ void DataSaveTask(void)
 
     		write_data_to_wave(&wav_file, &circular_buffer[bufferOutIdx], (RXBUFF_SZ_ADCSAMPS*2));
     		bufferOutIdx = ((bufferOutIdx + (RXBUFF_SZ_ADCSAMPS *2)) % PROCESS_BUFFER_SIZE);
-        	//LOG_printf(&trace,  "consuming %d buffer \n",SEM_count(&SEM_BufferFull));
+        	//LOG_printf(&trace,  "buff %d in %d out %d\n",SEM_count(&SEM_BufferFull),bufferInIdx,bufferOutIdx);
         	//printstring(".!");
     		step++;
     	}
