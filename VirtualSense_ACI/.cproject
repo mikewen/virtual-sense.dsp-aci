@@ -418,9 +418,9 @@
 								<option id="com.ti.ccstudio.buildDefinitions.C5500_4.4.linkerID.MAP_FILE.496952678" name="Input and output sections listed into &lt;file&gt; (--map_file, -m)" superClass="com.ti.ccstudio.buildDefinitions.C5500_4.4.linkerID.MAP_FILE" value="&quot;${PROJECT_BUILD_DIR}/CSL_USB_IsoFullSpeedExample_Out.map&quot;" valueType="string"/>
 								<option id="com.ti.ccstudio.buildDefinitions.C5500_4.4.linkerID.LIBRARY.1694217805" name="Include library file or command file as input (--library, -l)" superClass="com.ti.ccstudio.buildDefinitions.C5500_4.4.linkerID.LIBRARY" valueType="libs">
 									<listOptionValue builtIn="false" value="&quot;dma_bios_drv_lib.lib&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;palos_bios_lib.lib&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;i2c_bios_drv_lib.lib&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;i2s_bios_drv_lib.lib&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;palos_bios_lib.lib&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;pal_sys_bios_lib.lib&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;cslVC5505_Lib.lib&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;asrc_dly_fix_lib.lib&quot;"/>

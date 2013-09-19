@@ -14,7 +14,7 @@
 #include <stdio.h>
 #include <csl_rtc.h>
 #include "app_asrc.h"
-#include "VC5505_CSL_BIOS_cfg.h"
+#include "VirtualSense_ACIcfg.h"
 #include "psp_i2s.h"
 #include "lcd_osd.h"
 
@@ -23,6 +23,8 @@
 
 #include "ff.h"
 #include "make_wav.h"
+
+#define ICR 0x0001
 
 
 FRESULT rc;
@@ -56,6 +58,21 @@ void DataSaveTask(void)
     //main loop
     while (1)
     {
+
+    	//go to sleep test
+    	/**(ioport volatile unsigned int *)ICR = 0x03EF; // Request to disable ports & C55x CPU
+
+    	//add 6 "nop" clearing pipeline
+    	asm (" nop");
+    	asm (" nop");
+    	asm (" nop");
+    	asm (" nop");
+    	asm (" nop");
+    	asm (" nop");
+
+    	asm (" idle"); //idle the CPU */
+
+
     	//wait on semaphore released from a timer function
     	SEM_pend(&SEM_TimerSave, SYS_FOREVER);
     	//status = RTC_getTime(&GetTime);

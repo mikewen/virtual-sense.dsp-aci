@@ -7,6 +7,6 @@
 	<isElfFormat value="false"/>
 	<rts value=""/>
 	<deviceFamily value="C5500"/>
-	<isTargetManual value="false"/>
+	<isTargetManual value="true"/>
 	<connection value="common/targetdb/connections/TIXDS100v2_Connection.xml"/>
 </projectOptions>

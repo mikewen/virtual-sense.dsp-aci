@@ -11,6 +11,9 @@
 #include <csl_intc.h>
 #include <csl_general.h>
 
+//#include "VC5505_CSL_BIOS_cfg.h"
+#include "VirtualSense_ACIcfg.h"
+
 #define RTC_TIME_PRINT_CYCLE    (0xFFu)
 #define RTC_CALL_BACK           (1u)
 
@@ -77,14 +80,14 @@ void initRTC()
     InitTime.secs  = 00;
     InitTime.mSecs = 00;
 
-	/* Set the RTC alarm time */
-    /*AlarmTime.year  = 8;
-    AlarmTime.month = 10;
-    AlarmTime.day   = 16;
-    AlarmTime.hours = 12;
-    AlarmTime.mins  = 12;
-    AlarmTime.secs  = 17;
-    AlarmTime.mSecs = 512; */
+	/* Set the RTC alarm time  at one minutes after init state*/
+    AlarmTime.year  = 11;
+    AlarmTime.month = 11;
+    AlarmTime.day   = 27;
+    AlarmTime.hours = 14;
+    AlarmTime.mins  = 25;
+    AlarmTime.secs  = 0;
+    AlarmTime.mSecs = 00;
 
     /* Register the ISR function */
     isrAddr.MilEvtAddr    = rtc_msIntc;
@@ -163,7 +166,7 @@ void initRTC()
 	}
 
 	/* Set the RTC Alarm time */
-	/*status = RTC_setAlarm(&AlarmTime);
+	status = RTC_setAlarm(&AlarmTime);
 	if(status != CSL_SOK)
 	{
 		printf("RTC_setAlarm Failed\n");
@@ -172,7 +175,7 @@ void initRTC()
 	else
 	{
 		printf("RTC_setAlarm Successful\n");
-	}*/
+	}
 
 	/* Set the RTC interrupts */
 	/*status = RTC_setPeriodicInterval(CSL_RTC_MINS_PERIODIC_INTERRUPT);
@@ -335,7 +338,8 @@ void rtc_extEvt(void)
 void rtc_alarmEvt(void)
 {
     CSL_FINST(CSL_RTC_REGS->RTCINTFL, RTC_RTCINTFL_ALARMFL, SET);
-	printf("\nRTC Alarm Interrupt\n\n");
+    LOG_printf(&trace,"\nRTC Alarm Interrupt\n\n");
+    SEM_post(&SEM_TimerSave);
 }
 
 

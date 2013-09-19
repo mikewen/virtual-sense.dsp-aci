@@ -595,35 +595,37 @@ PSP_Result AIC3254_init(void)
 
 #ifdef ENABLE_RECORD
 
+        //LELE tp 10k
         //Route IN2L to LEFT_P with 40K input impedance
-        result = AIC3254_Write(52,0x30,hi2c);
+        result = AIC3254_Write(52,0x10/*0x30*/,hi2c);
         if (result != PSP_SOK) 
         {
             return result;
         }
 
         //Route Common Mode to LEFT_M with impedance of 40K
-        result = AIC3254_Write(54,0xC0,hi2c);
+        result = AIC3254_Write(54,0x40/*0xC0*/,hi2c);
         if (result != PSP_SOK) 
         {
             return result;
         }
 
         //Route IN2R to RIGHT_P with 40K input impedance
-        result = AIC3254_Write(55,0x30,hi2c);
+        result = AIC3254_Write(55,0x10/*0x30*/,hi2c);
         if (result != PSP_SOK) 
         {
             return result;
         }
 
         //Route Common Mode to RIGHT_M with impedance of 40K
-        result = AIC3254_Write(57,0xC0,hi2c);
+        result = AIC3254_Write(57,0x40/*0xC0*/,hi2c);
         if (result != PSP_SOK) 
         {
             return result;
         }
 
         //Unmute Left MICPGA
+        //result = AIC3254_Write(59,0x00,hi2c); // Gain = 0 dB
         //result = AIC3254_Write(59,0x0f,hi2c); // Gain = 7.5 dB
         //result = AIC3254_Write(59,0x1e,hi2c); // Gain = 15 dB
         result = AIC3254_Write(59,0x3c,hi2c); // Gain = 30 dB
@@ -633,6 +635,7 @@ PSP_Result AIC3254_init(void)
         }
 
         //Unmute Right MICPGA
+        //result = AIC3254_Write(60,0x00,hi2c); // Gain = 0 dB
         //result = AIC3254_Write(60,0x0f,hi2c); // Gain = 7.5 dB
         //result = AIC3254_Write(60,0x1e,hi2c); // Gain = 15 dB
         result = AIC3254_Write(60,0x3c,hi2c); // Gain = 30 dB

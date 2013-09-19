@@ -53,7 +53,7 @@
 #include "string.h"
 #include "dsplib.h"
 
-#include "VC5505_CSL_BIOS_cfg.h"
+#include "VirtualSense_ACIcfg.h"
 
 #ifdef C5535_EZDSP_DEMO
 

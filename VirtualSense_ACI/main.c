@@ -97,7 +97,7 @@ int display_buffer[128];
 
 
 
-#include "VC5505_CSL_BIOS_cfg.h"
+#include "VirtualSense_ACIcfg.h"
 
  /* Debug: enable run-time storage of data to SDRAM */
 //#define STORE_PARAMETERS_TO_SDRAM
@@ -126,7 +126,7 @@ void main(void)
     Uint32 j = 0;
 
     // Disable all tracing
-    TRC_disable(TRC_GBLTARG);
+    //TRC_disable(TRC_GBLTARG);
     // Disable trace log
     //LOG_disable(&trace);
 
@@ -189,7 +189,7 @@ void main(void)
     }
 
      /* Enable the USB LDO */
-    *(volatile ioport unsigned int *)(0x7004) |= 0x0001;
+    //*(volatile ioport unsigned int *)(0x7004) |= 0x0001;
 }
 
 /**
@@ -583,11 +583,12 @@ void ClockGating(void)
     
     // disable the CLKOUT. It is on reset
     // set bit 2 of ST3_55 to 1
-    asm("    bit(ST3, #ST3_CLKOFF) = #1");
+    //LELE 18-09-2013
+   /* asm("    bit(ST3, #ST3_CLKOFF) = #1");
     
     // turn off the XF
     // set bit 13 of ST1_55 to 0
-    asm("    bit(ST1, #ST1_XF) = #0");
+    asm("    bit(ST1, #ST1_XF) = #0"); */
 
 #ifdef C5535_EZDSP
     // turn off the DS3-6
@@ -611,7 +612,7 @@ void ClockGating(void)
     return;
 }
 
-#if 0
+#if 1
 void userIdle(void)
 {
     // set CPUI bit in ICR

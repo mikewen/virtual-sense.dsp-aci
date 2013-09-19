@@ -13,7 +13,7 @@
  * Creative Commons license Attribution-NonCommercial
  *  http://creativecommons.org/licenses/by-nc/3.0/
  */
-#include "VC5505_CSL_BIOS_cfg.h"
+#include "VirtualSense_ACIcfg.h"
 #include <stdio.h>
 #include <assert.h>
 

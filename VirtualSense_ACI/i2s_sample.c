@@ -39,7 +39,7 @@
 #include "app_usbac_descs.h"
 #include "i2s_sample.h"
 #include "gpio_control.h"
-#include "VC5505_CSL_BIOS_cfg.h"
+#include "VirtualSense_ACIcfg.h"
 #include <clk.h>
 
 #include "dbg_sdram.h"

@@ -63,7 +63,7 @@
  */
 
 //#include<stdio.h>
-#include "VC5505_CSL_BIOS_cfg.h"
+#include "VirtualSense_ACIcfg.h"
 
 #include "csl_pll.h"
 #include "csl_general.h"

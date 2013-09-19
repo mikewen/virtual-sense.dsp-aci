@@ -1,0 +1,62 @@
+utils.loadPlatform("ti.platforms.ezdsp5535");
+
+/* The following DSP/BIOS Features are enabled.  */
+bios.enableRealTimeAnalysis(prog);
+bios.enableRtdx(prog);
+bios.enableTskManager(prog);
+
+bios.LOG.create("trace");
+bios.LOG.instance("trace").bufSeg = prog.get("SARAM");
+bios.LOG.instance("trace").comment = "to use LOG_printf";
+bios.LOG.instance("trace").bufLen = 4096;
+bios.HWI.instance("HWI_INT8").fxn = prog.extern("DMA_Isr");
+bios.HWI.instance("HWI_INT8").useDispatcher = 1;
+bios.HWI.instance("HWI_INT8").interruptMask0 = "bitmask";
+bios.HWI.instance("HWI_INT8").interruptBitMask0 = 0x0110;
+bios.HWI.instance("HWI_INT8").interruptMask1 = "bitmask";
+bios.HWI.instance("HWI_INT8").interruptBitMask1 = 0x0010;
+bios.TSK.create("mainTsk");
+bios.TSK.instance("mainTsk").order = 1;
+bios.TSK.instance("mainTsk").stackSize = 512;
+bios.TSK.instance("mainTsk").sysStackSize = 128;
+bios.TSK.instance("mainTsk").stackMemSeg = prog.get("SARAM");
+bios.TSK.instance("mainTsk").priority = 15;
+bios.TSK.instance("mainTsk").fxn = prog.extern("CSL_acTest");
+bios.TSK.create("TSK_DataSave");
+bios.TSK.instance("TSK_DataSave").order = 2;
+bios.TSK.instance("TSK_DataSave").comment = "The save wav files task";
+bios.TSK.instance("TSK_DataSave").stackMemSeg = prog.get("SARAM");
+bios.TSK.instance("TSK_DataSave").priority = 14;
+bios.TSK.instance("TSK_DataSave").fxn = prog.extern("DataSaveTask");
+bios.TSK.instance("TSK_idle").stackMemSeg = prog.get("SARAM");
+bios.SEM.create("SEM_BufferEmpty");
+bios.SEM.instance("SEM_BufferEmpty").count = 250;
+bios.SEM.create("SEM_BufferFull");
+bios.SEM.create("SEM_BufferInReady");
+bios.SEM.create("SEM_PingPongRxLeftComplete");
+bios.SEM.create("SEM_PingPongRxRightComplete");
+bios.SEM.create("SEM_PingPongTxLeftComplete");
+bios.SEM.create("SEM_PingPongTxRightComplete");
+bios.SEM.create("SEM_TimerSave");
+bios.MEM.ARGSSIZE = 0x0100;
+bios.MEM.BIOSSEG = prog.get("SARAM");
+bios.MEM.SYSINITSEG = prog.get("SARAM");
+bios.MEM.USERCOMMANDFILE = 1;
+bios.SEM.create("SEM_I2cDevBusy");
+bios.TSK.instance("TSK_DataSave").fxn = prog.extern("DataSaveTask", "asm");
+bios.TSK.instance("mainTsk").fxn = prog.extern("CSL_acTest", "asm");
+bios.TSK.instance("TSK_DataSave").fxn = prog.extern("DataSaveTask");
+bios.TSK.instance("mainTsk").fxn = prog.extern("CSL_acTest");
+bios.SEM.instance("SEM_I2cDevBusy").count = 1;
+bios.GBL.SPECIFYRTSLIB = 0;
+bios.LOG.instance("trace").bufSeg = prog.get("DARAM");
+bios.LOG.instance("trace").bufLen = 256;
+bios.STS.create("sts0");
+bios.STS.instance("sts0").unitType = "High resolution time based";
+bios.SEM.instance("SEM_TimerSave").count = 1;
+bios.MEM.USERCOMMANDFILE = 0;
+bios.MEM.TEXTSEG = prog.get("SARAM");
+bios.MEM.USERCOMMANDFILE = 1;
+// !GRAPHICAL_CONFIG_TOOL_SCRIPT_INSERT_POINT!
+
+prog.gen();

@@ -21,7 +21,7 @@
 #include "app_usb.h"
 #include "app_usbac.h"
 #include "app_asrc.h"
-#include "VC5505_CSL_BIOS_cfg.h"
+#include "VirtualSense_ACIcfg.h"
 
 /* Number of supported sampling rates */
 #define AASRC_NUM_SAMP_RATES        ( 7 )
