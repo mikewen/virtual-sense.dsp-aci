@@ -51,7 +51,7 @@
 #include "csl_usb.h"
 #include "csl_audioClass.h"
 #include "soc.h"
-#include "psp_i2s.h"
+//#include "psp_i2s.h"
 #include "dda_dma.h"
 #include "i2s_sample.h"
 #include "gpio_control.h"
@@ -78,6 +78,8 @@
 #include "ff.h"
 #include "make_wav.h"
 
+#undef ENABLE_REC_ASRC
+#undef ENABLE_ASRC
 
 CSL_Status  CSL_i2cPowerTest(void);
 void calculate_FFT(unsigned char *input, int size);
@@ -92,6 +94,10 @@ DATA bufferScrach[FFT_LENGHT];
 // display buffer for spectrum display
 int display_buffer[128];
 
+extern Uint16 my_i2sRxLeftBuf[2*DMA_BUFFER_SZ]; /* 2x for ping/pong */
+extern Uint16 my_i2sRxRightBuf[2*DMA_BUFFER_SZ]; /* 2x for ping/pong */
+extern Int16 my_i2sTxLeftBuf[2*DMA_BUFFER_SZ]; /* 2x for ping/pong */
+extern Int16 my_i2sTxRightBuf[2*DMA_BUFFER_SZ]; /* 2x for ping/pong */
 
 #endif
 
@@ -233,7 +239,7 @@ void CSL_acTest(void)
         
 #ifdef SAMPLE_RATE_TX_48kHz
         /* Initialize I2S Tx ping/pong buffer size */
-        i2sTxBuffSz = 2*TXBUFF_SZ_I2SSAMPS_48KHZ;
+        i2sTxBuffSz = 2*DMA_BUFFER_SZ;
 #elif defined (SAMPLE_RATE_TX_16kHz)
         /* Initialize I2S Tx ping/pong buffer size */
         i2sTxBuffSz = 2*TXBUFF_SZ_I2SSAMPS_16KHZ;
@@ -249,10 +255,10 @@ void CSL_acTest(void)
         /* playback */
         i2sInitPrms.enablePlayback = TRUE;
         i2sInitPrms.enableStereoPb = TRUE;
-        i2sInitPrms.pingPongI2sTxLeftBuf = (Int16 *)ping_pong_i2sTxLeftBuf;  /* note: only Tx Left used for stereo, sample-by-sample Pb */
+        i2sInitPrms.pingPongI2sTxLeftBuf = (Int16 *)my_i2sTxLeftBuf;  /* note: only Tx Left used for stereo, sample-by-sample Pb */
 #ifndef SAMPLE_BY_SAMPLE_PB
         i2sInitPrms.sampleBySamplePb = FALSE;
-        i2sInitPrms.pingPongI2sTxRightBuf = (Int16 *)ping_pong_i2sTxRightBuf;
+        i2sInitPrms.pingPongI2sTxRightBuf = (Int16 *)my_i2sTxRightBuf;
 #else
         i2sInitPrms.sampleBySamplePb = TRUE;
 #endif
@@ -261,7 +267,7 @@ void CSL_acTest(void)
         i2sInitPrms.enableRecord = TRUE;
 #ifndef ENABLE_STEREO_RECORD
         i2sInitPrms.enableStereoRec = FALSE;
-        i2sInitPrms.pingPongI2sRxLeftBuf = (Int16 *)ping_pong_i2sRxLeftBuf;
+        i2sInitPrms.pingPongI2sRxLeftBuf = (Int16 *)my_i2sRxLeftBuf;
 #else
         i2sInitPrms.enableStereoRec = TRUE;
         i2sInitPrms.pingPongI2sRxLeftBuf = (Int16 *)ping_pong_i2sRxLeftBuf;
@@ -279,8 +285,8 @@ void CSL_acTest(void)
 
 #ifndef SAMPLE_BY_SAMPLE_PB
         /* Start left/right Tx DMAs */
-        DMA_StartTransfer(hDmaTxLeft);
-        DMA_StartTransfer(hDmaTxRight);
+        //DMA_StartTransfer(hDmaTxLeft);
+        //DMA_StartTransfer(hDmaTxRight);
 #endif
 
 #ifdef ENABLE_RECORD
@@ -294,10 +300,10 @@ void CSL_acTest(void)
 #endif /* ENABLE_RECORD */
 
 #ifdef SAMPLE_BY_SAMPLE_PB
-        /* SampleBySample, init interrupt */       
+        /* SampleBySample, init interrupt */
         /* Use with compiler "interrupt" keyword */
         //IRQ_plug(I2S_TX_EVENT, i2s_txIsr);
-        
+
         /* Use with dispatcher, no "interrupt" keyword */
         attrs.ier0mask = 0xFFFF;
         attrs.ier1mask = 0xFFFF;
@@ -308,7 +314,9 @@ void CSL_acTest(void)
 
 #ifndef SAMPLE_BY_SAMPLE_PB
         /* Initialize pitch calculation */
+#ifdef ENABLE_ASRC
         initPitchCalc(hDmaTxLeft);
+#endif
 #endif
 
 #ifdef ENABLE_REC_ASRC
@@ -328,11 +336,11 @@ void CSL_acTest(void)
         gUsbRecSampRateHz = SAMP_RATE_48KHZ;
 #endif
         /* Initialize record ASRC */
-        initAsrc(hRecAsrc, 
-            ASRC_NUM_CH_MONO, 
-            recAsrcInFifo, REC_ASRC_IN_FIFO_SZ, 
+        initAsrc(hRecAsrc,
+            ASRC_NUM_CH_MONO,
+            recAsrcInFifo, REC_ASRC_IN_FIFO_SZ,
             gAdcSampRateHz, gUsbRecSampRateHz, RATE_1KHZ,
-            recAsrcHbCircBuf, 
+            recAsrcHbCircBuf,
             &gRecAsrcNomOutTransSz);
         /* Initialize record ASRC output sample count */
         gRecFrameCnt = 0;
@@ -350,7 +358,7 @@ void CSL_acTest(void)
 
         /* Initialize DAC sampling rate */
 #ifdef SAMPLE_RATE_TX_48kHz
-        gDacSampRateHz = SAMP_RATE_48KHZ;
+        //LELE gDacSampRateHz = SAMP_RATE_48KHZ;
 #elif defined (SAMPLE_RATE_TX_16kHz)
         gDacSampRateHz = SAMP_RATE_16KHZ;
 #endif
@@ -358,15 +366,17 @@ void CSL_acTest(void)
 #ifndef ENABLE_PB_MULT_SAMP_RATES
         gUsbPbSampRateHz = PLAY_SAMP_RATE;
 #else
-        gUsbPbSampRateHz = SAMP_RATE_48KHZ;
+        //LELE gUsbPbSampRateHz = SAMP_RATE_48KHZ;
 #endif
+#ifdef ENABLE_ASRC
         /* Initialize playback ASRC */
-        initAsrc(hPbAsrc, 
-            ASRC_NUM_CH_STEREO, 
-            pbAsrcInFifo, PB_ASRC_IN_FIFO_SZ, 
-            gUsbPbSampRateHz, gDacSampRateHz, RATE_1KHZ, 
-            pbAsrcHbCircBuf, 
+        initAsrc(hPbAsrc,
+            ASRC_NUM_CH_STEREO,
+            pbAsrcInFifo, PB_ASRC_IN_FIFO_SZ,
+            gUsbPbSampRateHz, gDacSampRateHz, RATE_1KHZ,
+            pbAsrcHbCircBuf,
             &gPbAsrcNomOutTransSz);
+#endif
 
 #if 0  // LELE: Remove USB
         /* Initialize USB */
@@ -383,7 +393,7 @@ void CSL_acTest(void)
         usbConfig.startTransferCallback = StartTransfer;
         usbConfig.completeTransferCallback = CompleteTransfer;
         USB_init(&usbConfig);
-        
+
         /* Set USB full speed mode, set control endpoint packet size */
         USB_setFullSpeedMode(EP_CTL_MAXP);
 

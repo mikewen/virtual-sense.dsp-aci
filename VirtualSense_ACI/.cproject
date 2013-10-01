@@ -156,7 +156,7 @@
 						</tool>
 					</fileInfo>
 					<sourceEntries>
-						<entry excluding="app_usbac_descs.c|app_audio_alg.c|user_interface.c|app_usbac.c|app_usb.c|codec_config.c|lcd_osd.c|C5515.cmd" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="app_asrc.c|app_usbac_descs.c|app_audio_alg.c|user_interface.c|app_usbac.c|app_usb.c|codec_config.c|lcd_osd.c|C5515.cmd" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -318,7 +318,7 @@
 						</tool>
 					</fileInfo>
 					<sourceEntries>
-						<entry excluding="app_usbac_descs.c|app_audio_alg.c|user_interface.c|app_usbac.c|app_usb.c|codec_config.c|lcd_osd.c|C5515.cmd" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="app_asrc.c|app_usbac_descs.c|app_audio_alg.c|user_interface.c|app_usbac.c|app_usb.c|codec_config.c|lcd_osd.c|C5515.cmd" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -477,7 +477,7 @@
 						</tool>
 					</fileInfo>
 					<sourceEntries>
-						<entry excluding="app_usbac_descs.c|app_audio_alg.c|user_interface.c|app_usbac.c|app_usb.c|codec_config.c|dbg_sdram.c|C5515.cmd" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="app_asrc.c|app_usbac_descs.c|app_audio_alg.c|user_interface.c|app_usbac.c|app_usb.c|codec_config.c|dbg_sdram.c|C5515.cmd" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -640,7 +640,7 @@
 						</tool>
 					</fileInfo>
 					<sourceEntries>
-						<entry excluding="app_usbac_descs.c|app_audio_alg.c|user_interface.c|app_usbac.c|app_usb.c|codec_config.c|dbg_sdram.c|C5515.cmd" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="app_asrc.c|app_usbac_descs.c|app_audio_alg.c|user_interface.c|app_usbac.c|app_usb.c|codec_config.c|dbg_sdram.c|C5515.cmd" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>

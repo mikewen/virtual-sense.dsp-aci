@@ -349,6 +349,9 @@ PSP_Result AIC3254_init(void)
 
         #ifdef SAMPLE_RATE_TX_48kHz
         // Set NDAC to 2 - this along with BCLK N configures BCLK
+        // LELE: set NDAC to 1 to obtain 96khz
+        // LELE: also set MDAC to 3 to obtain 192khz
+        //LELE: was 82
         result = AIC3254_Write(11,0x82, hi2c); // 48khz
         #endif
 
@@ -376,6 +379,7 @@ PSP_Result AIC3254_init(void)
 
         #ifdef SAMPLE_RATE_TX_48kHz
         // Set MDAC to 7
+        //LELE was 87
         result = AIC3254_Write(12,0x87, hi2c); // 48khz
         #endif
 
@@ -415,6 +419,7 @@ PSP_Result AIC3254_init(void)
         #ifdef SAMPLE_RATE_TX_48kHz
         // Set DAC OSR LSB value to 128
         // This generates the DAC_FS = 48KHz
+        // LELE: to obtain 192khz should be 32
         result = AIC3254_Write(14, 128, hi2c ); // 48khz
         #endif
 
@@ -482,6 +487,9 @@ PSP_Result AIC3254_init(void)
         //
 
         // Set NADC to 2
+        // LELE: set NDAC to 1 to obtain 96khz
+        // LELE: also set MDAC to 3 to obtain 192khz
+        // LELE: was 82
         result = AIC3254_Write(18,0x82, hi2c); // 48khz
         if (result != PSP_SOK) 
         {
@@ -489,6 +497,7 @@ PSP_Result AIC3254_init(void)
         }
 
         // Set MADC to 7
+        // LELE: was 87
         result = AIC3254_Write(19,0x87, hi2c); // 48khz
         if (result != PSP_SOK) 
         {
@@ -498,6 +507,7 @@ PSP_Result AIC3254_init(void)
         // Set ADC OSR LSB value to 128
         // This generates the ADC_FS = 48KHz
         // ADC_FS = (12MHz *(R * J.D)/P)/(NADC * MADC * AOSR)
+        // LELE: to obtain 192khz should be 32
         result = AIC3254_Write(20, 128, hi2c ); // 48khz
         if (result != PSP_SOK) 
         {
@@ -714,6 +724,7 @@ PSP_Result AIC3254_init(void)
 
         #ifdef ENABLE_RECORD
         //Powerup left and right ADC
+        //LELE Powerup  only left ADC 0x80 -- was 0xc0
         result = AIC3254_Write(81,0xc0,hi2c);
         if (result != PSP_SOK) 
         {
@@ -721,6 +732,7 @@ PSP_Result AIC3254_init(void)
         }
 
         //Unmute left and right ADC
+        //LELE Unmute only left ADC 0x08-- was 0x00
         result = AIC3254_Write(82,0x00,hi2c);
         if (result != PSP_SOK) 
         {

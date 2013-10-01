@@ -14,7 +14,7 @@ SECTIONS
     .cio    : > DARAM
 
     .bss    : > SARAM
-    .ping_pong_i2sTxLeftBuf : block(0x10000)    {} > SARAM
+    .my_i2sRxLeftBuf    : block(0x10000)    {} > SARAM
     .pbAsrcInFifo       : > DARAM
     .recAsrcInFifo      : > DARAM
     .pbAsrcHbCircBuf    : > DARAM

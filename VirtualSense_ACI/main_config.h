@@ -23,10 +23,15 @@
 #ifndef MAIN_CONFIG_H
 #define MAIN_CONFIG_H
 
-#define FFT_LENGHT						  1024
-#define SECONDS 				  			10
-#define PROCESS_BUFFER_SIZE 			 24000
-#define STEP_PER_SECOND 				  1000 //SAMP_RATE_48KHZ/PROCESS_BUFFER_SIZE
+#define FFT_LENGHT						  	  1024
+#define SECONDS 				  				10
+#define PROCESS_BUFFER_SIZE 				 24000L
+#define SAMP_RATE					   		 48000L
+#define STEP_PER_SECOND 				 	  100L //SAMP_RATE_48KHZ/PROCESS_BUFFER_SIZE
+
+#define DMA_BUFFER_MS					   	   (10)
+#define DMA_BUFFER_SZ 	       (DMA_BUFFER_MS * 48)
+#define I2SS_RXBUFF_SZ            (2*DMA_BUFFER_SZ)
 
 #endif
 

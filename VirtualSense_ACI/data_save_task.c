@@ -30,7 +30,7 @@
 FRESULT rc;
 FATFS fatfs;			/* File system object */
 FIL wav_file;
-Uint16 step = 0;
+Uint32 step = 0;
 Uint16 file_counter = 0;
 char name[12];
 extern unsigned char circular_buffer[PROCESS_BUFFER_SIZE];
@@ -85,7 +85,7 @@ void DataSaveTask(void)
     	clear_lcd();
     	printstring("Creating   ");
     	printstring(name);
-    	rc = open_wave_file(&wav_file, name, SAMP_RATE_48KHZ,SECONDS);
+    	rc = open_wave_file(&wav_file, name, SAMP_RATE,SECONDS); //LELE: to obtain 192khz
     	if(rc) LOG_printf(&trace, "Error openin a new wav file %d\n",rc);
     	//clear_lcd();
     	SEM_reset(&SEM_BufferFull,0);
@@ -96,8 +96,8 @@ void DataSaveTask(void)
     		// wait on bufferIn ready semaphore
     		SEM_pend(&SEM_BufferFull, SYS_FOREVER);
 
-    		write_data_to_wave(&wav_file, &circular_buffer[bufferOutIdx], (RXBUFF_SZ_ADCSAMPS*2));
-    		bufferOutIdx = ((bufferOutIdx + (RXBUFF_SZ_ADCSAMPS *2)) % PROCESS_BUFFER_SIZE);
+    		write_data_to_wave(&wav_file, &circular_buffer[bufferOutIdx], (DMA_BUFFER_SZ*2));
+    		bufferOutIdx = ((bufferOutIdx + (DMA_BUFFER_SZ *2)) % PROCESS_BUFFER_SIZE);
         	//LOG_printf(&trace,  "buff %d in %d out %d\n",SEM_count(&SEM_BufferFull),bufferInIdx,bufferOutIdx);
         	//printstring(".!");
     		step++;

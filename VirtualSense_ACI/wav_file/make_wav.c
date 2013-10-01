@@ -40,6 +40,7 @@ FRESULT open_wave_file(FIL *file, char *filename, unsigned long sample_per_secon
 	byte_rate = sample_rate*num_channels*bytes_per_sample;
 
 	LOG_printf(&trace, "\nCreate a new file %s.\n", filename);
+	LOG_printf(&trace, "\nSampling rate %ld.\n", sample_rate);
 	rc = f_open(file, filename, FA_WRITE | FA_CREATE_ALWAYS);
 	if (rc) LOG_printf(&trace, "Error creating file %d\n",rc);
 
