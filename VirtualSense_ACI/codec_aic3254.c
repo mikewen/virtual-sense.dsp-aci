@@ -227,12 +227,18 @@ PSP_Result AIC3254_init(void)
                       DAC_FS = PLL_CLK/(6 * 7 * 128) = 16016.52
                       BCLK = PLL_CLK/NDAC/BCLK = 28701600/2/28 = 512528.57
           ADC_FS:
+          	 192 kHz: P=1, R=1, J=7, D=1754 (0x6da)
+                      NADC=2, MADC=7, AOSR=32
+                      ADC_FS = PLL_CLK/(2 * 7 * 32) = 192198.21
+              96 kHz: P=1, R=1, J=7, D=1754 (0x6da)
+                      NADC=2, MADC=7, AOSR=64
+                      ADC_FS = PLL_CLK/(2 * 7 * 64) = 96099.11
               48 kHz: P=1, R=1, J=7, D=1754 (0x6da)
                       NADC=2, MADC=7, AOSR=128
                       ADC_FS = PLL_CLK/(2 * 7 * 128) = 48049.55
               16 kHz: P=1, R=1, J=7, D=1754 (0x6da)
                       NADC=6, MADC=7, AOSR=128
-                      ADC_FS = PLL_CLK/(2 * 7 * 128) = 16016.52
+                      ADC_FS = PLL_CLK/(6 * 7 * 128) = 16016.52
         */
 
         #ifdef SAMPLE_RATE_TX_48kHz
@@ -321,8 +327,8 @@ PSP_Result AIC3254_init(void)
         #ifdef SAMPLE_RATE_TX_48kHz
         // Set D value(LSB) = 0x00
         //result = AIC3254_Write(8, 0x00, hi2c); // 48khz ; 0x700 => .792 => D = 7.1792 => DAC_FS = 48075
-        //result = AIC3254_Write(8, 0xda, hi2c); // 48khz ; 0x6da => .1754 => D = 7.1754 => DAC_FS = 48049.5536
-        result = AIC3254_Write(8, 0xa8, hi2c); // 48khz ; 0x0a8 => .168 => D = 7.168 => DAC_FS = 48000
+        result = AIC3254_Write(8, 0xda, hi2c); // 48khz ; 0x6da => .1754 => D = 7.1754 => DAC_FS = 48049.5536
+        //result = AIC3254_Write(8, 0xa8, hi2c); // 48khz ; 0x0a8 => .168 => D = 7.168 => DAC_FS = 48000
         //result = AIC3254_Write(8, 0x46, hi2c); // 48khz ; 0x646 => .1606 => D = 7.1606 => DAC_FS = 47950.4464
         #endif
 
@@ -420,7 +426,7 @@ PSP_Result AIC3254_init(void)
         // Set DAC OSR LSB value to 128
         // This generates the DAC_FS = 48KHz
         // LELE: to obtain 192khz should be 32
-        result = AIC3254_Write(14, 128, hi2c ); // 48khz
+        result = AIC3254_Write(14, 64, hi2c ); // 48khz
         #endif
 
         #ifdef SAMPLE_RATE_TX_44_1kHz
@@ -508,7 +514,7 @@ PSP_Result AIC3254_init(void)
         // This generates the ADC_FS = 48KHz
         // ADC_FS = (12MHz *(R * J.D)/P)/(NADC * MADC * AOSR)
         // LELE: to obtain 192khz should be 32
-        result = AIC3254_Write(20, 128, hi2c ); // 48khz
+        result = AIC3254_Write(20, 64, hi2c ); // 48khz
         if (result != PSP_SOK) 
         {
             return result;

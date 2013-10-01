@@ -57,6 +57,8 @@ Uint16    fsError1 = 0;    /**< FSYNC gobal parameter                 */
 Uint16    ouError1 = 0;    /**< under/over run global parameter    */
 //Uint16 outwrap = 0;
 
+extern Uint32 bufferInIdx;// = 0; //logical pointers
+
 DMA_ChanHandle   hDmaTxLeft;
 DMA_ChanHandle   hDmaTxRight;
 DMA_ChanHandle   hDmaRxLeft;
@@ -66,12 +68,13 @@ DMA_ChanHandle   hDmaRxRight;
 /* Codec input ping/pong buffer (Left ch.) */
 #pragma DATA_SECTION(my_i2sRxLeftBuf, ".my_i2sRxLeftBuf");
 #pragma DATA_ALIGN(my_i2sRxLeftBuf, 2);
-Uint16 my_i2sRxLeftBuf[2*I2SS_RXBUFF_SZ]; /* 2x for ping/pong */
+Uint16 my_i2sRxLeftBuf[2*DMA_TARNSFER_SZ]; /* 2x for ping/pong */
 Int16 left_rx_buf_sel = 0x0;
 
 /* Codec input ping/pong buffer (Right ch.) */
-#pragma DATA_ALIGN(my_i2sRxRightBuf, 2);
-Uint16 my_i2sRxRightBuf[2*I2SS_RXBUFF_SZ]; /* 2x for ping/pong */
+//#pragma DATA_SECTION(my_i2sRxRightBuf, ".my_i2sTxLeftBuf");
+//#pragma DATA_ALIGN(my_i2sRxRightBuf, 2);
+//Uint16 my_i2sRxRightBuf[2*DMA_TARNSFER_SZ]; /* 2x for ping/pong */ //LELE IS NOT USED
 Int16 right_rx_buf_sel = 0x0;
 
 // codec input buffer
@@ -94,11 +97,11 @@ static Int16 recInLeftBuf = 0;
 /* NOTE: Left & Right interleaved channels for sample-by-sample playback */
 #pragma DATA_SECTION(my_i2sTxLeftBuf, ".my_i2sTxLeftBuf");
 #pragma DATA_ALIGN(my_i2sTxLeftBuf, 2);
-Int16 my_i2sTxLeftBuf[2*I2SS_RXBUFF_SZ]; /* 2x for ping/pong */
+Int16 my_i2sTxLeftBuf[2*DMA_TARNSFER_SZ]; /* 2x for ping/pong */
 
 /* Codec output ping/pong buffer (Right ch.) */
 #pragma DATA_ALIGN(my_i2sTxRightBuf, 2);
-Int16 my_i2sTxRightBuf[2*I2SS_RXBUFF_SZ]; /* 2x for ping/pong */
+Int16 my_i2sTxRightBuf[2*DMA_TARNSFER_SZ]; /* 2x for ping/pong */
 
 /* Output ping/pong buffer selection variable */
 Int16 tx_buf_sel;
@@ -188,7 +191,7 @@ Int16 i2sInit(
             dmaTxConfig.chanDir         = PSP_DMA_WRITE;
             dmaTxConfig.trigger         = PSP_DMA_EVENT_TRIGGER;
             dmaTxConfig.trfType         = PSP_DMA_TRANSFER_IO_MEMORY;
-            dmaTxConfig.dataLen         = 2*(2*I2SS_RXBUFF_SZ); /* bytes */
+            dmaTxConfig.dataLen         = (2*2*DMA_TARNSFER_SZ); /* bytes */
             dmaTxConfig.srcAddr         = (Uint32)pI2sInitPrms->pingPongI2sTxLeftBuf;
             dmaTxConfig.callback        = I2S_DmaTxLChCallBack;
 
@@ -299,7 +302,7 @@ Int16 i2sInit(
         dmaRxConfig.chanDir         = PSP_DMA_READ;
         dmaRxConfig.trigger         = PSP_DMA_EVENT_TRIGGER;
         dmaRxConfig.trfType         = PSP_DMA_TRANSFER_IO_MEMORY;
-        dmaRxConfig.dataLen         = 2*(2*I2SS_RXBUFF_SZ); /* bytes */
+        dmaRxConfig.dataLen         = 2*(2*DMA_TARNSFER_SZ); /* bytes */
         dmaRxConfig.destAddr        = (Uint32)pI2sInitPrms->pingPongI2sRxLeftBuf;
         dmaRxConfig.callback        = I2S_DmaRxLChCallBack;
 
@@ -516,9 +519,9 @@ void i2s_rxIsr(void) /* dispatcher used */
 /* Resets codec output buffer */
 void reset_codec_output_buffer(void)
 {
-    memset(my_i2sTxLeftBuf, 0, 2*I2SS_RXBUFF_SZ); /* 2x for ping/pong */
-    memset(my_i2sTxRightBuf, 0, 2*I2SS_RXBUFF_SZ); /* 2x for ping/pong */
-    codec_output_buffer = &my_i2sTxLeftBuf[0];
+    //memset(my_i2sTxLeftBuf, 0, 2*I2SS_RXBUFF_SZ); /* 2x for ping/pong */
+    //memset(my_i2sTxRightBuf, 0, 2*I2SS_RXBUFF_SZ); /* 2x for ping/pong */
+    //codec_output_buffer = &my_i2sTxLeftBuf[0];
     tx_buf_sel = 0x0;
     codec_output_buf_samp_cnt = 0;
     codec_output_buffer_avail = TRUE;
@@ -686,7 +689,7 @@ void I2S_DmaRxLChCallBack(
     	if (left_rx_buf_sel == 0x1) /* check ping or pong buffer */
     	{
     	  	/* this buffer has data to be processed */
-            ptrRxLeft += I2SS_RXBUFF_SZ;
+            ptrRxLeft += DMA_TARNSFER_SZ;
         }
         left_rx_buf_sel ^= 0x1; /* update ping/pong */
     	// copy data to the
@@ -704,7 +707,7 @@ void I2S_DmaRxLChCallBack(
     	    bufferInIdx = (bufferInIdx+1) % PROCESS_BUFFER_SIZE; */
     	}
     	SEM_post(&SEM_BufferFull);
-    	//LOG_printf(&trace, "IN log %d\n",bufferInIdx);
+    	//LOG_printf(&trace, "IN log %ld\n",bufferInIdx);
     }
     else
     {

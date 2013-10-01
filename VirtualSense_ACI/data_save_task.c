@@ -34,8 +34,8 @@ Uint32 step = 0;
 Uint16 file_counter = 0;
 char name[12];
 extern unsigned char circular_buffer[PROCESS_BUFFER_SIZE];
-extern Uint16 bufferInIdx; //logical pointer
-extern Uint16 bufferOutIdx; //logical pointer
+extern Uint32 bufferInIdx; //logical pointer
+extern Uint32 bufferOutIdx; //logical pointer
 
 // PRD function. Runs every 10 minutes to start sampling a new file
 void CreateNewFile(void){
@@ -51,6 +51,8 @@ void DataSaveTask(void)
 	//CSL_RtcTime 	 GetTime;
 	CSL_RtcDate 	 GetDate;
 	CSL_Status    status;
+	Uint32 burts_size_bytes = DMA_BUFFER_SZ * 2;
+	Uint32 b_size = PROCESS_BUFFER_SIZE;
 
     LOG_printf(&trace, "\nMount a volume.\n");
     rc = f_mount(0, &fatfs);
@@ -85,7 +87,7 @@ void DataSaveTask(void)
     	clear_lcd();
     	printstring("Creating   ");
     	printstring(name);
-    	rc = open_wave_file(&wav_file, name, SAMP_RATE,SECONDS); //LELE: to obtain 192khz
+    	rc = open_wave_file(&wav_file, name, SAMP_RATE,SECONDS);
     	if(rc) LOG_printf(&trace, "Error openin a new wav file %d\n",rc);
     	//clear_lcd();
     	SEM_reset(&SEM_BufferFull,0);
@@ -96,8 +98,9 @@ void DataSaveTask(void)
     		// wait on bufferIn ready semaphore
     		SEM_pend(&SEM_BufferFull, SYS_FOREVER);
 
-    		write_data_to_wave(&wav_file, &circular_buffer[bufferOutIdx], (DMA_BUFFER_SZ*2));
-    		bufferOutIdx = ((bufferOutIdx + (DMA_BUFFER_SZ *2)) % PROCESS_BUFFER_SIZE);
+    		write_data_to_wave(&wav_file, &circular_buffer[bufferOutIdx], burts_size_bytes);
+    		bufferOutIdx = ((bufferOutIdx + burts_size_bytes) % b_size);
+    		//LOG_printf(&trace, "out log %ld\n",bufferOutIdx);
         	//LOG_printf(&trace,  "buff %d in %d out %d\n",SEM_count(&SEM_BufferFull),bufferInIdx,bufferOutIdx);
         	//printstring(".!");
     		step++;

@@ -87,10 +87,10 @@ void calculate_FFT(unsigned char *input, int size);
 Uint16 DemoSwitchFlag = 1;
 
 // buffer for perform FFT
-#pragma DATA_ALIGN(bufferFFT, 4)
-DATA bufferFFT[FFT_LENGHT];
+//#pragma DATA_ALIGN(bufferFFT, 4)
+//DATA bufferFFT[FFT_LENGHT];
 // scarch buffer for FFT
-DATA bufferScrach[FFT_LENGHT];
+//DATA bufferScrach[FFT_LENGHT];
 // display buffer for spectrum display
 int display_buffer[128];
 
