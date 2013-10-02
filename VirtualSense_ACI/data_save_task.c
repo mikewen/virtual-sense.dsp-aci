@@ -31,11 +31,13 @@ FRESULT rc;
 FATFS fatfs;			/* File system object */
 FIL wav_file;
 Uint32 step = 0;
+Uint32 my_step = 0;
+Uint16 file_is_open = 0;
 Uint16 file_counter = 0;
 char name[12];
-extern unsigned char circular_buffer[PROCESS_BUFFER_SIZE];
-extern Uint32 bufferInIdx; //logical pointer
-extern Uint32 bufferOutIdx; //logical pointer
+//extern unsigned char circular_buffer[PROCESS_BUFFER_SIZE];
+//extern Uint32 bufferInIdx; //logical pointer
+//extern Uint32 bufferOutIdx; //logical pointer
 
 // PRD function. Runs every 10 minutes to start sampling a new file
 void CreateNewFile(void){
@@ -88,12 +90,15 @@ void DataSaveTask(void)
     	printstring("Creating   ");
     	printstring(name);
     	rc = open_wave_file(&wav_file, name, SAMP_RATE,SECONDS);
-    	if(rc) LOG_printf(&trace, "Error openin a new wav file %d\n",rc);
+    	if(rc)
+    		LOG_printf(&trace, "Error openin a new wav file %d\n",rc);
+    	else
+    		file_is_open = 1;
     	//clear_lcd();
     	SEM_reset(&SEM_BufferFull,0);
-    	bufferOutIdx = 0;
-    	bufferInIdx = 0;
-    	while (step < (SECONDS * STEP_PER_SECOND))
+    	//bufferOutIdx = 0;
+    	//bufferInIdx = 0;
+    	/*while (step < (SECONDS * STEP_PER_SECOND))
     	{
     		// wait on bufferIn ready semaphore
     		SEM_pend(&SEM_BufferFull, SYS_FOREVER);
@@ -104,8 +109,10 @@ void DataSaveTask(void)
         	//LOG_printf(&trace,  "buff %d in %d out %d\n",SEM_count(&SEM_BufferFull),bufferInIdx,bufferOutIdx);
         	//printstring(".!");
     		step++;
-    	}
+    	}*/
+    	SEM_pend(&SEM_CloseFile, SYS_FOREVER);
     	close_wave_file(&wav_file);
+    	file_is_open = 0;
         directory_listing();
         file_counter++;
         step = 0;
@@ -116,3 +123,15 @@ void DataSaveTask(void)
      }
 }
 
+void putDataIntoOpenFile(const void *buff, unsigned int number_of_bytes){
+	if(file_is_open){
+		write_data_to_wave(&wav_file, buff, number_of_bytes);
+		my_step++;
+	}
+	if(my_step == (SECONDS * STEP_PER_SECOND)){
+		file_is_open = 0;
+		my_step = 0;
+		SEM_post(&SEM_CloseFile);
+	}
+
+}

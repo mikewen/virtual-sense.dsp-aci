@@ -57,6 +57,7 @@ bios.SEM.instance("SEM_TimerSave").count = 1;
 bios.MEM.USERCOMMANDFILE = 0;
 bios.MEM.TEXTSEG = prog.get("SARAM");
 bios.MEM.USERCOMMANDFILE = 1;
+bios.SEM.create("SEM_CloseFile");
 // !GRAPHICAL_CONFIG_TOOL_SCRIPT_INSERT_POINT!
 
 prog.gen();

@@ -58,6 +58,8 @@ Uint16    ouError1 = 0;    /**< under/over run global parameter    */
 //Uint16 outwrap = 0;
 
 extern Uint32 bufferInIdx;// = 0; //logical pointers
+extern void putDataIntoOpenFile(const void *buff, unsigned int number_of_bytes);
+extern unsigned char circular_buffer[PROCESS_BUFFER_SIZE];
 
 DMA_ChanHandle   hDmaTxLeft;
 DMA_ChanHandle   hDmaTxRight;
@@ -69,6 +71,7 @@ DMA_ChanHandle   hDmaRxRight;
 #pragma DATA_SECTION(my_i2sRxLeftBuf, ".my_i2sRxLeftBuf");
 #pragma DATA_ALIGN(my_i2sRxLeftBuf, 2);
 Uint16 my_i2sRxLeftBuf[2*DMA_TARNSFER_SZ]; /* 2x for ping/pong */
+Uint16 my_samples[DMA_BUFFER_SZ];
 Int16 left_rx_buf_sel = 0x0;
 
 /* Codec input ping/pong buffer (Right ch.) */
@@ -701,12 +704,14 @@ void I2S_DmaRxLChCallBack(
        		recInLeftBuf = *ptrRxLeft;
     	    ptrRxLeft += 2;
     	    circular_buffer_put(recInLeftBuf);
+    	    //my_samples[i] = recInLeftBuf;
     	    /*bufferIn[bufferInIdx] =  (recInLeftBuf & 0xFF);
     	    bufferInIdx = (bufferInIdx+1) % PROCESS_BUFFER_SIZE;
     	    bufferIn[bufferInIdx] =  ((recInLeftBuf >> 8) & 0xFF);
     	    bufferInIdx = (bufferInIdx+1) % PROCESS_BUFFER_SIZE; */
     	}
-    	SEM_post(&SEM_BufferFull);
+       	putDataIntoOpenFile(circular_buffer, PROCESS_BUFFER_SIZE);
+    	//SEM_post(&SEM_BufferFull);
     	//LOG_printf(&trace, "IN log %ld\n",bufferInIdx);
     }
     else
