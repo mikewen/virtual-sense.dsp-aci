@@ -426,7 +426,7 @@ PSP_Result AIC3254_init(void)
         // Set DAC OSR LSB value to 128
         // This generates the DAC_FS = 48KHz
         // LELE: to obtain 192khz should be 32
-        result = AIC3254_Write(14, 64, hi2c ); // 48khz
+        result = AIC3254_Write(14, 128, hi2c ); // 48khz
         #endif
 
         #ifdef SAMPLE_RATE_TX_44_1kHz
@@ -514,7 +514,7 @@ PSP_Result AIC3254_init(void)
         // This generates the ADC_FS = 48KHz
         // ADC_FS = (12MHz *(R * J.D)/P)/(NADC * MADC * AOSR)
         // LELE: to obtain 192khz should be 32
-        result = AIC3254_Write(20, 64, hi2c ); // 48khz
+        result = AIC3254_Write(20, 128, hi2c ); // 48khz
         if (result != PSP_SOK) 
         {
             return result;
