@@ -47,6 +47,9 @@
 #include "main_config.h"
 #include "circular_buffer.h"
 
+#include "ff.h"
+#include "make_wav.h"
+
 //extern Uint16 bufferInIdx; //logical pointer
 
 /* I2S handles */
@@ -59,6 +62,11 @@ Uint16    ouError1 = 0;    /**< under/over run global parameter    */
 
 extern Uint32 bufferInIdx;// = 0; //logical pointers
 
+// open file pointer
+extern FIL wav_file;
+extern Uint16 file_is_open;
+Uint32 my_step = 0;
+
 DMA_ChanHandle   hDmaTxLeft;
 DMA_ChanHandle   hDmaTxRight;
 DMA_ChanHandle   hDmaRxLeft;
@@ -69,6 +77,7 @@ DMA_ChanHandle   hDmaRxRight;
 #pragma DATA_SECTION(my_i2sRxLeftBuf, ".my_i2sRxLeftBuf");
 #pragma DATA_ALIGN(my_i2sRxLeftBuf, 2);
 Uint16 my_i2sRxLeftBuf[2*DMA_TARNSFER_SZ]; /* 2x for ping/pong */
+Uint16 my_samples[DMA_TARNSFER_SZ]; /* 2x for ping/pong */
 Int16 left_rx_buf_sel = 0x0;
 
 /* Codec input ping/pong buffer (Right ch.) */
@@ -700,13 +709,35 @@ void I2S_DmaRxLChCallBack(
 
        		recInLeftBuf = *ptrRxLeft;
     	    ptrRxLeft += 2;
-    	    circular_buffer_put(recInLeftBuf);
+    	    //circular_buffer_put(recInLeftBuf);
+    	    my_samples[i] = recInLeftBuf;
     	    /*bufferIn[bufferInIdx] =  (recInLeftBuf & 0xFF);
     	    bufferInIdx = (bufferInIdx+1) % PROCESS_BUFFER_SIZE;
     	    bufferIn[bufferInIdx] =  ((recInLeftBuf >> 8) & 0xFF);
     	    bufferInIdx = (bufferInIdx+1) % PROCESS_BUFFER_SIZE; */
     	}
-    	SEM_post(&SEM_BufferFull);
+
+    	//while (step < (SECONDS * STEP_PER_SECOND))
+    	//{
+    		// wait on bufferIn ready semaphore
+    	//	SEM_pend(&SEM_BufferFull, SYS_FOREVER);
+       	if(file_is_open){
+       		write_data_to_wave(&wav_file, &my_samples[0], 2*DMA_BUFFER_SZ);
+    	//	bufferOutIdx = ((bufferOutIdx + burts_size_bytes) % b_size);
+    		//LOG_printf(&trace, "out log %ld\n",bufferOutIdx);
+        	//LOG_printf(&trace,  "buff %d in %d out %d\n",SEM_count(&SEM_BufferFull),bufferInIdx,bufferOutIdx);
+        	//printstring(".!");
+       		my_step++;
+       	}
+    	if(my_step == (SECONDS * STEP_PER_SECOND)){
+    		file_is_open = 0;
+    		SEM_post(&SEM_CloseFile);
+    		my_step = 0;
+    	}
+    	//}
+
+
+    	//SEM_post(&SEM_BufferFull);
     	//LOG_printf(&trace, "IN log %ld\n",bufferInIdx);
     }
     else

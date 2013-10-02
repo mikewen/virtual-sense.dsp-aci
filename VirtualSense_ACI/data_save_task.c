@@ -30,6 +30,7 @@
 FRESULT rc;
 FATFS fatfs;			/* File system object */
 FIL wav_file;
+Uint16 file_is_open = 0;
 Uint32 step = 0;
 Uint16 file_counter = 0;
 char name[12];
@@ -42,7 +43,9 @@ void CreateNewFile(void){
 	LOG_printf(&trace, "Timer executes\n");
 	SEM_post(&SEM_TimerSave);
 }
+void DataSaveTask2(void){
 
+}
 
 void DataSaveTask(void)
 {
@@ -89,23 +92,28 @@ void DataSaveTask(void)
     	printstring(name);
     	rc = open_wave_file(&wav_file, name, SAMP_RATE,SECONDS);
     	if(rc) LOG_printf(&trace, "Error openin a new wav file %d\n",rc);
+    	file_is_open = 1;
     	//clear_lcd();
     	SEM_reset(&SEM_BufferFull,0);
     	bufferOutIdx = 0;
     	bufferInIdx = 0;
-    	while (step < (SECONDS * STEP_PER_SECOND))
-    	{
+    	//while (step < (SECONDS * STEP_PER_SECOND))
+    	//{
     		// wait on bufferIn ready semaphore
-    		SEM_pend(&SEM_BufferFull, SYS_FOREVER);
+    	//	SEM_pend(&SEM_BufferFull, SYS_FOREVER);
 
-    		write_data_to_wave(&wav_file, &circular_buffer[bufferOutIdx], burts_size_bytes);
-    		bufferOutIdx = ((bufferOutIdx + burts_size_bytes) % b_size);
+    	//	write_data_to_wave(&wav_file, &circular_buffer[bufferOutIdx], burts_size_bytes);
+    	//	bufferOutIdx = ((bufferOutIdx + burts_size_bytes) % b_size);
     		//LOG_printf(&trace, "out log %ld\n",bufferOutIdx);
         	//LOG_printf(&trace,  "buff %d in %d out %d\n",SEM_count(&SEM_BufferFull),bufferInIdx,bufferOutIdx);
         	//printstring(".!");
-    		step++;
-    	}
+    	//	step++;
+    	//}
+
+    	//wait on the close semaphore
+    	SEM_pend(&SEM_CloseFile, SYS_FOREVER);
     	close_wave_file(&wav_file);
+    	file_is_open = 0;
         directory_listing();
         file_counter++;
         step = 0;

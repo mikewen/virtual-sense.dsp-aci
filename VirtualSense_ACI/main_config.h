@@ -24,8 +24,8 @@
 #define MAIN_CONFIG_H
 
 #define FFT_LENGHT						  	  1024
-#define SECONDS 				  				10
-#define PROCESS_BUFFER_SIZE 				 19200L //BYTE size
+#define SECONDS 				  				 5
+#define PROCESS_BUFFER_SIZE 				  1920L //BYTE size
 #define SAMP_RATE					   		 96000L
 #define STEP_PER_SECOND 				 	   100L //SAMP_RATE_48KHZ/PROCESS_BUFFER_SIZE
 
