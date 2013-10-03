@@ -78,14 +78,14 @@ Int16 left_rx_buf_sel = 0x0;
 Int16 right_rx_buf_sel = 0x0;
 
 // codec input buffer
-Uint16 codec_input_buffer[CODEC_INPUT_BUFFER_SIZE];
+/*Uint16 codec_input_buffer[CODEC_INPUT_BUFFER_SIZE];
 //codec input buffer input index
 Uint16 codec_input_buffer_input_index;
 //codec input buffer output index
 Uint16 codec_input_buffer_output_index;
 Uint32 codec_input_buffer_overflow = 0;
 Uint32 codec_input_buffer_underflow = 0;
-
+*/
 #endif  // ENABLE_RECORD
 
 //extern unsigned char cicular_buffer[PROCESS_BUFFER_SIZE];

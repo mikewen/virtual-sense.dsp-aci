@@ -95,7 +95,7 @@ Uint16 DemoSwitchFlag = 1;
 int display_buffer[128];
 
 extern Uint16 my_i2sRxLeftBuf[2*DMA_BUFFER_SZ]; /* 2x for ping/pong */
-extern Uint16 my_i2sRxRightBuf[2*DMA_BUFFER_SZ]; /* 2x for ping/pong */
+//extern Uint16 my_i2sRxRightBuf[2*DMA_BUFFER_SZ]; /* 2x for ping/pong */
 extern Int16 my_i2sTxLeftBuf[2*DMA_BUFFER_SZ]; /* 2x for ping/pong */
 extern Int16 my_i2sTxRightBuf[2*DMA_BUFFER_SZ]; /* 2x for ping/pong */
 
@@ -220,7 +220,8 @@ void CSL_acTest(void)
 #endif
 
     /* Initialize audio module */
-    result = AIC3254_init();
+    //result = AIC3254_init();
+    result = AIC3254_my_init();
     Set_Mute_State(TRUE);
     if (result != 0)
     {
