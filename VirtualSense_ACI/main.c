@@ -220,7 +220,7 @@ void CSL_acTest(void)
 #endif
 
     /* Initialize audio module */
-    result = AIC3254_init();
+    result = AIC3254_my_init();
     Set_Mute_State(TRUE);
     if (result != 0)
     {

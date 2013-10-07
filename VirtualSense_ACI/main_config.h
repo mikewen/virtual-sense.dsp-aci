@@ -1,13 +1,13 @@
 /*****************************************************************************/
 /*                                                                           */
 /* FILENAME                                                                  */ 
-/* 	main_config.h                                                            */
+/*      main_config.h                                                            */
 /*                                                                           */
 /* DESCRIPTION                                                               */
 /*   Header file for main configuration.                                     */
 /*                                                                           */
 /* REVISION                                                                  */
-/*   Revision: 1.00	                                                         */ 
+/*   Revision: 1.00                                                              */
 /*   Author  : Emanuele Lattanzi                                             */
 /*---------------------------------------------------------------------------*/
 /*                                                                           */
@@ -23,17 +23,15 @@
 #ifndef MAIN_CONFIG_H
 #define MAIN_CONFIG_H
 
-#define FFT_LENGHT						  	  1024
-#define SECONDS 				  				 5
+#define FFT_LENGHT                                                   1024
+#define SECONDS                                                         5
+#define PROCESS_BUFFER_SIZE                              		     512L //BYTE size of the fat sector
+#define SAMP_RATE                                                 192000L
+#define STEP_PER_SECOND                                              750L //number of DMA_BUFFER to cover one second
 
-#define SAMP_RATE					   		 48000L
-#define STEP_PER_SECOND 				 	   100L //SAMP_RATE_48KHZ/PROCESS_BUFFER_SIZE
-
-#define DMA_BUFFER_MS					   	    (10)
-#define DMA_BUFFER_SZ 	       (DMA_BUFFER_MS * 48L)
-#define DMA_TARNSFER_SZ            (2*DMA_BUFFER_SZ)
-
-#define PROCESS_BUFFER_SIZE         DMA_TARNSFER_SZ //BYTE size
+//#define DMA_BUFFER_MS                                                (10)
+#define DMA_BUFFER_SZ          					   				   (256L) // number of sample in fat sector
+#define DMA_TARNSFER_SZ            						(2*DMA_BUFFER_SZ)
 
 #endif
 

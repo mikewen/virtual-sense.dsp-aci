@@ -368,7 +368,7 @@ Int16 i2sInit(
             {
                 return I2SSAMPLE_DMAINIT_REC_FAIL;
             }
-		}
+                }
 
         /* Zero buffers */
         zeroI2sBuf(pI2sInitPrms->enableStereoRec, 
@@ -621,7 +621,7 @@ void I2S_DmaTxLChCallBack(
     if ((dataCallback != NULL) && (dmaStatus == PSP_DMA_TRANSFER_COMPLETE))
 
     {
-    	SEM_post(&SEM_PingPongTxLeftComplete);
+        SEM_post(&SEM_PingPongTxLeftComplete);
     }
     else
     {
@@ -680,39 +680,43 @@ void I2S_DmaRxLChCallBack(
     void    *dataCallback
 )
 {
-	Uint16 *ptrRxLeft;
-	Uint16 i;
+        Uint16 *ptrRxLeft;
+        Uint16 i;
 
 
 #ifdef ENABLE_RECORD
     if ((dataCallback != NULL) && (dmaStatus == PSP_DMA_TRANSFER_COMPLETE))
     {
-    	/* Get pointer to ping/pong buffer */
-    	ptrRxLeft = &my_i2sRxLeftBuf[0];
-    	if (left_rx_buf_sel == 0x1) /* check ping or pong buffer */
-    	{
-    	  	/* this buffer has data to be processed */
+        /* Get pointer to ping/pong buffer */
+        ptrRxLeft = &my_i2sRxLeftBuf[0];
+        if (left_rx_buf_sel == 0x1) /* check ping or pong buffer */
+        {
+                /* this buffer has data to be processed */
             ptrRxLeft += DMA_TARNSFER_SZ;
         }
         left_rx_buf_sel ^= 0x1; /* update ping/pong */
-    	// copy data to the
-       	for (i = 0; i < DMA_BUFFER_SZ; i++)
-       	{
+        // copy data to the
+        /*if(SEM_count(&SEM_BufferFull) > PROCESS_BUFFER_SIZE/DMA_TARNSFER_SZ){
+            return;
+        }*/
+
+        for (i = 0; i < DMA_BUFFER_SZ; i++)
+        {
             // NOTE: since we need datapack to be disabled on I2S tx, we need it disabled on I2S rx therefore
             // we get 2 words per DMA transfer so the offset into DMA buffers has to be twice as big
 
-       		recInLeftBuf = *ptrRxLeft;
-    	    ptrRxLeft += 2;
-    	    circular_buffer_put(recInLeftBuf);
-    	    //my_samples[i] = recInLeftBuf;
-    	    /*bufferIn[bufferInIdx] =  (recInLeftBuf & 0xFF);
-    	    bufferInIdx = (bufferInIdx+1) % PROCESS_BUFFER_SIZE;
-    	    bufferIn[bufferInIdx] =  ((recInLeftBuf >> 8) & 0xFF);
-    	    bufferInIdx = (bufferInIdx+1) % PROCESS_BUFFER_SIZE; */
-    	}
-       	putDataIntoOpenFile(circular_buffer, PROCESS_BUFFER_SIZE);
-    	//SEM_post(&SEM_BufferFull);
-    	//LOG_printf(&trace, "IN log %ld\n",bufferInIdx);
+            recInLeftBuf = *ptrRxLeft;
+            ptrRxLeft += 2;
+            circular_buffer_put(recInLeftBuf);
+            //my_samples[i] = recInLeftBuf;
+            /*bufferIn[bufferInIdx] =  (recInLeftBuf & 0xFF);
+            bufferInIdx = (bufferInIdx+1) % PROCESS_BUFFER_SIZE;
+            bufferIn[bufferInIdx] =  ((recInLeftBuf >> 8) & 0xFF);
+            bufferInIdx = (bufferInIdx+1) % PROCESS_BUFFER_SIZE; */
+        }
+        putDataIntoOpenFile(circular_buffer, PROCESS_BUFFER_SIZE);
+        //SEM_post(&SEM_BufferFull);
+        //LOG_printf(&trace, "IN log %ld\n",bufferInIdx);
     }
     else
     {
@@ -756,4 +760,3 @@ void I2S_DmaRxRChCallBack(
 
 #endif // ENABLE_STEREO_RECORD
 }
-

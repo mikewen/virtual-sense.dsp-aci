@@ -227,7 +227,7 @@ PSP_Result AIC3254_init(void)
                       DAC_FS = PLL_CLK/(6 * 7 * 128) = 16016.52
                       BCLK = PLL_CLK/NDAC/BCLK = 28701600/2/28 = 512528.57
           ADC_FS:
-          	 192 kHz: P=1, R=1, J=7, D=1754 (0x6da)
+                 192 kHz: P=1, R=1, J=7, D=1754 (0x6da)
                       NADC=2, MADC=7, AOSR=32
                       ADC_FS = PLL_CLK/(2 * 7 * 32) = 192198.21
               96 kHz: P=1, R=1, J=7, D=1754 (0x6da)
@@ -426,7 +426,7 @@ PSP_Result AIC3254_init(void)
         // Set DAC OSR LSB value to 128
         // This generates the DAC_FS = 48KHz
         // LELE: to obtain 192khz should be 32
-        result = AIC3254_Write(14, 64, hi2c ); // 48khz
+        result = AIC3254_Write(14, 128, hi2c ); // 48khz
         #endif
 
         #ifdef SAMPLE_RATE_TX_44_1kHz
@@ -514,7 +514,7 @@ PSP_Result AIC3254_init(void)
         // This generates the ADC_FS = 48KHz
         // ADC_FS = (12MHz *(R * J.D)/P)/(NADC * MADC * AOSR)
         // LELE: to obtain 192khz should be 32
-        result = AIC3254_Write(20, 128, hi2c ); // 48khz
+        result = AIC3254_Write(20, 64, hi2c ); // 48khz
         if (result != PSP_SOK) 
         {
             return result;
@@ -566,7 +566,7 @@ PSP_Result AIC3254_init(void)
         }
 
 #ifdef C5535_EZDSP        
-		// power up Mic Bias using LDO-IN
+                // power up Mic Bias using LDO-IN
         result = AIC3254_Write(51,0x48,hi2c);
         if (result != PSP_SOK) 
         {
@@ -581,7 +581,7 @@ PSP_Result AIC3254_init(void)
         }
 
 #ifdef C5535_EZDSP        
-		result = AIC3254_Write(0x2,1,hi2c);// Enable Analog Blocks and internal LDO
+                result = AIC3254_Write(0x2,1,hi2c);// Enable Analog Blocks and internal LDO
 #else
         result = AIC3254_Write(0x2,0,hi2c);// Enable Analog Blocks
 #endif
@@ -788,6 +788,406 @@ PSP_Result AIC3254_init(void)
 
 }
 
+
+
+PSP_Result AIC3254_my_init(void)
+{
+    PSP_Result result = PSP_SOK;
+    volatile Uint16 looper;
+
+    /* Reset AIC3254 */
+    /* NOTE: Assumes EBSR and GPIO are set correctly before function is called */
+    CSL_FINS((*GPIO_DOUT0_ADDR), GPIO_DOUT0, 0x0000); /* reset active low */
+    for(looper=0; looper<10; looper++ )
+        asm("    nop");
+    CSL_FINS((*GPIO_DOUT0_ADDR), GPIO_DOUT0, 0x0400);
+
+    hi2c = I2C_Init(0x2f, 390000);  /* 390 kHz, assuming 100 MHz cpu clock */
+    if (hi2c)
+    {
+        result = AIC3254_Write(0, 0, hi2c); // write 0 to page register to select page 0
+        if (result != PSP_SOK)
+        {
+            return result;
+        }
+
+        result = AIC3254_Write(1, 1, hi2c); // reset codec
+        if (result != PSP_SOK)
+        {
+            return result;
+        }
+
+        /* Select the PLL input and CODEC_CLKIN */
+        /* PLL input is assumed as 12MHz */
+        result = AIC3254_Write(4, 0x03, hi2c);
+        if (result != PSP_SOK)
+        {
+            return result;
+        }
+
+        /*
+          PLL_CLK = (PLL_CLKIN * R * J.D)/P
+          DAC_FS = PLL_CLKIN/(NDAC * MDAC * DOSR)
+          ADC_FS = PLL_CLKIN/(NADC * MADC * AOSR)
+          DAC_CLK = PLL_CLK/NDAC
+          BCLK = DAC_CLK/BDIV_CLKIN
+
+                  DAC_CLK = 86016000/2 = 43008000
+
+          ADC_FS:
+                 192 kHz: P=1, R=1, J=7, D=1680 (0x690)  => .1680 => J.D = 7.1680
+                                  PLL_CLK = (12e6 * 1 * 7.1680)/1 = 86016000
+                      NADC=2, MADC=7, AOSR=32
+                      ADC_FS = PLL_CLK/(2 * 7 * 32) = 192000
+              96 kHz: P=1, R=1, J=7, D=1680 (0x690)  => .1680 => J.D = 7.1680
+                                  PLL_CLK = (12e6 * 1 * 7.1680)/1 = 86016000
+                      NADC=2, MADC=7, AOSR=64
+                      ADC_FS = PLL_CLK/(2 * 7 * 64) = 96000
+              48 kHz: P=1, R=1, J=7, D=1680 (0x690)  => .1680 => J.D = 7.1680
+                                  PLL_CLK = (12e6 * 1 * 7.168)/1 = 86016000
+                      NADC=2, MADC=7, AOSR=128
+                      ADC_FS = PLL_CLK/(2 * 7 * 128) = 48000
+              24 kHz: P=1, R=1, J=7, D=1680 (0x690)  => .1680 => J.D = 7.1680
+                                  PLL_CLK = (12e6 * 1 * 7.1680)/1 = 86016000
+                      NADC=4, MADC=7, AOSR=128
+                      ADC_FS = PLL_CLK/(4 * 7 * 128) = 24000
+              16 kHz: P=1, R=1, J=7, D=1680 (0x690)  => .1680 => J.D = 7.1680
+                                  PLL_CLK = (12e6 * 1 * 7.1680)/1 = 86016000
+                      NADC=6, MADC=7, AOSR=128
+                      ADC_FS = PLL_CLK/(6 * 7 * 128) = 16000
+
+              DAC_FS, BCLK: should have the same configuration
+        */
+        // Power up the PLL and set P = 1 & R = 1
+        result = AIC3254_Write(5, 0x91, hi2c);
+        if (result != PSP_SOK)
+        {
+            return result;
+        }
+
+        // Set J value to 7
+        result = AIC3254_Write(6, 0x07, hi2c);
+        if (result != PSP_SOK)
+        {
+            return result;
+        }
+
+        // Set D value(MSB) = 0x06
+        result = AIC3254_Write(7, 0x06, hi2c);
+        if (result != PSP_SOK)
+        {
+            return result;
+        }
+
+        // Set D value(LSB) = 0x90
+        result = AIC3254_Write(8, 0x90, hi2c); // 0x690 => .1680 => D = 7.1680
+        if (result != PSP_SOK)
+        {
+            return result;
+        }
+
+        // Set NDAC to 2 - to obtain 48-96-192Khz
+        result = AIC3254_Write(11,0x82, hi2c);
+        if (result != PSP_SOK)
+        {
+            return result;
+        }
+
+        // Set MDAC to 7 - to obtain 48-96-192Khz
+        result = AIC3254_Write(12,0x87, hi2c);
+
+        if (result != PSP_SOK)
+        {
+            return result;
+        }
+
+        /* Set DAC OSR MSB value to 0 */
+        result = AIC3254_Write(13, 0x0, hi2c );
+        if (result != PSP_SOK)
+        {
+            return result;
+        }
+
+        // Set DAC OSR LSB value to 64 to obtain 96Khz
+        result = AIC3254_Write(14, 32, hi2c ); // 48khz
+        if (result != PSP_SOK)
+        {
+            return result;
+        }
+        // Set BCLK is ADC_MOD_CLK --> (PLL_CLK/(MADC*NADC)) = 6144000
+        //11: BDIV_CLKIN = ADC_MOD_CLK
+        result = AIC3254_Write(29,0x03, hi2c); // 6144000 => 6.144 Mhz
+        if (result != PSP_SOK)
+        {
+            return result;
+        }
+        // Set BCLK divider value to 2 to transfer 32 bit word at 96Khz
+        // 32 * 96000 = 3.072 Mhz
+        // BCLK=ADC_MOD_CLK/N =(6144000/2) = 3.072 Mhz = 32*fs
+        // For 32 bit clocks per frame in Master mode ONLY
+        result = AIC3254_Write(30,0x81, hi2c); // for 192khz
+        if (result != PSP_SOK)
+        {
+            return result;
+        }
+
+        // Set NADC to 2 - to obtain 48-96-192Khz
+        result = AIC3254_Write(18,0x82, hi2c);
+        if (result != PSP_SOK)
+        {
+            return result;
+        }
+
+        // Set MADC to 7 - to obtain 48-96-192Khz
+        result = AIC3254_Write(19,0x87, hi2c);
+        if (result != PSP_SOK)
+        {
+            return result;
+        }
+
+        // Set ADC OSR LSB value to 64 to obtain 192khz
+        result = AIC3254_Write(20, 32, hi2c );
+        if (result != PSP_SOK)
+        {
+            return result;
+        }
+
+        // Enable processing block  PRB7 --> 96Khz
+        // Enable processing block  PRB13 --> 192Khz
+        result = AIC3254_Write(61, 0x0d, hi2c );
+        if (result != PSP_SOK)
+        {
+            return result;
+        }
+
+        result = AIC3254_Write(27,/*0xC*/0xd, hi2c); // BCLK and WCLK is set as op to AIC3254(Master)
+        if (result != PSP_SOK)
+        {
+            return result;
+        }
+
+
+        result = AIC3254_Write(0,1,hi2c);// select page 1
+        if (result != PSP_SOK)
+        {
+            return result;
+        }
+
+                // power up Mic Bias using LDO-IN
+        result = AIC3254_Write(51,0x48,hi2c);
+        if (result != PSP_SOK)
+        {
+            return result;
+        }
+
+        result = AIC3254_Write(0x1,0x8,hi2c);// Disable crude AVDD generation from DVDD
+        if (result != PSP_SOK)
+        {
+            return result;
+        }
+
+        //Enable Master Analog Power Control
+                result = AIC3254_Write(0x2,0x1,hi2c);// Enable Analog Blocks and internal LDO
+                if (result != PSP_SOK)
+        {
+            return result;
+        }
+                // Set the input power-up time to 3.1ms (for ADC)
+                //w 30 47 32
+                result = AIC3254_Write(0x47,0x32,hi2c);
+                if (result != PSP_SOK)
+                {
+                        return result;
+                }
+
+                //# Set the REF charging time to 40ms
+                //w 30 7b 01
+                result = AIC3254_Write(0x7b,0x01,hi2c);
+                if (result != PSP_SOK)
+                {
+                        return result;
+                }
+
+                //LELE tp 10k
+        //Route IN2L to LEFT_P with 40K input impedance
+        result = AIC3254_Write(52,0x10/*0x30*/,hi2c);
+        if (result != PSP_SOK)
+        {
+            return result;
+        }
+
+        //Route Common Mode to LEFT_M with impedance of 40K
+        result = AIC3254_Write(54,0x40/*0xC0*/,hi2c);
+        if (result != PSP_SOK)
+        {
+            return result;
+        }
+
+        //Route IN2R to RIGHT_P with 40K input impedance
+        result = AIC3254_Write(55,0x10/*0x30*/,hi2c);
+        if (result != PSP_SOK)
+        {
+            return result;
+        }
+
+        //Route Common Mode to RIGHT_M with impedance of 40K
+        result = AIC3254_Write(57,0x40/*0xC0*/,hi2c);
+        if (result != PSP_SOK)
+        {
+            return result;
+        }
+
+        //Unmute Left MICPGA
+        //result = AIC3254_Write(59,0x00,hi2c); // Gain = 0 dB
+        //result = AIC3254_Write(59,0x0f,hi2c); // Gain = 7.5 dB
+        //result = AIC3254_Write(59,0x1e,hi2c); // Gain = 15 dB
+        result = AIC3254_Write(59,0x3c,hi2c); // Gain = 30 dB
+        if (result != PSP_SOK)
+        {
+            return result;
+        }
+
+        //Unmute Right MICPGA
+        //result = AIC3254_Write(60,0x00,hi2c); // Gain = 0 dB
+        //result = AIC3254_Write(60,0x0f,hi2c); // Gain = 7.5 dB
+        //result = AIC3254_Write(60,0x1e,hi2c); // Gain = 15 dB
+        result = AIC3254_Write(60,0x3c,hi2c); // Gain = 30 dB
+        if (result != PSP_SOK)
+        {
+            return result;
+        }
+
+        result = AIC3254_Write(0, 0, hi2c); // write 0 to page register to select page 0
+        if (result != PSP_SOK)
+        {
+            return result;
+        }
+
+        result = AIC3254_Write(64,0x2,hi2c); // left vol=right vol
+        if (result != PSP_SOK)
+        {
+            return result;
+        }
+
+        result = AIC3254_Write(63,0xd4, hi2c); // power up left,right data paths and set channel
+        if (result != PSP_SOK)
+        {
+            return result;
+        }
+
+        result = AIC3254_Write(64,0xc,hi2c); // left vol=right vol; muted
+        if (result != PSP_SOK)
+        {
+            return result;
+        }
+
+        result = AIC3254_Write(0,1,hi2c);// select page 1
+        if (result != PSP_SOK)
+        {
+            return result;
+        }
+
+        result = AIC3254_Write(0x10,0,hi2c);// unmute HPL , 0dB gain
+        if (result != PSP_SOK)
+        {
+            return result;
+        }
+
+        result = AIC3254_Write(0x11,0,hi2c);// unmute HPR , 0dB gain
+        if (result != PSP_SOK)
+        {
+            return result;
+        }
+
+        result = AIC3254_Write(0x9,0x30,hi2c);// power up HPL,HPR
+        if (result != PSP_SOK)
+        {
+            return result;
+        }
+
+        result = AIC3254_Write(0x0,0x0,hi2c);// select page 0
+        if (result != PSP_SOK)
+        {
+            return result;
+        }
+
+        result = AIC3254_Write(0x40,0x2,hi2c);// unmute DAC with right vol=left vol
+        if (result != PSP_SOK)
+        {
+            return result;
+        }
+
+        result = AIC3254_Write(65,/*20 48*/ 0,hi2c);// set DAC gain to 0dB
+        if (result != PSP_SOK)
+        {
+            return result;
+        }
+
+        //Powerup left and right ADC
+        //LELE Powerup  only left ADC 0x80 -- was 0xc0
+        result = AIC3254_Write(81,0xc0,hi2c);
+        if (result != PSP_SOK)
+        {
+            return result;
+        }
+
+        //Unmute left and right ADC
+        //LELE Unmute only left ADC 0x08-- was 0x00
+        result = AIC3254_Write(82,0x00,hi2c);
+        if (result != PSP_SOK)
+        {
+            return result;
+        }
+
+        result = AIC3254_Write(0x0,0x1,hi2c);// select page 1
+        if (result != PSP_SOK)
+        {
+            return result;
+        }
+
+        result = AIC3254_Write(0x10,0,hi2c);// unmute HPL , 0dB gain
+        if (result != PSP_SOK)
+        {
+            return result;
+        }
+
+        result = AIC3254_Write(0x11,0,hi2c);// unmute HPR , 0dB gain
+        if (result != PSP_SOK)
+        {
+            return result;
+        }
+
+
+
+        // write 1 to page register to select page 1 - prepare for next headset volume change
+        result = AIC3254_Write(0, 1, hi2c);
+        if (result != PSP_SOK)
+        {
+            return FALSE;
+        }
+
+#if 1 // debug
+        result = AIC3254_Write(0x0,0x0,hi2c);// select page 0
+        if (result != PSP_SOK)
+        {
+                return result;
+        }
+       // route ADC_FS to WCLK (I2S FS)
+        result = AIC3254_Write(33, 0x10, hi2c);
+        if (result != PSP_SOK)
+        {
+            return result;
+        }
+#endif
+
+        return result;
+  }
+  else
+  {
+        return PSP_E_DRIVER_INIT;
+  }
+
+}
 /**
  *  \brief Codec write function
  *
