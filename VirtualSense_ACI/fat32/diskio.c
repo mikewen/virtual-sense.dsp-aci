@@ -11,7 +11,7 @@
 //#include "csl_sysctrl.h"
 //#include "sdcard.h"		/* Example: MMC/SDC contorl */
 
-#define CSL_SD_CLOCK_MAX_KHZ      (20000u)
+#define CSL_SD_CLOCK_MAX_KHZ      (25000u)
 
 
 #define CSL_PLL_DIV_000    (0)
@@ -258,15 +258,19 @@ DRESULT disk_ioctl (
 CSL_Status configSdCard (CSL_MMCSDOpMode    opMode)
 {
 	CSL_Status     status;
+	CSL_MMCConfig  mm_config;
 	Uint16		   actCard;
 	Uint16         clockDiv;
 	Uint16         rca;
 
 	/* Get the clock divider value for the current CPU frequency */
 	clockDiv = computeClkRate();
+	clockDiv = 1;//computeClkRate(); //LELE: setting MMCSD bus speed to 25MHz
 
 	/* Initialize MMCSD CSL module */
 	status = MMC_init();
+
+
 
 	/* Open MMCSD CSL module */
 #ifdef C5515_EZDSP
@@ -281,6 +285,7 @@ CSL_Status configSdCard (CSL_MMCSDOpMode    opMode)
 		printf("MMC_open Failed\n");
 		return (status);
 	}
+
 
 	/* Configure the DMA in case of operating mode is set to DMA */
 	if(opMode == CSL_MMCSD_OPMODE_DMA)
@@ -422,6 +427,25 @@ CSL_Status configSdCard (CSL_MMCSDOpMode    opMode)
 		return (status);
 	}
 
+
+	/* Set bus width - Optional */
+	status = SD_setBusWidth(mmcsdHandle, 1);
+	if(status != CSL_SOK)
+	{
+		printf("API: SD_setBusWidth Failed\n");
+		return(status);
+	}
+
+	/* Disable SD card pull-up resistors - Optional */
+	status = SD_configurePullup(mmcsdHandle, 0);
+	if(status != CSL_SOK)
+	{
+		printf("API: SD_configurePullup Failed\n");
+		return(status);
+	}
+
+
+
 	/* Set clock for read-write access */
     status = MMC_sendOpCond(mmcsdHandle, clockDiv);
 	if(status != CSL_SOK)
@@ -450,6 +474,22 @@ CSL_Status configSdCard (CSL_MMCSDOpMode    opMode)
 		return(status);
 	}
 
+	// LELE to enable 4 bit bus
+	/*	status = MMC_getConfig(mmcsdHandle, &mm_config);
+		if(status != CSL_SOK){
+			printf("get config  Failed!\n");
+			return(status);
+		}
+
+		mm_config.mmcctl |= 0x4;
+		status = MMC_config(mmcsdHandle, &mm_config);
+		if(status != CSL_SOK){
+			printf("set  config  Failed!\n");
+			return(status);
+		}
+		// LELE end to enable 4 bit bus
+
+	*/
 	return (status);
 }
 

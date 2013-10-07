@@ -835,24 +835,24 @@ PSP_Result AIC3254_my_init(void)
 		  DAC_CLK = 86016000/2 = 43008000
 
           ADC_FS:
-          	 192 kHz: P=1, R=1, J=7, D=168 (0x0a8)  => .168 => J.D = 7.168
-          	 	 	  PLL_CLK = (12e6 * 1 * 7.168)/1 = 86016000
+          	 192 kHz: P=1, R=1, J=7, D=1680 (0x690)  => .1680 => J.D = 7.1680
+          	 	 	  PLL_CLK = (12e6 * 1 * 7.1680)/1 = 86016000
                       NADC=2, MADC=7, AOSR=32
                       ADC_FS = PLL_CLK/(2 * 7 * 32) = 192000
-              96 kHz: P=1, R=1, J=7, D=168 (0x0a8)  => .168 => J.D = 7.168
-          	 	 	  PLL_CLK = (12e6 * 1 * 7.168)/1 = 86016000
+              96 kHz: P=1, R=1, J=7, D=1680 (0x690)  => .1680 => J.D = 7.1680
+          	 	 	  PLL_CLK = (12e6 * 1 * 7.1680)/1 = 86016000
                       NADC=2, MADC=7, AOSR=64
                       ADC_FS = PLL_CLK/(2 * 7 * 64) = 96000
-              48 kHz: P=1, R=1, J=7, D=168 (0x0a8)  => .168 => J.D = 7.168
+              48 kHz: P=1, R=1, J=7, D=1680 (0x690)  => .1680 => J.D = 7.1680
           	 	 	  PLL_CLK = (12e6 * 1 * 7.168)/1 = 86016000
                       NADC=2, MADC=7, AOSR=128
                       ADC_FS = PLL_CLK/(2 * 7 * 128) = 48000
-              24 kHz: P=1, R=1, J=7, D=168 (0x0a8)  => .168 => J.D = 7.168
-          	 	 	  PLL_CLK = (12e6 * 1 * 7.168)/1 = 86016000
+              24 kHz: P=1, R=1, J=7, D=1680 (0x690)  => .1680 => J.D = 7.1680
+          	 	 	  PLL_CLK = (12e6 * 1 * 7.1680)/1 = 86016000
                       NADC=4, MADC=7, AOSR=128
                       ADC_FS = PLL_CLK/(4 * 7 * 128) = 24000
-              16 kHz: P=1, R=1, J=7, D=168 (0x0a8)  => .168 => J.D = 7.168
-          	 	 	  PLL_CLK = (12e6 * 1 * 7.168)/1 = 86016000
+              16 kHz: P=1, R=1, J=7, D=1680 (0x690)  => .1680 => J.D = 7.1680
+          	 	 	  PLL_CLK = (12e6 * 1 * 7.1680)/1 = 86016000
                       NADC=6, MADC=7, AOSR=128
                       ADC_FS = PLL_CLK/(6 * 7 * 128) = 16000
 
@@ -909,7 +909,7 @@ PSP_Result AIC3254_my_init(void)
         }
 
         // Set DAC OSR LSB value to 64 to obtain 96Khz
-        result = AIC3254_Write(14, 64, hi2c ); // 48khz
+        result = AIC3254_Write(14, 32, hi2c ); // 48khz
         if (result != PSP_SOK)
         {
             return result;
@@ -925,7 +925,7 @@ PSP_Result AIC3254_my_init(void)
         // 32 * 96000 = 3.072 Mhz
         // BCLK=ADC_MOD_CLK/N =(6144000/2) = 3.072 Mhz = 32*fs
         // For 32 bit clocks per frame in Master mode ONLY
-        result = AIC3254_Write(30,0x82, hi2c); // for 96khz
+        result = AIC3254_Write(30,0x81, hi2c); // for 192khz
         if (result != PSP_SOK)
         {
             return result;
@@ -945,15 +945,16 @@ PSP_Result AIC3254_my_init(void)
             return result;
         }
 
-        // Set ADC OSR LSB value to 64 to obtain 96Khz
-        result = AIC3254_Write(20, 64, hi2c );
+        // Set ADC OSR LSB value to 64 to obtain 192khz
+        result = AIC3254_Write(20, 32, hi2c );
         if (result != PSP_SOK)
         {
             return result;
         }
 
         // Enable processing block  PRB7 --> 96Khz
-        result = AIC3254_Write(61, 0x07, hi2c );
+        // Enable processing block  PRB13 --> 192Khz
+        result = AIC3254_Write(61, 0x0d, hi2c );
         if (result != PSP_SOK)
         {
             return result;
