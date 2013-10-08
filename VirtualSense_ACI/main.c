@@ -248,6 +248,9 @@ void CSL_acTest(void)
         reset_codec_output_buffer();
 
         /* Initialize DMA hardware and driver */
+        /* Initialize Dma */
+        DMA_init();
+
         DMA_HwInit();
         DMA_DrvInit();
 
