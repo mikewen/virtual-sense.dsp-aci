@@ -27,6 +27,8 @@
 
 
 static DWORD totalSectors;
+Uint16 writer_buffer[256];
+Uint16 readed_buffer[256];
 
 //static BYTE Buffer[BUFSIZE];
 
@@ -138,7 +140,7 @@ DRESULT disk_read (
 	Uint32          cardAddr = (Uint32)sector;
     Uint16          noOfBytes = (Uint16)512;
     BYTE buffer[512];
-    Uint16 readed_buffer[256];
+
     Uint16 i,j;
 	//read the entire block (512) byte
 	//printf("Reading addres %d and sector %d\n",cardAddr, count);
@@ -185,7 +187,7 @@ DRESULT disk_write (
 	Uint16			j = 0;
 	
 	BYTE buffer[512];
-    Uint16 writer_buffer[256];
+
     
 	//printf("Writing %d bytes at address %d\n",noOfBytes,cardAddr);
 	for(j=0; j < count; j++){
