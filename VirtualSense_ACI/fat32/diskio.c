@@ -189,7 +189,7 @@ DRESULT disk_write (
         Uint16                  j = 0;
 
 
-    
+
         //printf("Writing %d bytes at address %d\n",noOfBytes,cardAddr);
         for(j=0; j < count; j++){
                 //printf("writing sector %d starting from add %d\n",count,cardAddr);

@@ -23,11 +23,9 @@ Uint32 b_size = PROCESS_BUFFER_SIZE;
 
 void circular_buffer_put(Int16 item){
 	 circular_buffer[bufferInIdx] =  (item & 0xFF);
-	 //bufferInIdx++;
 	 bufferInIdx = ((bufferInIdx+1) % b_size);
 	 circular_buffer[bufferInIdx] =  ((item >> 8) & 0xFF);
 	 bufferInIdx = ((bufferInIdx+1) % b_size);
-	 //bufferInIdx++;
 }
 
 Int16 circular_buffer_get(){

@@ -707,14 +707,14 @@ void I2S_DmaRxLChCallBack(
 
             recInLeftBuf = *ptrRxLeft;
             ptrRxLeft += 2;
-            circular_buffer_put(recInLeftBuf);
-            //my_samples[i] = recInLeftBuf;
-            /*bufferIn[bufferInIdx] =  (recInLeftBuf & 0xFF);
-            bufferInIdx = (bufferInIdx+1) % PROCESS_BUFFER_SIZE;
-            bufferIn[bufferInIdx] =  ((recInLeftBuf >> 8) & 0xFF);
-            bufferInIdx = (bufferInIdx+1) % PROCESS_BUFFER_SIZE; */
+            //circular_buffer_put(recInLeftBuf);
+            circular_buffer[bufferInIdx] =  (recInLeftBuf & 0xFF);
+            bufferInIdx = ((bufferInIdx+1) % PROCESS_BUFFER_SIZE);
+            circular_buffer[bufferInIdx] =  ((recInLeftBuf >> 8) & 0xFF);
+            bufferInIdx = ((bufferInIdx+1) % PROCESS_BUFFER_SIZE);
         }
-        putDataIntoOpenFile(circular_buffer, PROCESS_BUFFER_SIZE);
+        putDataIntoOpenFile((void *)circular_buffer, PROCESS_BUFFER_SIZE);
+        bufferInIdx = 0;
         //SEM_post(&SEM_BufferFull);
         //LOG_printf(&trace, "IN log %ld\n",bufferInIdx);
     }
