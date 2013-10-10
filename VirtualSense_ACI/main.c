@@ -248,6 +248,7 @@ void CSL_acTest(void)
         reset_codec_output_buffer();
 
         /* Initialize DMA hardware and driver */
+        DMA_init(); // To enable MMCSD DMA
         DMA_HwInit();
         DMA_DrvInit();
 
@@ -291,6 +292,7 @@ void CSL_acTest(void)
 
 #ifdef ENABLE_RECORD
         /* Start left Rx DMA */
+
         DMA_StartTransfer(hDmaRxLeft);
 
 #ifdef ENABLE_STEREO_RECORD
@@ -466,6 +468,7 @@ void CSL_acTest(void)
         asm("   idle");
 
         /* Clock gate usused peripherals */
+
         ClockGating();
 
         DDC_I2S_transEnable((DDC_I2SHandle)i2sHandleTx, TRUE); /* enable I2S transmit and receive */
@@ -566,7 +569,7 @@ void ClockGating(void)
     //pcgcr_value |= CSL_FMKT(SYS_PCGCR1_I2S2CG, DISABLED);
     pcgcr_value |= CSL_FMKT(SYS_PCGCR1_I2S3CG, DISABLED);
     // clock gating DMA0
-    pcgcr_value |= CSL_FMKT(SYS_PCGCR1_DMA0CG, DISABLED);
+    //pcgcr_value |= CSL_FMKT(SYS_PCGCR1_DMA0CG, DISABLED);
     // clock gating Timer 1
     //pcgcr_value |= CSL_FMKT(SYS_PCGCR1_TMR1CG, DISABLED);
     // clock gating Timer 2

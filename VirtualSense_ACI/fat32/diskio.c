@@ -28,6 +28,10 @@
 
 static DWORD totalSectors;
 
+Uint16 readed_buffer[256];
+BYTE buffer[512];
+Uint16 writer_buffer[256];
+
 //static BYTE Buffer[BUFSIZE];
 
 /* CSL MMCSD Data structures */
@@ -68,8 +72,8 @@ DSTATUS disk_initialize (BYTE pdrv)
         // Put your code here
 
         CSL_Status    status = CSL_SOK;
-        //status = configSdCard(CSL_MMCSD_OPMODE_DMA);
-        status = configSdCard(CSL_MMCSD_OPMODE_POLLED);
+        status = configSdCard(CSL_MMCSD_OPMODE_DMA);
+        //status = configSdCard(CSL_MMCSD_OPMODE_POLLED);
 
 
         if(status != CSL_SOK)
@@ -138,7 +142,7 @@ DRESULT disk_read (
         Uint32          cardAddr = (Uint32)sector;
     Uint16          noOfBytes = (Uint16)512;
     BYTE buffer[512];
-    Uint16 readed_buffer[256];
+
     Uint16 i,j;
         //read the entire block (512) byte
         //printf("Reading addres %d and sector %d\n",cardAddr, count);
@@ -184,8 +188,7 @@ DRESULT disk_write (
         Uint16                  i = 0;
         Uint16                  j = 0;
 
-        BYTE buffer[512];
-    Uint16 writer_buffer[256];
+
     
         //printf("Writing %d bytes at address %d\n",noOfBytes,cardAddr);
         for(j=0; j < count; j++){
@@ -291,12 +294,12 @@ CSL_Status configSdCard (CSL_MMCSDOpMode    opMode)
         if(opMode == CSL_MMCSD_OPMODE_DMA)
         {
                 /* Initialize Dma */
-                status = DMA_init();
+                /*status = DMA_init();
                 if (status != CSL_SOK)
                 {
                         printf("DMA_init Failed!\n");
                         return(status);
-                }
+                }*/
 
                 /* Open Dma channel for MMCSD write */
                 dmaWrHandle = DMA_open(CSL_DMA_CHAN0, &dmaWrChanObj, &status);

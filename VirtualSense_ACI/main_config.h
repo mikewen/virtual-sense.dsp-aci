@@ -25,12 +25,12 @@
 
 #define FFT_LENGHT                                                   1024
 #define SECONDS                                                         5
-#define PROCESS_BUFFER_SIZE                              		     512L //BYTE size of the fat sector
+#define PROCESS_BUFFER_SIZE                              		    2048L //BYTE size of the fat sector
 #define SAMP_RATE                                                 192000L
-#define STEP_PER_SECOND                                              750L //number of DMA_BUFFER to cover one second
+#define STEP_PER_SECOND                                              187L //number of DMA_BUFFER to cover one second
 
 //#define DMA_BUFFER_MS                                                (10)
-#define DMA_BUFFER_SZ          					   				   (256L) // number of sample in fat sector
+#define DMA_BUFFER_SZ          					   				   (1024L) // number of sample in fat sector
 #define DMA_TARNSFER_SZ            						(2*DMA_BUFFER_SZ)
 
 #endif
