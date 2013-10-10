@@ -25,12 +25,12 @@
 
 #define FFT_LENGHT						  	  1024
 #define SECONDS 				  				 5
-#define PROCESS_BUFFER_SIZE 				 19200L //BYTE size
-#define SAMP_RATE					   		192000L
+#define PROCESS_BUFFER_SIZE 				 9600L //BYTE size
+#define SAMP_RATE					   		 96000L
 #define STEP_PER_SECOND 				 	   100L //SAMP_RATE_48KHZ/PROCESS_BUFFER_SIZE
 
 #define DMA_BUFFER_MS					   	   (10)
-#define DMA_BUFFER_SZ 	       (DMA_BUFFER_MS * 192L)
+#define DMA_BUFFER_SZ 	       (DMA_BUFFER_MS * 96L)
 #define DMA_TARNSFER_SZ            (2*DMA_BUFFER_SZ)
 
 #endif

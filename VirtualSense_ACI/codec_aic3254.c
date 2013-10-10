@@ -909,7 +909,7 @@ PSP_Result AIC3254_my_init(void)
         }
 
         // Set DAC OSR LSB value to 64 to obtain 96Khz
-        result = AIC3254_Write(14, 32, hi2c ); // 48khz
+        result = AIC3254_Write(14, 64, hi2c ); // 48khz
         if (result != PSP_SOK)
         {
             return result;
@@ -946,7 +946,7 @@ PSP_Result AIC3254_my_init(void)
         }
 
         // Set ADC OSR LSB value to 64 to obtain 192khz
-        result = AIC3254_Write(20, 32, hi2c );
+        result = AIC3254_Write(20, 64, hi2c );
         if (result != PSP_SOK)
         {
             return result;
@@ -954,7 +954,7 @@ PSP_Result AIC3254_my_init(void)
 
         // Enable processing block  PRB7 --> 96Khz
         // Enable processing block  PRB13 --> 192Khz
-        result = AIC3254_Write(61, 0x0d, hi2c );
+        result = AIC3254_Write(61, 0x07, hi2c );
         if (result != PSP_SOK)
         {
             return result;
