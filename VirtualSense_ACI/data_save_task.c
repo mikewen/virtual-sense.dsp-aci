@@ -89,7 +89,7 @@ void DataSaveTask(void)
     	clear_lcd();
     	printstring("Creating   ");
     	printstring(name);
-    	rc = open_wave_file(&wav_file, name, SAMP_RATE,SECONDS);
+    	rc = open_wave_file(&wav_file, name, FREQUENCY,SECONDS);
     	if(rc)
     		LOG_printf(&trace, "Error openin a new wav file %d\n",rc);
     	else
