@@ -251,6 +251,7 @@ void CSL_acTest(void)
         /* Initialize DMA hardware and driver */
         DMA_HwInit();
         DMA_DrvInit();
+        DMA_init(); // TO enable MMCSD DMA Channel 0
 
         /* Initialize I2S and DMA channels for Playback and Record */
         /* playback */
@@ -567,7 +568,7 @@ void ClockGating(void)
     //pcgcr_value |= CSL_FMKT(SYS_PCGCR1_I2S2CG, DISABLED);
     pcgcr_value |= CSL_FMKT(SYS_PCGCR1_I2S3CG, DISABLED);
     // clock gating DMA0
-    pcgcr_value |= CSL_FMKT(SYS_PCGCR1_DMA0CG, DISABLED);
+    //pcgcr_value |= CSL_FMKT(SYS_PCGCR1_DMA0CG, DISABLED);
     // clock gating Timer 1
     //pcgcr_value |= CSL_FMKT(SYS_PCGCR1_TMR1CG, DISABLED);
     // clock gating Timer 2
