@@ -696,10 +696,6 @@ void I2S_DmaRxLChCallBack(
         }
         left_rx_buf_sel ^= 0x1; /* update ping/pong */
         // copy data to the
-        /*if(SEM_count(&SEM_BufferFull) > PROCESS_BUFFER_SIZE/DMA_TARNSFER_SZ){
-            return;
-        }*/
-
         for (i = 0; i < DMA_BUFFER_SZ; i++)
         {
             // NOTE: since we need datapack to be disabled on I2S tx, we need it disabled on I2S rx therefore
@@ -715,8 +711,6 @@ void I2S_DmaRxLChCallBack(
         }
         putDataIntoOpenFile((void *)circular_buffer, PROCESS_BUFFER_SIZE);
         bufferInIdx = 0;
-        //SEM_post(&SEM_BufferFull);
-        //LOG_printf(&trace, "IN log %ld\n",bufferInIdx);
     }
     else
     {
