@@ -211,9 +211,6 @@ void CSL_acTest(void)
     CSL_UsbConfig usbConfig;
     PSP_Result result;
     Int16 status;
-#ifdef SAMPLE_BY_SAMPLE_PB
-    HWI_Attrs attrs;
-#endif
 
 #ifdef DEBUG_LOG_PRINT
     LOG_printf(&trace, "USB ISO FULL SPEED MODE");
@@ -237,13 +234,7 @@ void CSL_acTest(void)
 #endif
        initRTC();
         
-#ifdef SAMPLE_RATE_TX_48kHz
-        /* Initialize I2S Tx ping/pong buffer size */
         i2sTxBuffSz = 2*DMA_BUFFER_SZ;
-#elif defined (SAMPLE_RATE_TX_16kHz)
-        /* Initialize I2S Tx ping/pong buffer size */
-        i2sTxBuffSz = 2*TXBUFF_SZ_I2SSAMPS_16KHZ;
-#endif
         /* Reset codec output buffer */
         reset_codec_output_buffer();
 
@@ -257,23 +248,13 @@ void CSL_acTest(void)
         i2sInitPrms.enablePlayback = TRUE;
         i2sInitPrms.enableStereoPb = TRUE;
         i2sInitPrms.pingPongI2sTxLeftBuf = (Int16 *)my_i2sTxLeftBuf;  /* note: only Tx Left used for stereo, sample-by-sample Pb */
-#ifndef SAMPLE_BY_SAMPLE_PB
         i2sInitPrms.sampleBySamplePb = FALSE;
         i2sInitPrms.pingPongI2sTxRightBuf = (Int16 *)my_i2sTxRightBuf;
-#else
-        i2sInitPrms.sampleBySamplePb = TRUE;
-#endif
         i2sInitPrms.i2sPb = PSP_I2S_TX_INST_ID;
         /* record */
         i2sInitPrms.enableRecord = TRUE;
-#ifndef ENABLE_STEREO_RECORD
         i2sInitPrms.enableStereoRec = FALSE;
         i2sInitPrms.pingPongI2sRxLeftBuf = (Int16 *)my_i2sRxLeftBuf;
-#else
-        i2sInitPrms.enableStereoRec = TRUE;
-        i2sInitPrms.pingPongI2sRxLeftBuf = (Int16 *)ping_pong_i2sRxLeftBuf;
-        i2sInitPrms.pingPongI2sRxRightBuf = (Int16 *)ping_pong_i2sRxRightBuf;
-#endif
         i2sInitPrms.i2sRec = PSP_I2S_RX_INST_ID;
         status = i2sInit(&i2sInitPrms);
         if (status != I2SSAMPLE_SOK)
@@ -284,184 +265,9 @@ void CSL_acTest(void)
             exit(EXIT_FAILURE);
         }
 
-#ifndef SAMPLE_BY_SAMPLE_PB
-        /* Start left/right Tx DMAs */
-        //DMA_StartTransfer(hDmaTxLeft);
-        //DMA_StartTransfer(hDmaTxRight);
-#endif
 
-#ifdef ENABLE_RECORD
         /* Start left Rx DMA */
-
         DMA_StartTransfer(hDmaRxLeft);
-
-#ifdef ENABLE_STEREO_RECORD
-        /* Start right Rx DMA */
-        DMA_StartTransfer(hDmaRxRight);
-#endif
-#endif /* ENABLE_RECORD */
-
-#ifdef SAMPLE_BY_SAMPLE_PB
-        /* SampleBySample, init interrupt */
-        /* Use with compiler "interrupt" keyword */
-        //IRQ_plug(I2S_TX_EVENT, i2s_txIsr);
-
-        /* Use with dispatcher, no "interrupt" keyword */
-        attrs.ier0mask = 0xFFFF;
-        attrs.ier1mask = 0xFFFF;
-        HWI_dispatchPlug(I2S_TX_EVENT, (Fxn)i2s_txIsr, &attrs);
-
-        IRQ_enable(I2S_TX_EVENT);   /* enable IRQ for I2S Tx */
-#endif
-
-#ifndef SAMPLE_BY_SAMPLE_PB
-        /* Initialize pitch calculation */
-#ifdef ENABLE_ASRC
-        initPitchCalc(hDmaTxLeft);
-#endif
-#endif
-
-#ifdef ENABLE_REC_ASRC
-        /* Initialize ADC sampling rate */
-#if defined(SAMPLE_RATE_RX_48kHz) && defined(SAMPLE_RATE_TX_48kHz)
-        gAdcSampRateHz = SAMP_RATE_48KHZ;
-#elif defined(SAMPLE_RATE_RX_16kHz) && defined(SAMPLE_RATE_TX_16kHz)
-        gAdcSampRateHz = SAMP_RATE_16KHZ;
-#else
-        LOG_printf(&trace, "ERROR: ADC and DAC must have same sampling rate");
-        exit(EXIT_FAILURE);
-#endif
-        /* Initialize USB record sampling rate */
-#ifndef ENABLE_REC_MULT_SAMP_RATES
-        gUsbRecSampRateHz = RECORD_SAMP_RATE;
-#else
-        gUsbRecSampRateHz = SAMP_RATE_48KHZ;
-#endif
-        /* Initialize record ASRC */
-        initAsrc(hRecAsrc,
-            ASRC_NUM_CH_MONO,
-            recAsrcInFifo, REC_ASRC_IN_FIFO_SZ,
-            gAdcSampRateHz, gUsbRecSampRateHz, RATE_1KHZ,
-            recAsrcHbCircBuf,
-            &gRecAsrcNomOutTransSz);
-        /* Initialize record ASRC output sample count */
-        gRecFrameCnt = 0;
-        gRecNumFrames = 0;
-        if (gUsbRecSampRateHz == SAMP_RATE_22_05KHZ)
-        {
-            gRecNumFrames = REC_NUM_FRAMES_22_05KHZ;
-        }
-        else if (gUsbRecSampRateHz == SAMP_RATE_44_1KHZ)
-        {
-            gRecNumFrames = REC_NUM_FRAMES_44_1KHZ;
-        }
-        ASRC_wrtNumOutSamps(hRecAsrc, gRecAsrcNomOutTransSz);
-#endif /* ENABLE_REC_ASRC */
-
-        /* Initialize DAC sampling rate */
-#ifdef SAMPLE_RATE_TX_48kHz
-        //LELE gDacSampRateHz = SAMP_RATE_48KHZ;
-#elif defined (SAMPLE_RATE_TX_16kHz)
-        gDacSampRateHz = SAMP_RATE_16KHZ;
-#endif
-        /* Initialize USB playback sampling rate */
-#ifndef ENABLE_PB_MULT_SAMP_RATES
-        gUsbPbSampRateHz = PLAY_SAMP_RATE;
-#else
-        //LELE gUsbPbSampRateHz = SAMP_RATE_48KHZ;
-#endif
-#ifdef ENABLE_ASRC
-        /* Initialize playback ASRC */
-        initAsrc(hPbAsrc,
-            ASRC_NUM_CH_STEREO,
-            pbAsrcInFifo, PB_ASRC_IN_FIFO_SZ,
-            gUsbPbSampRateHz, gDacSampRateHz, RATE_1KHZ,
-            pbAsrcHbCircBuf,
-            &gPbAsrcNomOutTransSz);
-#endif
-
-#if 0  // LELE: Remove USB
-        /* Initialize USB */
-        usbConfig.devNum = CSL_USB0;
-        usbConfig.opMode = CSL_USB_OPMODE_POLLED;
-#ifdef APP_USB_SELF_POWERED
-        usbConfig.selfPowered = TRUE;
-#else
-        usbConfig.selfPowered = FALSE;
-#endif
-        usbConfig.maxCurrent = APP_USB_MAX_CURRENT;
-        usbConfig.appSuspendCallBack = (CSL_USB_APP_CALLBACK)CSL_suspendCallBack;
-        usbConfig.appWakeupCallBack = (CSL_USB_APP_CALLBACK)CSL_selfWakeupCallBack;
-        usbConfig.startTransferCallback = StartTransfer;
-        usbConfig.completeTransferCallback = CompleteTransfer;
-        USB_init(&usbConfig);
-
-        /* Set USB full speed mode, set control endpoint packet size */
-        USB_setFullSpeedMode(EP_CTL_MAXP);
-
-        /* Reset USB */
-        USB_resetDev(CSL_USB0);
-
-        /* Initialize HID report for USB Get Report */
-        genHidReport(UI_PUSH_BUTTON_NONE, &gHidReportLen, gHidReport);
-
-
-        /* Initialize USB Audio Class */
-        /* Initialize Audio Class Handle to the allocated memory */
-        AC_AppHandle.pAcObj = &ACAppBuffer[0];
-        /* Initialize table handles, data buffers, PID & VID */
-        AC_AppHandle.strDescrApp = (char **)string_descriptor;
-        AC_AppHandle.lbaBufferPbApp = &lbaBufferPbApp[0];
-        AC_AppHandle.lbaBufferRecApp = &lbaBufferRecApp[0];
-        AC_AppHandle.lbaBufferHidReportApp = &lbaBufferHidReportApp[0];
-        AC_AppHandle.acReqTableApp = USB_ReqTable;
-        AC_AppHandle.pId = pId;
-        AC_AppHandle.vId = vId;
-        /* Initialize endpoint numbers and maximum packet sizes */
-        AC_AppHandle.rxEpNum = EP_NUM_PLAY;         /* playback endpoint number */
-        AC_AppHandle.txEpNum = EP_NUM_REC;          /* record endpoint number */
-        AC_AppHandle.hidTxEpNum = EP_NUM_HID;       /* HID interrupt-IN endpoint number */
-        AC_AppHandle.rxPktSize = EP_PB_MAXP;        /* max packet size for playback endpoint */
-        AC_AppHandle.txPktSize = EP_REC_MAXP;       /* max packet size of record endpoint */
-        AC_AppHandle.hidTxPktSize = EP_HID_MAXP;    /* max packet size for HID output report */
-        /* Initialize event handlers */
-        AC_AppHandle.playAudioApp = appPlayAudio;
-        AC_AppHandle.recordAudioApp = appRecordAudio;
-        AC_AppHandle.initPlayAudioApp = appInitPlayAudio;
-        AC_AppHandle.initRecordAudioApp = appInitRecordAudio;
-        AC_AppHandle.stopPlayAudioApp = appStopPlayAudio;
-        AC_AppHandle.stopRecordAudioApp = appStopRecordAudio;
-        AC_AppHandle.mediaGetPresentStateApp = AppGetMediaStatus;
-        AC_AppHandle.mediaInitApp = AppMediaInit;
-        AC_AppHandle.mediaEjectApp = AppMediaEject;
-        AC_AppHandle.mediaLockUnitApp = AppLockMedia;
-        AC_AppHandle.getMediaSizeApp = AppGetMediaSize;
-        AC_AppHandle.getHidReportApp = appGetHidReport;
-        AC_AppHandle.ctrlHandler  = appCtrlFxn;
-        AC_AppHandle.isoHandler   = appIsoFxn;
-        AC_AppHandle.hidHandler = appHidFxn;
-        /* Initialize logical unit number */
-        AC_AppHandle.numLun = 2;
-        /* Initialize descriptors */
-        AC_initDescriptors(AC_AppHandle.pAcObj, (Uint16 *)deviceDescriptorB,        /* device */
-            CSL_AC_DEVICE_DESCR, sizeof(deviceDescriptorB));
-        AC_initDescriptors(AC_AppHandle.pAcObj, (Uint16 *)deviceQualifierDescr,     /* device qualifer */
-            CSL_AC_DEVICE_QUAL_DESCR, 10);
-        AC_initDescriptors(AC_AppHandle.pAcObj, (Uint16 *)configDescriptor,         /* configuration */
-            CSL_AC_CONFIG_DESCR, sizeof(configDescriptor));
-        AC_initDescriptors(AC_AppHandle.pAcObj, (Uint16 *)acHidReportDescriptor,    /* HID report */
-            CSL_AC_HID_REPORT_DESC, sizeof(acHidReportDescriptor));
-        /* Initialize HID-related information */
-        AC_AppHandle.acHidIfNum = IF_NUM_HID;                   /* HID interface number */
-        AC_AppHandle.acHidReportId = HID_REPORT_ID;             /* HID report ID */
-        AC_AppHandle.acHidReportLen = HID_REPORT_SIZE_BYTES;    /* HID report length (bytes) */
-        AC_Open(&AC_AppHandle);
-#endif
-
-#ifdef STORE_PARAMETERS_TO_SDRAM // debug
-        /* Initialize SDRAM */
-        initSdram(FALSE, 0x0000);
-#endif
 
         /* Set HWAI ICR */
         *(volatile ioport Uint16 *)0x0001 = 0xFC0E | (1<<9);
@@ -473,11 +279,6 @@ void CSL_acTest(void)
 
         DDC_I2S_transEnable((DDC_I2SHandle)i2sHandleTx, TRUE); /* enable I2S transmit and receive */
 
-        /* Enable CPU USB interrupts */
-#if 0 //LELE remove USB functions
-        IRQ_enable(USB_EVENT);
-        USB_connectDev(CSL_USB0); /* connect USB */
-#endif
     }
 
 #ifdef DEBUG_LOG_PRINT
@@ -511,28 +312,6 @@ void C5515_reset(void)
     // clear all interrupts (IFR0 and IFR1)
     *(volatile ioport unsigned int *)(0x0001) = 0xFFFF;
     *(volatile ioport unsigned int *)(0x0046) = 0xFFFF;
-}
-
-
-
-// PRD function. Runs every 10 second to switch the demo mode between
-// power display mode and spectrum analyzer mode
-void DemoSwitch(void)
-{
-    DemoSwitchFlag++;
-    if (DemoSwitchFlag==1)
-    {
-        // if we were in power display mode, swtch to spectrum analyzer mode
-        // clear the bufferInIdx
-        //bufferInIdx = 0;
-    }
-    else if (DemoSwitchFlag==3)
-    {
-        // if we were in spectrum analyzer mode, switch to power display mode
-        DemoSwitchFlag = 1;
-        // stop data collection for spectrum analyzer
-        //bufferInIdx = 0;
-    }
 }
 
 // Clock gating for unused peripherals

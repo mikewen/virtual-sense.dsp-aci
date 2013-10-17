@@ -267,7 +267,7 @@ CSL_Status configSdCard (CSL_MMCSDOpMode    opMode)
         Uint16         rca;
 
         /* Get the clock divider value for the current CPU frequency */
-        clockDiv = computeClkRate();
+        //clockDiv = computeClkRate();
         clockDiv = 1;//computeClkRate(); //LELE: setting MMCSD bus speed to 25MHz
 
         /* Initialize MMCSD CSL module */
