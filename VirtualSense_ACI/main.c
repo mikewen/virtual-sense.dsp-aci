@@ -140,21 +140,13 @@ void main(void)
     CSL_SYSCTRL_REGS->PCGCR1 = 0x7FFF;
     CSL_SYSCTRL_REGS->PCGCR2 = 0x007F;
 
-    /* Configure EBSR */
-#if defined(USE_I2S0_PB) || defined(USE_I2S0_REC)
-    /* SP0 Mode 1 (I2S0 and GP[5:4]) */
-    CSL_FINST(CSL_SYSCTRL_REGS->EBSR, SYS_EBSR_SP0MODE, MODE1);
-#else
     /* SP0 Mode 2 (GP[5:0]) -- GPIO02/GPIO04 for debug  */
     CSL_FINST(CSL_SYSCTRL_REGS->EBSR, SYS_EBSR_SP0MODE, MODE2);
-#endif
-#if defined(USE_I2S1_PB) || defined(USE_I2S1_REC)
-    /* SP1 Mode 1 (I2S1 and GP[11:10]) */
-    CSL_FINST(CSL_SYSCTRL_REGS->EBSR, SYS_EBSR_SP1MODE, MODE1);
-#else
+
+
     /* SP1 Mode 2 (GP[11:6]) */
     CSL_FINST(CSL_SYSCTRL_REGS->EBSR, SYS_EBSR_SP1MODE, MODE2); /* need GPIO10 for AIC3204 reset */
-#endif
+
     /* PP Mode 1 (SPI, GPIO[17:12], UART, and I2S2) */
     CSL_FINST(CSL_SYSCTRL_REGS->EBSR, SYS_EBSR_PPMODE, MODE1);
 
@@ -175,16 +167,13 @@ void main(void)
     CSL_SYSCTRL_REGS->TIAFR = 0x7;
 
     /* Initialize GPIO module */
-#if !defined(USE_I2S0_PB) && !defined(USE_I2S0_REC)
+
     /* GPIO02 and GPIO04 for debug */
     /* GPIO10 for AIC3204 reset */
     gpioIoDir = (((Uint32)CSL_GPIO_DIR_OUTPUT)<<CSL_GPIO_PIN2) | 
         (((Uint32)CSL_GPIO_DIR_OUTPUT)<<CSL_GPIO_PIN4) |
         (((Uint32)CSL_GPIO_DIR_OUTPUT)<<CSL_GPIO_PIN10);
-#else
-    /* GPIO10 for AIC3204 reset */
-    gpioIoDir = (((Uint32)CSL_GPIO_DIR_OUTPUT)<<CSL_GPIO_PIN10);
-#endif
+
     status = gpioInit(gpioIoDir, 0x00000000, 0x00000000);
     if (status != GPIOCTRL_SOK)
     {
