@@ -35,9 +35,11 @@ Uint32 my_step = 0;
 Uint16 file_is_open = 0;
 Uint16 file_counter = 0;
 char name[12];
-//extern unsigned char circular_buffer[PROCESS_BUFFER_SIZE];
+extern unsigned char circular_buffer[PROCESS_BUFFER_SIZE];
 //extern Uint32 bufferInIdx; //logical pointer
 //extern Uint32 bufferOutIdx; //logical pointer
+
+void putDataIntoOpenFile(const void *buff, unsigned int number_of_bytes);
 
 // PRD function. Runs every 10 minutes to start sampling a new file
 void CreateNewFile(void){
@@ -94,6 +96,8 @@ void DataSaveTask(void)
     		LOG_printf(&trace, "Error openin a new wav file %d\n",rc);
     	else
     		file_is_open = 1;
+    	putDataIntoOpenFile((void *)circular_buffer, 468); // to fill first sector in order to increase performance
+    	// wave header is 44 bytes length
     	//clear_lcd();
     	SEM_reset(&SEM_BufferFull,0);
     	//bufferOutIdx = 0;
@@ -128,7 +132,7 @@ void putDataIntoOpenFile(const void *buff, unsigned int number_of_bytes){
 		write_data_to_wave(&wav_file, buff, number_of_bytes);
 		my_step++;
 	}
-	if(my_step == (SECONDS * STEP_PER_SECOND)){
+	if(my_step == ((SECONDS * STEP_PER_SECOND)+1)){
 		file_is_open = 0;
 		my_step = 0;
 		SEM_post(&SEM_CloseFile);
