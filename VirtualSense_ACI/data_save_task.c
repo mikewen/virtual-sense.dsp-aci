@@ -91,6 +91,7 @@ void DataSaveTask(void)
     	clear_lcd();
     	printstring("Creating   ");
     	printstring(name);
+    	printf("Saving \n");
     	rc = open_wave_file(&wav_file, name, FREQUENCY,SECONDS);
     	if(rc)
     		LOG_printf(&trace, "Error openin a new wav file %d\n",rc);
@@ -124,6 +125,7 @@ void DataSaveTask(void)
         printstring("Done ");
         printstring(name);
         LOG_printf(&trace,  "File saved test%d.wav\n",file_counter);
+        printf("File save done!!!!\n");
      }
 }
 

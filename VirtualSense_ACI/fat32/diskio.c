@@ -56,7 +56,7 @@ CSL_RtcDate      GetDate;
 
 CSL_Status configSdCard (CSL_MMCSDOpMode    opMode);
 Uint16 computeClkRate(void);
-Uint32 getSysClk(void);
+Uint32 getSysClk2(void);
 
 
 /*-----------------------------------------------------------------------*/
@@ -526,7 +526,7 @@ Uint16 computeClkRate(void)
         clkRate   = 0;
 
         /* Get the clock value at which CPU is running */
-        sysClock = getSysClk();
+        sysClock = getSysClk2();
 
         if (sysClock > memMaxClk)
         {
@@ -593,7 +593,7 @@ Uint16 computeClkRate(void)
  */
 #if (defined(CHIP_C5505_C5515) || defined(CHIP_C5504_C5514))
 
-Uint32 getSysClk(void)
+Uint32 getSysClk2(void)
 {
         Bool      pllRDBypass;
         Bool      pllOutDiv;

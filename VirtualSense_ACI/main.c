@@ -44,6 +44,7 @@
  */
 
 #include <stdlib.h>
+#include <stdio.h>
 #include "csl_types.h"
 #include "csl_error.h"
 #include "csl_intc.h"
@@ -79,6 +80,12 @@
 
 #include "ff.h"
 #include "make_wav.h"
+
+#include "csl_uart.h"
+#include "csl_uartAux.h"
+#include "csl_general.h"
+#include "csl_sysctrl.h"
+
 
 #undef ENABLE_REC_ASRC
 #undef ENABLE_ASRC
@@ -127,9 +134,37 @@ extern void initRTC(void);
  *
  *  \return None
  */
-void main(void)
+
+CSL_UartSetup uartSetup =
+{
+	/* Input clock freq in MHz */
+    100000000,
+	/* Baud rate */
+    57600,
+	/* Word length of 8 */
+    CSL_UART_WORD8,
+	/* To generate 1 stop bit */
+    0,
+	/* Disable the parity */
+    CSL_UART_DISABLE_PARITY,
+	/* Disable fifo */
+	/* Enable trigger 14 fifo */
+	CSL_UART_FIFO_DMA1_DISABLE_TRIG14,
+	/* Loop Back enable */
+    CSL_UART_NO_LOOPBACK,
+	/* No auto flow control*/
+	CSL_UART_NO_AFE ,
+	/* No RTS */
+	CSL_UART_NO_RTS ,
+};
+
+
+CSL_UartObj uartObj;
+
+int main(void)
 {
     CSL_Status status;
+    CSL_UartHandle    hUart;
     Uint32 gpioIoDir;
     Uint32 j = 0;
 
@@ -139,12 +174,25 @@ void main(void)
     //LOG_disable(&trace);
     //asm("   BCLR XF");
 
-    Uint16 temp1920, temp1924;
-    CSL_CPU_REGS->ST1_55 &= ~CSL_CPU_ST1_55_XF_MASK;
 
     Uint16 index = 0;
-    for(index=0; index < 10000; index++)
-    	asm("    nop ");
+    Uint16 index2 = 0;
+
+    puts("Hello, serra!");
+    LOG_printf(&trace, "hello worldb!\n\r");
+    printf("hello worldc!\n");
+
+	puts("Hello, serra2!");
+    LOG_printf(&trace, "hello world3!\n\r");
+    printf("hello world4!\n\r");
+
+    Uint16 temp1920, temp1924;
+    //CSL_CPU_REGS->ST1_55 &= ~CSL_CPU_ST1_55_XF_MASK;
+
+
+
+
+    /*
 
     		   asm("	@#IFR0_L = #0xffff || mmap() "); // clear int flags
                asm("	@#IER0_L = #0x0000 || mmap() "); // set RTC int
@@ -192,7 +240,7 @@ void main(void)
 
     //asm("   NOP");
     //asm("   BSET XF");
-
+    */
     /* Clock gate all peripherals */
     CSL_SYSCTRL_REGS->PCGCR1 = 0x7FFF;
     CSL_SYSCTRL_REGS->PCGCR2 = 0x007F;
@@ -242,6 +290,72 @@ void main(void)
 
      /* Enable the USB LDO */
     //*(volatile ioport unsigned int *)(0x7004) |= 0x0001;
+
+
+#if 1//UART_TEST
+    /* uart test */
+
+      	//uartSetup.clkInput = getSysClk();
+
+
+    /* Loop counter and error flag */
+       status = UART_init(&uartObj,CSL_UART_INST_0,UART_POLLED);
+       if(CSL_SOK != status)
+       {
+           printf("UART_init failed error code %d\n",status);
+           return(status);
+       }
+       else
+       {
+   		printf("UART_init Successful\n");
+   	}
+
+       status = SYS_setEBSR(CSL_EBSR_FIELD_PPMODE,
+                            CSL_EBSR_PPMODE_1);
+       if(CSL_SOK != status)
+       {
+           printf("SYS_setEBSR failed\n");
+           return (status);
+       }
+
+       /* Handle created */
+       hUart = (CSL_UartHandle)(&uartObj);
+
+       /* Configure UART registers using setup structure */
+       status = UART_setup(hUart,&uartSetup);
+       if(CSL_SOK != status)
+       {
+           printf("UART_setup failed error code %d\n",status);
+           return(status);
+       }
+       else
+       {
+   		printf("UART_setup Successful\n");
+   	}
+
+   	/* Send the message to HyperTerminal to Query the string size */
+       for(index=0; index <10000; index++){
+    	   status = UART_fputs(hUart,"Hello VirtualSense\n",0);
+    	   if(CSL_SOK != status)
+    	   {
+    		   printf("UART_fputs failed error code %d\n",status);
+    		   return(status);
+    	   }
+    	   else
+    	   {
+    		   printf("\n\nMessage Sent to HyperTerminal :\n");
+    	   }
+       	   for(index2 = 0; index2 < 1000; index2++)
+       		   asm("      nop    ");
+       }
+
+
+#endif // UART_TEST
+
+       /* end uart test */
+
+
+
 }
 
 /**
@@ -380,7 +494,7 @@ void ClockGating(void)
     // wait for acknowledge
     while (CSL_FEXT(CSL_SYSCTRL_REGS->CLKSTOP, SYS_CLKSTOP_URTCLKSTPACK)==0);
     // clock gating UART
-    pcgcr_value |= CSL_FMKT(SYS_PCGCR1_UARTCG, DISABLED);
+    //pcgcr_value |= CSL_FMKT(SYS_PCGCR1_UARTCG, DISABLED);
     // clock stop request for EMIF
     //clkstop_value = CSL_FMKT(SYS_CLKSTOP_EMFCLKSTPREQ, REQ);
     // write to CLKSTOP
@@ -451,7 +565,7 @@ void ClockGating(void)
     return;
 }
 
-#if 1
+#if 0
 void userIdle(void)
 {
     // set CPUI bit in ICR
