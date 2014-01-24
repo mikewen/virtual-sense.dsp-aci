@@ -378,7 +378,6 @@
 									<listOptionValue builtIn="false" value="&quot;${COMMON_ROOT}/build&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${COMMON_ROOT}/inc&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${COMMON_ROOT}/c55xx_csl/inc&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;C:\c55_lp\c55_csl_3.03\c55_csl_3.03\c55xx_csl\inc&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${COMMON_ROOT}/c55x5_drivers/inc&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${COMMON_ROOT}/c55x5_drivers/i2c/inc&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${COMMON_ROOT}/c55x5_drivers/i2s/inc&quot;"/>
@@ -409,7 +408,6 @@
 								<option id="com.ti.ccstudio.buildDefinitions.C5500_4.4.compilerID.PTRDIFF_SIZE.923567851" name="Specify type size to hold results of pointer math (--ptrdiff_size)" superClass="com.ti.ccstudio.buildDefinitions.C5500_4.4.compilerID.PTRDIFF_SIZE" value="com.ti.ccstudio.buildDefinitions.C5500_4.4.compilerID.PTRDIFF_SIZE.16" valueType="enumerated"/>
 								<option id="com.ti.ccstudio.buildDefinitions.C5500_4.4.compilerID.SILICON_VERSION.175602637" name="device+optional revision of target silicon (--silicon_version, -v)" superClass="com.ti.ccstudio.buildDefinitions.C5500_4.4.compilerID.SILICON_VERSION" value="5535" valueType="string"/>
 								<option id="com.ti.ccstudio.buildDefinitions.C5500_4.4.compilerID.BYTE_MODE.272091312" name="Activate byte mode (CHAR_BIT==8) (--byte_mode)" superClass="com.ti.ccstudio.buildDefinitions.C5500_4.4.compilerID.BYTE_MODE" value="false" valueType="boolean"/>
-								<option id="com.ti.ccstudio.buildDefinitions.C5500_4.4.compilerID.ASM_SOURCE.25427102" name="Select assembly source language (--asm_source)" superClass="com.ti.ccstudio.buildDefinitions.C5500_4.4.compilerID.ASM_SOURCE" value="com.ti.ccstudio.buildDefinitions.C5500_4.4.compilerID.ASM_SOURCE.algebraic" valueType="enumerated"/>
 								<inputType id="com.ti.ccstudio.buildDefinitions.C5500_4.4.compiler.inputType__C_SRCS.1934603301" name="C Sources" superClass="com.ti.ccstudio.buildDefinitions.C5500_4.4.compiler.inputType__C_SRCS"/>
 								<inputType id="com.ti.ccstudio.buildDefinitions.C5500_4.4.compiler.inputType__CPP_SRCS.1861151290" name="C++ Sources" superClass="com.ti.ccstudio.buildDefinitions.C5500_4.4.compiler.inputType__CPP_SRCS"/>
 								<inputType id="com.ti.ccstudio.buildDefinitions.C5500_4.4.compiler.inputType__ASM_SRCS.1721011793" name="Assembly Sources" superClass="com.ti.ccstudio.buildDefinitions.C5500_4.4.compiler.inputType__ASM_SRCS"/>
@@ -419,9 +417,8 @@
 								<option id="com.ti.ccstudio.buildDefinitions.C5500_4.4.linkerID.OUTPUT_FILE.739196473" name="Specify output file name (--output_file, -o)" superClass="com.ti.ccstudio.buildDefinitions.C5500_4.4.linkerID.OUTPUT_FILE" value="&quot;${PROJECT_BUILD_DIR}/CSL_USB_IsoFullSpeedExample_Out.out&quot;" valueType="string"/>
 								<option id="com.ti.ccstudio.buildDefinitions.C5500_4.4.linkerID.MAP_FILE.496952678" name="Input and output sections listed into &lt;file&gt; (--map_file, -m)" superClass="com.ti.ccstudio.buildDefinitions.C5500_4.4.linkerID.MAP_FILE" value="&quot;${PROJECT_BUILD_DIR}/CSL_USB_IsoFullSpeedExample_Out.map&quot;" valueType="string"/>
 								<option id="com.ti.ccstudio.buildDefinitions.C5500_4.4.linkerID.LIBRARY.1694217805" name="Include library file or command file as input (--library, -l)" superClass="com.ti.ccstudio.buildDefinitions.C5500_4.4.linkerID.LIBRARY" valueType="libs">
-									<listOptionValue builtIn="false" value="&quot;C:\c55_lp\c55_csl_3.03\c55_csl_3.03\c55xx_csl\build\C55XXCSL_LP.lib&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;C:\c55_lp\c55_caf_02.00.02.04\c55xx_csl\build\ccsv5\Debug\cslVC5505_Lib.lib&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;dma_bios_drv_lib.lib&quot;"/>
-									<listOptionValue builtIn="false" value="libc.a"/>
 									<listOptionValue builtIn="false" value="&quot;palos_bios_lib.lib&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;i2c_bios_drv_lib.lib&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;i2s_bios_drv_lib.lib&quot;"/>
@@ -490,7 +487,7 @@
 				<externalSettings containerId="i2s_bios_drv_lib;com.ti.ccstudio.buildDefinitions.C5500.Debug.1436042229" factoryId="org.eclipse.cdt.core.cfg.export.settings.sipplier"/>
 				<externalSettings containerId="palos_bios_lib;com.ti.ccstudio.buildDefinitions.C5500.Debug.918468723" factoryId="org.eclipse.cdt.core.cfg.export.settings.sipplier"/>
 				<externalSettings containerId="pal_sys_bios_lib;com.ti.ccstudio.buildDefinitions.C5500.Debug.378999123" factoryId="org.eclipse.cdt.core.cfg.export.settings.sipplier"/>
-				<externalSettings containerId="C55XXCSL_LP;" factoryId="org.eclipse.cdt.core.cfg.export.settings.sipplier"/>
+				<externalSettings containerId="cslVC5505;" factoryId="org.eclipse.cdt.core.cfg.export.settings.sipplier"/>
 			</storageModule>
 		</cconfiguration>
 		<cconfiguration id="com.ti.ccstudio.buildDefinitions.C5500.Release.10488754.1655958476">

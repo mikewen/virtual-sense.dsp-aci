@@ -35,15 +35,13 @@ Uint32 my_step = 0;
 Uint16 file_is_open = 0;
 Uint16 file_counter = 0;
 char name[12];
-extern unsigned char circular_buffer[PROCESS_BUFFER_SIZE];
+//extern unsigned char circular_buffer[PROCESS_BUFFER_SIZE];
 //extern Uint32 bufferInIdx; //logical pointer
 //extern Uint32 bufferOutIdx; //logical pointer
 
-void putDataIntoOpenFile(const void *buff, unsigned int number_of_bytes);
-
 // PRD function. Runs every 10 minutes to start sampling a new file
 void CreateNewFile(void){
-	printf("Timer executes\n");
+	LOG_printf(&trace, "Timer executes\n");
 	SEM_post(&SEM_TimerSave);
 }
 
@@ -58,9 +56,9 @@ void DataSaveTask(void)
 	Uint32 burts_size_bytes = DMA_BUFFER_SZ * 2;
 	Uint32 b_size = PROCESS_BUFFER_SIZE;
 
-    printf("\nMount a volume.\n");
+    LOG_printf(&trace, "\nMount a volume.\n");
     rc = f_mount(0, &fatfs);
-    if(rc) printf("Error mounting volume\n");
+    if(rc) LOG_printf(&trace, "Error mounting volume\n");
     //main loop
     while (1)
     {
@@ -91,14 +89,11 @@ void DataSaveTask(void)
     	clear_lcd();
     	printstring("Creating   ");
     	printstring(name);
-    	printf("Saving \n");
     	rc = open_wave_file(&wav_file, name, FREQUENCY,SECONDS);
     	if(rc)
     		LOG_printf(&trace, "Error openin a new wav file %d\n",rc);
     	else
     		file_is_open = 1;
-    	putDataIntoOpenFile((void *)circular_buffer, 468); // to fill first sector in order to increase performance
-    	// wave header is 44 bytes length
     	//clear_lcd();
     	SEM_reset(&SEM_BufferFull,0);
     	//bufferOutIdx = 0;
@@ -125,7 +120,6 @@ void DataSaveTask(void)
         printstring("Done ");
         printstring(name);
         LOG_printf(&trace,  "File saved test%d.wav\n",file_counter);
-        printf("File save done!!!!\n");
      }
 }
 
@@ -134,7 +128,7 @@ void putDataIntoOpenFile(const void *buff, unsigned int number_of_bytes){
 		write_data_to_wave(&wav_file, buff, number_of_bytes);
 		my_step++;
 	}
-	if(my_step == ((SECONDS * STEP_PER_SECOND)+1)){
+	if(my_step == (SECONDS * STEP_PER_SECOND)){
 		file_is_open = 0;
 		my_step = 0;
 		SEM_post(&SEM_CloseFile);

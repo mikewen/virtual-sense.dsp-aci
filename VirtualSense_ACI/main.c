@@ -44,7 +44,6 @@
  */
 
 #include <stdlib.h>
-#include <stdio.h>
 #include "csl_types.h"
 #include "csl_error.h"
 #include "csl_intc.h"
@@ -73,16 +72,11 @@
 #include "cslr.h"
 #include "cslr_sysctrl.h"
 
-#include "csl_rtc.h"
-
 #include "main_config.h"
 #include "circular_buffer.h"
 
 #include "ff.h"
 #include "make_wav.h"
-
-#include "debug_uart.h";
-
 
 #undef ENABLE_REC_ASRC
 #undef ENABLE_ASRC
@@ -131,68 +125,17 @@ extern void initRTC(void);
  *
  *  \return None
  */
-
-
-int main(void)
+void main(void)
 {
     CSL_Status status;
     Uint32 gpioIoDir;
     Uint32 j = 0;
 
-    //CSL_CPU_REGS->ST1_55 &= ~CSL_CPU_ST1_55_XF_MASK;
+    // Disable all tracing
+    //TRC_disable(TRC_GBLTARG);
+    // Disable trace log
+    //LOG_disable(&trace);
 
-
-
-
-    /*
-
-    		   asm("	@#IFR0_L = #0xffff || mmap() "); // clear int flags
-               asm("	@#IER0_L = #0x0000 || mmap() "); // set RTC int
-               asm("	@#IFR1_L = #0xffff || mmap() "); // clear int flags
-               asm("	@#IER1_L = #0x0004 || mmap() "); // set RTC int
-               asm(" bit(ST1,#11) = #0 "); // GLOBAL INTERRUPT ENABLE
-
-
-
-               // RTC configure
-
-
-               asm("	*port(#0x1920) = #0x803F "); //clear interrupt flags
-               asm("	*port(#0x1900) = #0x0001 "); //RTCINTEN enabled
-               asm("	*port(#0x1924) = #0x0020 "); //EXTINTEN enabled
-               asm("	*port(#0x1930) = #0x0000 "); //WU_DIR input
-
-               do // waiting until RTC interrupt is enabled in the RTC domain could take 2 RTC clocks for write to propagate
-               {
-               temp1924 = *(volatile ioport unsigned int *) (0x1924);
-               }	while ((temp1924&0x0020)==0);
-
-               temp1920 = *(volatile ioport unsigned int *) (0x1920);
-               if ((temp1920&0x0020)!=0)
-               {
-               asm("	*port(#0x1920) = #0x803F "); //clear interrupt flags
-               }
-               asm("	*port(#0x1930) = #0x0006 "); //WU_DIR input & LDO & BG shutdown
-               asm("	*port(#0x1920) = #0x803F "); //clear interrupt flags
-
-           // power down to RTC only mode
-           while (1)
-               {
-               temp1920 = *(volatile ioport unsigned int *) (0x1920);
-               if ((temp1920&0x0020)!=0)
-               {
-               asm("	*port(#0x1920) = #0x803F "); //clear interrupt flags
-               asm("	*port(#0x1930) = #0x0006 "); //WU_DIR input & LDO & BG shutdown
-               asm("	*port(#0x1920) = #0x803F "); //clear interrupt flags
-               }
-               }
-           CSL_CPU_REGS->ST1_55 &= CSL_CPU_ST1_55_XF_MASK;
-
-    // Enter RTC-only
-
-    //asm("   NOP");
-    //asm("   BSET XF");
-    */
     /* Clock gate all peripherals */
     CSL_SYSCTRL_REGS->PCGCR1 = 0x7FFF;
     CSL_SYSCTRL_REGS->PCGCR2 = 0x007F;
@@ -240,15 +183,8 @@ int main(void)
         exit(EXIT_FAILURE);
     }
 
-    //init_debug_over_uart();
      /* Enable the USB LDO */
     //*(volatile ioport unsigned int *)(0x7004) |= 0x0001;
-
-
-
-
-
-
 }
 
 /**
@@ -264,14 +200,19 @@ void CSL_acTest(void)
     CSL_UsbConfig usbConfig;
     PSP_Result result;
     Int16 status;
-    Uint16 temp1920, temp1924;
 
+#ifdef DEBUG_LOG_PRINT
+    LOG_printf(&trace, "USB ISO FULL SPEED MODE");
+#endif
 
     /* Initialize audio module */
     result = set_sampling_frequency_gain_impedence(FREQUENCY, GAIN, IMPEDANCE);
     Set_Mute_State(TRUE);
     if (result != 0)
     {
+#ifdef DEBUG_LOG_PRINT
+        LOG_printf(&trace, "ERROR: Unable to configure audio codec");
+#endif
         exit(EXIT_FAILURE);
     }
     else
@@ -280,7 +221,7 @@ void CSL_acTest(void)
         /* Initialize the OLED display */
         oled_init();
 #endif
-        initRTC();
+       initRTC();
         
         i2sTxBuffSz = 2*DMA_BUFFER_SZ;
         /* Reset codec output buffer */
@@ -307,6 +248,9 @@ void CSL_acTest(void)
         status = i2sInit(&i2sInitPrms);
         if (status != I2SSAMPLE_SOK)
         {
+#ifdef DEBUG_LOG_PRINT
+            LOG_printf(&trace, "ERROR: Unable to initialize I2S");
+#endif
             exit(EXIT_FAILURE);
         }
 
@@ -326,6 +270,9 @@ void CSL_acTest(void)
 
     }
 
+#ifdef DEBUG_LOG_PRINT
+    LOG_printf(&trace, "Initialization complete");
+#endif
 }
 
 /* Resets C5515 */
@@ -375,7 +322,7 @@ void ClockGating(void)
     // wait for acknowledge
     while (CSL_FEXT(CSL_SYSCTRL_REGS->CLKSTOP, SYS_CLKSTOP_URTCLKSTPACK)==0);
     // clock gating UART
-    //pcgcr_value |= CSL_FMKT(SYS_PCGCR1_UARTCG, DISABLED);
+    pcgcr_value |= CSL_FMKT(SYS_PCGCR1_UARTCG, DISABLED);
     // clock stop request for EMIF
     //clkstop_value = CSL_FMKT(SYS_CLKSTOP_EMFCLKSTPREQ, REQ);
     // write to CLKSTOP
@@ -446,7 +393,7 @@ void ClockGating(void)
     return;
 }
 
-#if 0
+#if 1
 void userIdle(void)
 {
     // set CPUI bit in ICR

@@ -9,7 +9,6 @@
 		<project>palos_bios_lib</project>
 		<project>pal_sys_bios_lib</project>
 		<project>cslVC5505</project>
-		<project>C55XXCSL_LP</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>

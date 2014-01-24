@@ -6,14 +6,13 @@
  */
 
 
-
+#include <stdio.h>
 #include <csl_rtc.h>
 #include <csl_intc.h>
 #include <csl_general.h>
 
 //#include "VC5505_CSL_BIOS_cfg.h"
 #include "VirtualSense_ACIcfg.h"
-#include "debug_uart.h">
 
 #define RTC_TIME_PRINT_CYCLE    (0xFFu)
 #define RTC_CALL_BACK           (1u)

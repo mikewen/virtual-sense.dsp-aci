@@ -5,10 +5,12 @@
  *      Author: Emanuele Lattanzi
  */
 
+#if 0
 #include <stdio.h>
 #include "csl_uart.h"
 #include "csl_uartAux.h"
 #include "csl_general.h"
+
 #include "csl_sysctrl.h"
 
 CSL_UartObj 		uartObj;
@@ -96,4 +98,5 @@ void printdebug(const char *format, ...){
 
     }
 }
+#endif
 
