@@ -43,7 +43,7 @@ void putDataIntoOpenFile(const void *buff, unsigned int number_of_bytes);
 
 // PRD function. Runs every 10 minutes to start sampling a new file
 void CreateNewFile(void){
-	LOG_printf(&trace, "Timer executes\n");
+	printf("Timer executes\n");
 	SEM_post(&SEM_TimerSave);
 }
 
@@ -58,9 +58,9 @@ void DataSaveTask(void)
 	Uint32 burts_size_bytes = DMA_BUFFER_SZ * 2;
 	Uint32 b_size = PROCESS_BUFFER_SIZE;
 
-    LOG_printf(&trace, "\nMount a volume.\n");
+    printf("\nMount a volume.\n");
     rc = f_mount(0, &fatfs);
-    if(rc) LOG_printf(&trace, "Error mounting volume\n");
+    if(rc) printf("Error mounting volume\n");
     //main loop
     while (1)
     {

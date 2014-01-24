@@ -81,10 +81,7 @@
 #include "ff.h"
 #include "make_wav.h"
 
-#include "csl_uart.h"
-#include "csl_uartAux.h"
-#include "csl_general.h"
-#include "csl_sysctrl.h"
+#include "debug_uart.h";
 
 
 #undef ENABLE_REC_ASRC
@@ -135,58 +132,13 @@ extern void initRTC(void);
  *  \return None
  */
 
-CSL_UartSetup uartSetup =
-{
-	/* Input clock freq in MHz */
-    100000000,
-	/* Baud rate */
-    57600,
-	/* Word length of 8 */
-    CSL_UART_WORD8,
-	/* To generate 1 stop bit */
-    0,
-	/* Disable the parity */
-    CSL_UART_DISABLE_PARITY,
-	/* Disable fifo */
-	/* Enable trigger 14 fifo */
-	CSL_UART_FIFO_DMA1_DISABLE_TRIG14,
-	/* Loop Back enable */
-    CSL_UART_NO_LOOPBACK,
-	/* No auto flow control*/
-	CSL_UART_NO_AFE ,
-	/* No RTS */
-	CSL_UART_NO_RTS ,
-};
-
-
-CSL_UartObj uartObj;
 
 int main(void)
 {
     CSL_Status status;
-    CSL_UartHandle    hUart;
     Uint32 gpioIoDir;
     Uint32 j = 0;
 
-    // Disable all tracing
-    //TRC_disable(TRC_GBLTARG);
-    // Disable trace log
-    //LOG_disable(&trace);
-    //asm("   BCLR XF");
-
-
-    Uint16 index = 0;
-    Uint16 index2 = 0;
-
-    puts("Hello, serra!");
-    LOG_printf(&trace, "hello worldb!\n\r");
-    printf("hello worldc!\n");
-
-	puts("Hello, serra2!");
-    LOG_printf(&trace, "hello world3!\n\r");
-    printf("hello world4!\n\r");
-
-    Uint16 temp1920, temp1924;
     //CSL_CPU_REGS->ST1_55 &= ~CSL_CPU_ST1_55_XF_MASK;
 
 
@@ -288,71 +240,12 @@ int main(void)
         exit(EXIT_FAILURE);
     }
 
+    //init_debug_over_uart();
      /* Enable the USB LDO */
     //*(volatile ioport unsigned int *)(0x7004) |= 0x0001;
 
 
-#if 1//UART_TEST
-    /* uart test */
 
-      	//uartSetup.clkInput = getSysClk();
-
-
-    /* Loop counter and error flag */
-       status = UART_init(&uartObj,CSL_UART_INST_0,UART_POLLED);
-       if(CSL_SOK != status)
-       {
-           printf("UART_init failed error code %d\n",status);
-           return(status);
-       }
-       else
-       {
-   		printf("UART_init Successful\n");
-   	}
-
-       status = SYS_setEBSR(CSL_EBSR_FIELD_PPMODE,
-                            CSL_EBSR_PPMODE_1);
-       if(CSL_SOK != status)
-       {
-           printf("SYS_setEBSR failed\n");
-           return (status);
-       }
-
-       /* Handle created */
-       hUart = (CSL_UartHandle)(&uartObj);
-
-       /* Configure UART registers using setup structure */
-       status = UART_setup(hUart,&uartSetup);
-       if(CSL_SOK != status)
-       {
-           printf("UART_setup failed error code %d\n",status);
-           return(status);
-       }
-       else
-       {
-   		printf("UART_setup Successful\n");
-   	}
-
-   	/* Send the message to HyperTerminal to Query the string size */
-       for(index=0; index <10000; index++){
-    	   status = UART_fputs(hUart,"Hello VirtualSense\n",0);
-    	   if(CSL_SOK != status)
-    	   {
-    		   printf("UART_fputs failed error code %d\n",status);
-    		   return(status);
-    	   }
-    	   else
-    	   {
-    		   printf("\n\nMessage Sent to HyperTerminal :\n");
-    	   }
-       	   for(index2 = 0; index2 < 1000; index2++)
-       		   asm("      nop    ");
-       }
-
-
-#endif // UART_TEST
-
-       /* end uart test */
 
 
 
@@ -372,18 +265,13 @@ void CSL_acTest(void)
     PSP_Result result;
     Int16 status;
     Uint16 temp1920, temp1924;
-#ifdef DEBUG_LOG_PRINT
-    LOG_printf(&trace, "USB ISO FULL SPEED MODE");
-#endif
+
 
     /* Initialize audio module */
     result = set_sampling_frequency_gain_impedence(FREQUENCY, GAIN, IMPEDANCE);
     Set_Mute_State(TRUE);
     if (result != 0)
     {
-#ifdef DEBUG_LOG_PRINT
-        LOG_printf(&trace, "ERROR: Unable to configure audio codec");
-#endif
         exit(EXIT_FAILURE);
     }
     else
@@ -419,9 +307,6 @@ void CSL_acTest(void)
         status = i2sInit(&i2sInitPrms);
         if (status != I2SSAMPLE_SOK)
         {
-#ifdef DEBUG_LOG_PRINT
-            LOG_printf(&trace, "ERROR: Unable to initialize I2S");
-#endif
             exit(EXIT_FAILURE);
         }
 
@@ -440,10 +325,6 @@ void CSL_acTest(void)
         DDC_I2S_transEnable((DDC_I2SHandle)i2sHandleTx, TRUE); /* enable I2S transmit and receive */
 
     }
-
-#ifdef DEBUG_LOG_PRINT
-    LOG_printf(&trace, "Initialization complete");
-#endif
 
 }
 
