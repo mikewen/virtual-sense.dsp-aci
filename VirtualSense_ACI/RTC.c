@@ -6,7 +6,7 @@
  */
 
 
-#include <stdio.h>
+#include "debug_uart.h" // to redirect debug_printf over UART
 #include <csl_rtc.h>
 #include <csl_intc.h>
 #include <csl_general.h>
@@ -101,12 +101,12 @@ void initRTC()
     status = RTC_setCallback(&rtcDispatchTable, &isrAddr);
 	if(status != CSL_SOK)
 	{
-		printf("RTC_setCallback Failed\n");
+		debug_printf("RTC_setCallback Failed\n");
 		return;
 	}
 	else
 	{
-		printf("RTC_setCallback Successful\n");
+		debug_printf("RTC_setCallback Successful\n");
 	}
 
 	/* Configure and enable the RTC interrupts using INTC module */
@@ -133,87 +133,87 @@ void initRTC()
 	status = RTC_config(&rtcConfig);
 	if(status != CSL_SOK)
 	{
-		printf("RTC_config Failed\n");
+		debug_printf("RTC_config Failed\n");
 		return;
 	}
 	else
 	{
-		printf("RTC_config Successful\n");
+		debug_printf("RTC_config Successful\n");
 	}
 
 	/* Set the RTC time */
 	status = RTC_setTime(&InitTime);
 	if(status != CSL_SOK)
 	{
-		printf("RTC_setTime Failed\n");
+		debug_printf("RTC_setTime Failed\n");
 		return;
 	}
 	else
 	{
-		printf("RTC_setTime Successful\n");
+		debug_printf("RTC_setTime Successful\n");
 	}
 
 	/* Set the RTC date */
 	status = RTC_setDate(&InitDate);
 	if(status != CSL_SOK)
 	{
-		printf("RTC_setDate Failed\n");
+		debug_printf("RTC_setDate Failed\n");
 		return;
 	}
 	else
 	{
-		printf("RTC_setDate Successful\n");
+		debug_printf("RTC_setDate Successful\n");
 	}
 
 	/* Set the RTC Alarm time */
 	status = RTC_setAlarm(&AlarmTime);
 	if(status != CSL_SOK)
 	{
-		printf("RTC_setAlarm Failed\n");
+		debug_printf("RTC_setAlarm Failed\n");
 		return;
 	}
 	else
 	{
-		printf("RTC_setAlarm Successful\n");
+		debug_printf("RTC_setAlarm Successful\n");
 	}
 
 	/* Set the RTC interrupts */
 	/*status = RTC_setPeriodicInterval(CSL_RTC_MINS_PERIODIC_INTERRUPT);
 	if(status != CSL_SOK)
 	{
-		printf("RTC_setPeriodicInterval Failed\n");
+		debug_printf("RTC_setPeriodicInterval Failed\n");
 		return;
 	}
 	else
 	{
-		printf("RTC_setPeriodicInterval Successful\n");
+		debug_printf("RTC_setPeriodicInterval Successful\n");
 	}*/
 
 	/* Enable the RTC SEC interrupts */
 	/*status = RTC_eventEnable(CSL_RTC_SECEVENT_INTERRUPT);
 	if(status != CSL_SOK)
 	{
-		printf("RTC_eventEnable for SEC EVENT Failed\n");
+		debug_printf("RTC_eventEnable for SEC EVENT Failed\n");
 		return;
 	}
 	else
 	{
-		printf("RTC_eventEnable for SEC EVENT Successful\n");
+		debug_printf("RTC_eventEnable for SEC EVENT Successful\n");
 	}*/
 
 	/* Enable the RTC alarm interrupts */
 	/*status = RTC_eventEnable(CSL_RTC_ALARM_INTERRUPT);
 	if(status != CSL_SOK)
 	{
-		printf("RTC_eventEnable for ALARM EVENT Failed\n");
+		debug_printf("RTC_eventEnable for ALARM EVENT Failed\n");
 		return;
 	}
 	else
 	{
-		printf("RTC_eventEnable for ALARM EVENT Successful\n");
+		debug_printf("RTC_eventEnable for ALARM EVENT Successful\n");
 	}*/
 
-	printf("\nStarting the RTC\n\n");
+	debug_printf("\nStarting the RTC\n\n");
 	/* Start the RTC */
 	RTC_start();
 
@@ -223,20 +223,20 @@ void initRTC()
 	 	status = RTC_getTime(&GetTime);
 		if(status != CSL_SOK)
 		{
-			printf("RTC_getTime Failed\n");
+			debug_printf("RTC_getTime Failed\n");
 			return;
 		}
 
 	 	status = RTC_getDate(&GetDate);
 		if(status != CSL_SOK)
 		{
-			printf("RTC_getDate Failed\n");
+			debug_printf("RTC_getDate Failed\n");
 			return;
 		}
 
-		printf("Iteration %d: ",iteration++);
+		debug_printf("Iteration %d: ",iteration++);
 
-	    printf("Time and Date is : %02d:%02d:%02d:%04d, %02d-%02d-%02d\n",
+	    debug_printf("Time and Date is : %02d:%02d:%02d:%04d, %02d-%02d-%02d\n",
 		GetTime.hours,GetTime.mins,GetTime.secs,GetTime.mSecs,GetDate.day,GetDate.month,GetDate.year);
 	} */
 }
@@ -312,7 +312,7 @@ void rtc_secIntc(void)
 {
     CSL_FINST(CSL_RTC_REGS->RTCINTFL, RTC_RTCINTFL_SECFL, SET);
 	secIntrCnt++;
-	printf("\nRTC Sec Interrupt %d\n\n",secIntrCnt);
+	//debug_printf("\nRTC Sec Interrupt %d\n\n",secIntrCnt);
 }
 
 void rtc_minIntc(void)
@@ -338,7 +338,7 @@ void rtc_extEvt(void)
 void rtc_alarmEvt(void)
 {
     CSL_FINST(CSL_RTC_REGS->RTCINTFL, RTC_RTCINTFL_ALARMFL, SET);
-    LOG_printf(&trace,"\nRTC Alarm Interrupt\n\n");
+    debug_printf("\nRTC Alarm Interrupt\n\n");
     SEM_post(&SEM_TimerSave);
 }
 

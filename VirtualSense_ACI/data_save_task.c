@@ -11,7 +11,9 @@
 */
 
 #include <std.h>
+#include <stdlib.h>
 #include <stdio.h>
+#include "debug_uart.h" // to redirect debug_printf over UART
 #include <csl_rtc.h>
 #include "app_asrc.h"
 #include "VirtualSense_ACIcfg.h"
@@ -34,14 +36,14 @@ Uint32 step = 0;
 Uint32 my_step = 0;
 Uint16 file_is_open = 0;
 Uint16 file_counter = 0;
-char name[12];
+
 //extern unsigned char circular_buffer[PROCESS_BUFFER_SIZE];
 //extern Uint32 bufferInIdx; //logical pointer
 //extern Uint32 bufferOutIdx; //logical pointer
 
 // PRD function. Runs every 10 minutes to start sampling a new file
 void CreateNewFile(void){
-	LOG_printf(&trace, "Timer executes\n");
+	debug_debug_printf(  "Timer executes\n");
 	SEM_post(&SEM_TimerSave);
 }
 
@@ -53,29 +55,15 @@ void DataSaveTask(void)
 	//CSL_RtcTime 	 GetTime;
 	CSL_RtcDate 	 GetDate;
 	CSL_Status    status;
+	char file_name[12];
 	Uint32 burts_size_bytes = DMA_BUFFER_SZ * 2;
 	Uint32 b_size = PROCESS_BUFFER_SIZE;
-
-    LOG_printf(&trace, "\nMount a volume.\n");
     rc = f_mount(0, &fatfs);
-    if(rc) LOG_printf(&trace, "Error mounting volume\n");
+    debug_printf("Mounting volume\n");
+    if(rc) debug_printf("Error mounting volume\n");
     //main loop
     while (1)
     {
-
-    	//go to sleep test
-    	/**(ioport volatile unsigned int *)ICR = 0x03EF; // Request to disable ports & C55x CPU
-
-    	//add 6 "nop" clearing pipeline
-    	asm (" nop");
-    	asm (" nop");
-    	asm (" nop");
-    	asm (" nop");
-    	asm (" nop");
-    	asm (" nop");
-
-    	asm (" idle"); //idle the CPU */
-
 
     	//wait on semaphore released from a timer function
     	SEM_pend(&SEM_TimerSave, SYS_FOREVER);
@@ -83,15 +71,16 @@ void DataSaveTask(void)
     	status |= RTC_getDate(&GetDate);
 
     	if(!status)
-    		sprintf(name, "%d%d%d%d.wav",GetDate.day,GetDate.month,GetDate.year,file_counter);
+    		sprintf(file_name, "%d%d%d%d.wav",GetDate.day,GetDate.month,GetDate.year,file_counter);
     	else
-    		sprintf(name, "test%d.wav",file_counter);
+    		sprintf(file_name, "test%d.wav",file_counter);
     	clear_lcd();
     	printstring("Creating   ");
-    	printstring(name);
-    	rc = open_wave_file(&wav_file, name, FREQUENCY,SECONDS);
+    	printstring(file_name);
+    	debug_printf("Creating a new file %s\n",file_name);
+    	rc = open_wave_file(&wav_file, file_name, FREQUENCY,SECONDS);
     	if(rc)
-    		LOG_printf(&trace, "Error openin a new wav file %d\n",rc);
+    		debug_printf("Error openin a new wav file %d\n",rc);
     	else
     		file_is_open = 1;
     	//clear_lcd();
@@ -105,8 +94,8 @@ void DataSaveTask(void)
 
     		write_data_to_wave(&wav_file, &circular_buffer[bufferOutIdx], burts_size_bytes);
     		bufferOutIdx = ((bufferOutIdx + burts_size_bytes) % b_size);
-    		//LOG_printf(&trace, "out log %ld\n",bufferOutIdx);
-        	//LOG_printf(&trace,  "buff %d in %d out %d\n",SEM_count(&SEM_BufferFull),bufferInIdx,bufferOutIdx);
+    		//debug_debug_printf(  "out log %ld\n",bufferOutIdx);
+        	//debug_debug_printf(   "buff %d in %d out %d\n",SEM_count(&SEM_BufferFull),bufferInIdx,bufferOutIdx);
         	//printstring(".!");
     		step++;
     	}*/
@@ -118,8 +107,8 @@ void DataSaveTask(void)
         step = 0;
         clear_lcd();
         printstring("Done ");
-        printstring(name);
-        LOG_printf(&trace,  "File saved test%d.wav\n",file_counter);
+        printstring(file_name);
+        debug_printf("File saved %s\n",file_name);
      }
 }
 

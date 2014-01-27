@@ -26,6 +26,7 @@
  */
 
 #include <string.h>
+#include "debug_uart.h" // to redirect printf over UART
 //#include "psp_i2s.h"
 #include "dda_i2s.h"
 #include "psp_dma.h"
@@ -714,9 +715,9 @@ void I2S_DmaRxLChCallBack(
     }
     else
     {
-#ifdef DEBUG_LOG_PRINT
-        LOG_printf(&trace, "Left RX DMA Failed");
-#endif
+
+        printf("Left RX DMA Failed");
+
     }
 
 #endif // ENABLE_RECORD

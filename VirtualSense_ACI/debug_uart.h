@@ -22,8 +22,7 @@
 
 #ifndef DEBUG_UART_MAIN_CONFIG_H
 #define DEBUG_UART_MAIN_CONFIG_H
-#include <stdio.h>
-//#define printf printdebug
+#define debug_printf printdebug
 
 void init_debug_over_uart();
 void printdebug(const char *format, ...);

@@ -44,6 +44,9 @@
  */
 
 #include <stdlib.h>
+#include <stdio.h>
+#include "debug_uart.h" // to redirect debug_printf over UART
+
 #include "csl_types.h"
 #include "csl_error.h"
 #include "csl_intc.h"
@@ -131,10 +134,6 @@ void main(void)
     Uint32 gpioIoDir;
     Uint32 j = 0;
 
-    // Disable all tracing
-    //TRC_disable(TRC_GBLTARG);
-    // Disable trace log
-    //LOG_disable(&trace);
 
     /* Clock gate all peripherals */
     CSL_SYSCTRL_REGS->PCGCR1 = 0x7FFF;
@@ -157,9 +156,7 @@ void main(void)
     status = pll_sample();
     if (status != CSL_SOK)
     {
-#ifdef DEBUG_LOG_PRINT
-        LOG_printf(&trace, "ERROR: Unable to initialize PLL");
-#endif
+
         exit(EXIT_FAILURE);
     }
 
@@ -177,14 +174,12 @@ void main(void)
     status = gpioInit(gpioIoDir, 0x00000000, 0x00000000);
     if (status != GPIOCTRL_SOK)
     {
-#ifdef DEBUG_LOG_PRINT
-        LOG_printf(&trace, "ERROR: Unable to initialize GPIO");
-#endif
         exit(EXIT_FAILURE);
     }
 
      /* Enable the USB LDO */
     //*(volatile ioport unsigned int *)(0x7004) |= 0x0001;
+    init_debug_over_uart();
 }
 
 /**
@@ -201,18 +196,15 @@ void CSL_acTest(void)
     PSP_Result result;
     Int16 status;
 
-#ifdef DEBUG_LOG_PRINT
-    LOG_printf(&trace, "USB ISO FULL SPEED MODE");
-#endif
 
+    debug_printf("Start Configuration....\n");
     /* Initialize audio module */
     result = set_sampling_frequency_gain_impedence(FREQUENCY, GAIN, IMPEDANCE);
     Set_Mute_State(TRUE);
+    debug_printf("Set_Mute_State true");
     if (result != 0)
     {
-#ifdef DEBUG_LOG_PRINT
-        LOG_printf(&trace, "ERROR: Unable to configure audio codec");
-#endif
+        debug_printf("ERROR: Unable to configure audio codec\n");
         exit(EXIT_FAILURE);
     }
     else
@@ -220,17 +212,23 @@ void CSL_acTest(void)
 #ifdef C5535_EZDSP_DEMO
         /* Initialize the OLED display */
         oled_init();
+        debug_printf("oled init\n");
 #endif
        initRTC();
         
         i2sTxBuffSz = 2*DMA_BUFFER_SZ;
         /* Reset codec output buffer */
         reset_codec_output_buffer();
+        debug_printf("reset codec output buffer\n");
 
         /* Initialize DMA hardware and driver */
         DMA_init(); // To enable MMCSD DMA
+        debug_printf("DMA INIT\n");
+
         DMA_HwInit();
+        debug_printf("DMA HW INIT\n");
         DMA_DrvInit();
+        debug_printf("DMA DrvInit\n");
 
         /* Initialize I2S and DMA channels for Playback and Record */
         /* playback */
@@ -248,31 +246,30 @@ void CSL_acTest(void)
         status = i2sInit(&i2sInitPrms);
         if (status != I2SSAMPLE_SOK)
         {
-#ifdef DEBUG_LOG_PRINT
-            LOG_printf(&trace, "ERROR: Unable to initialize I2S");
-#endif
+
+            debug_printf("ERROR: Unable to initialize I2S\n");
             exit(EXIT_FAILURE);
         }
 
 
         /* Start left Rx DMA */
         DMA_StartTransfer(hDmaRxLeft);
-
+        debug_printf("DMA Start Transfer\n");
         /* Set HWAI ICR */
         *(volatile ioport Uint16 *)0x0001 = 0xFC0E | (1<<9);
         asm("   idle");
 
         /* Clock gate usused peripherals */
 
-        ClockGating();
 
+        //ClockGating(); //LELE test UART
+        //debug_printf("ClokGating\n");
         DDC_I2S_transEnable((DDC_I2SHandle)i2sHandleTx, TRUE); /* enable I2S transmit and receive */
 
     }
 
-#ifdef DEBUG_LOG_PRINT
-    LOG_printf(&trace, "Initialization complete");
-#endif
+
+    debug_printf("Initialization complete\n");
 }
 
 /* Resets C5515 */
@@ -322,7 +319,7 @@ void ClockGating(void)
     // wait for acknowledge
     while (CSL_FEXT(CSL_SYSCTRL_REGS->CLKSTOP, SYS_CLKSTOP_URTCLKSTPACK)==0);
     // clock gating UART
-    pcgcr_value |= CSL_FMKT(SYS_PCGCR1_UARTCG, DISABLED);
+    //LELE to use UART pcgcr_value |= CSL_FMKT(SYS_PCGCR1_UARTCG, DISABLED);
     // clock stop request for EMIF
     //clkstop_value = CSL_FMKT(SYS_CLKSTOP_EMFCLKSTPREQ, REQ);
     // write to CLKSTOP
@@ -393,7 +390,7 @@ void ClockGating(void)
     return;
 }
 
-#if 1
+#if 0
 void userIdle(void)
 {
     // set CPUI bit in ICR

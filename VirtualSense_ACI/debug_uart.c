@@ -5,47 +5,37 @@
  *      Author: Emanuele Lattanzi
  */
 
-#if 0
+#if 1
 #include <stdio.h>
 #include "csl_uart.h"
 #include "csl_uartAux.h"
 #include "csl_general.h"
 
-#include "csl_sysctrl.h"
+#include "cslr_sysctrl.h"
 
 CSL_UartObj 		uartObj;
 CSL_Status 			status;
 CSL_UartHandle    	hUart;
-char debugBuffer[256];
-
-CSL_UartSetup uartSetup =
-{
-	/* Input clock freq in MHz */
-    100000000,
-	/* Baud rate */
-    57600,
-	/* Word length of 8 */
-    CSL_UART_WORD8,
-	/* To generate 1 stop bit */
-    0,
-	/* Disable the parity */
-    CSL_UART_DISABLE_PARITY,
-	/* Disable fifo */
-	/* Enable trigger 14 fifo */
-	CSL_UART_FIFO_DMA1_DISABLE_TRIG14,
-	/* Loop Back enable */
-    CSL_UART_NO_LOOPBACK,
-	/* No auto flow control*/
-	CSL_UART_NO_AFE ,
-	/* No RTS */
-	CSL_UART_NO_RTS ,
-};
-
+#pragma DATA_SECTION(uart_debugBuffer, ".uart_debugBuffer");
+ static  char uart_debugBuffer[256];
+CSL_UartSetup uartSetup;
 
 
 
 void init_debug_over_uart(){
 
+
+	    uartSetup.afeEnable = CSL_UART_NO_AFE;
+	    uartSetup.baud = 57600;
+	    uartSetup.clkInput = 100000000;
+	    uartSetup.fifoControl = CSL_UART_FIFO_DISABLE;
+	    uartSetup.loopBackEnable = CSL_UART_NO_LOOPBACK;
+	    uartSetup.parity =  CSL_UART_DISABLE_PARITY;
+	    uartSetup.rtsEnable = CSL_UART_NO_RTS;
+	    uartSetup.stopBits = 0;
+        uartSetup.wordLength = CSL_UART_WORD8;
+	 /* PP Mode 1 (SPI, GPIO[17:12], UART, and I2S2) */
+	    CSL_FINST(CSL_SYSCTRL_REGS->EBSR, SYS_EBSR_PPMODE, MODE1);
 
     /* Loop counter and error flag */
        status = UART_init(&uartObj,CSL_UART_INST_0,UART_POLLED);
@@ -58,13 +48,9 @@ void init_debug_over_uart(){
     	   printf("UART_init Successful\n");
        }
 
-       status = SYS_setEBSR(CSL_EBSR_FIELD_PPMODE,
-                            CSL_EBSR_PPMODE_1);
-       if(CSL_SOK != status)
-       {
-           printf("SYS_setEBSR failed\n");
-       }
 
+       /* PP Mode 1 (SPI, GPIO[17:12], UART, and I2S2) */
+          CSL_FINST(CSL_SYSCTRL_REGS->EBSR, SYS_EBSR_PPMODE, MODE1);
        /* Handle created */
        hUart = (CSL_UartHandle)(&uartObj);
 
@@ -86,17 +72,8 @@ void printdebug(const char *format, ...){
 	va_list arg;
 	int done;
 	va_start (arg, format);
-	done = vsprintf (debugBuffer, format, arg);
-    status = UART_fputs(hUart,debugBuffer,0);
-    if(CSL_SOK != status)
-    {
-    	printf("UART_fputs failed error code %d\n",status);
-    }
-    else
-    {
-    	printf("\n\nMessage Sent to HyperTerminal :\n");
-
-    }
+	done = vsprintf (uart_debugBuffer, format, arg);
+    status = UART_fputs(hUart,uart_debugBuffer,0);
 }
 #endif
 

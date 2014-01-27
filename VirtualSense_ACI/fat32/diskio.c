@@ -1,4 +1,4 @@
-#include <stdio.h>
+#include "debug_uart.h" // to redirect printf over UART
 #include <csl_general.h>
 #include <csl_mmcsd.h>
 #include <csl_types.h>
