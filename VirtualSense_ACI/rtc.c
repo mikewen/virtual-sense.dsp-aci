@@ -42,6 +42,12 @@ void rtc_dayIntc(void);
 void rtc_extEvt(void);
 void rtc_alarmEvt(void);
 
+unsigned short RTCNeedUpdate(){
+	Uint16 needUpdated = 0;
+	needUpdated = CSL_RTC_REGS->RTCNOPWR;
+	return needUpdated;
+}
+
 void initRTC()
 {
 	CSL_Status    status;
@@ -127,58 +133,61 @@ void initRTC()
 	IRQ_globalEnable();
 
 	/* Reset the RTC */
-	RTC_reset();
 
-	/* Configure the RTC module */
-	status = RTC_config(&rtcConfig);
-	if(status != CSL_SOK)
-	{
-		debug_printf("RTC_config Failed\n");
-		return;
-	}
-	else
-	{
-		debug_printf("RTC_config Successful\n");
-	}
+	if(RTCNeedUpdate()){
+		RTC_reset();
 
-	/* Set the RTC time */
-	status = RTC_setTime(&InitTime);
-	if(status != CSL_SOK)
-	{
-		debug_printf("RTC_setTime Failed\n");
-		return;
-	}
-	else
-	{
-		debug_printf("RTC_setTime Successful\n");
-	}
+		/* Configure the RTC module */
+		status = RTC_config(&rtcConfig);
+		if(status != CSL_SOK)
+		{
+			debug_printf("RTC_config Failed\n");
+			return;
+		}
+		else
+		{
+			debug_printf("RTC_config Successful\n");
+		}
 
-	/* Set the RTC date */
-	status = RTC_setDate(&InitDate);
-	if(status != CSL_SOK)
-	{
-		debug_printf("RTC_setDate Failed\n");
-		return;
-	}
-	else
-	{
-		debug_printf("RTC_setDate Successful\n");
-	}
+		/* Set the RTC time */
+		status = RTC_setTime(&InitTime);
+		if(status != CSL_SOK)
+		{
+			debug_printf("RTC_setTime Failed\n");
+			return;
+		}
+		else
+		{
+			debug_printf("RTC_setTime Successful\n");
+		}
 
-	/* Set the RTC Alarm time */
-	status = RTC_setAlarm(&AlarmTime);
-	if(status != CSL_SOK)
-	{
-		debug_printf("RTC_setAlarm Failed\n");
-		return;
-	}
-	else
-	{
-		debug_printf("RTC_setAlarm Successful\n");
-	}
+		/* Set the RTC date */
+		status = RTC_setDate(&InitDate);
+		if(status != CSL_SOK)
+		{
+			debug_printf("RTC_setDate Failed\n");
+			return;
+		}
+		else
+		{
+			debug_printf("RTC_setDate Successful\n");
+		}
 
-	/* Set the RTC interrupts */
-	/*status = RTC_setPeriodicInterval(CSL_RTC_MINS_PERIODIC_INTERRUPT);
+		/* Set the RTC Alarm time */
+		status = RTC_setAlarm(&AlarmTime);
+		if(status != CSL_SOK)
+		{
+			debug_printf("RTC_setAlarm Failed\n");
+			return;
+		}
+		else
+		{
+			debug_printf("RTC_setAlarm Successful\n");
+		}
+
+		/* Set the RTC interrupts */
+	}
+	status = RTC_setPeriodicInterval(CSL_RTC_SEC_PERIODIC_INTERRUPT);
 	if(status != CSL_SOK)
 	{
 		debug_printf("RTC_setPeriodicInterval Failed\n");
@@ -187,7 +196,7 @@ void initRTC()
 	else
 	{
 		debug_printf("RTC_setPeriodicInterval Successful\n");
-	}*/
+	}
 
 	/* Enable the RTC SEC interrupts */
 	/*status = RTC_eventEnable(CSL_RTC_SECEVENT_INTERRUPT);
@@ -310,9 +319,11 @@ void rtc_msIntc(void)
 
 void rtc_secIntc(void)
 {
+	CSL_RtcTime 	 GetTime;
     CSL_FINST(CSL_RTC_REGS->RTCINTFL, RTC_RTCINTFL_SECFL, SET);
 	secIntrCnt++;
-	//debug_printf("\nRTC Sec Interrupt %d\n\n",secIntrCnt);
+	RTC_getTime(&GetTime);
+	debug_printf("\nRTC actual time %d:%d:%d\n\n",GetTime.hours, GetTime.mins,GetTime.secs);
 }
 
 void rtc_minIntc(void)

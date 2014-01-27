@@ -46,7 +46,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "debug_uart.h" // to redirect debug_printf over UART
-
+#include "rtc.h"
 #include "csl_types.h"
 #include "csl_error.h"
 #include "csl_intc.h"
@@ -214,7 +214,7 @@ void CSL_acTest(void)
         oled_init();
         debug_printf("oled init\n");
 #endif
-       initRTC();
+        initRTC();
         
         i2sTxBuffSz = 2*DMA_BUFFER_SZ;
         /* Reset codec output buffer */
