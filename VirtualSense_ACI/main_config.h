@@ -59,7 +59,7 @@
 
 
 
-#define FREQUENCY 								           (S_RATE_48KHZ)
+#define FREQUENCY 								           (S_RATE_192KHZ)
 #define GAIN														 (48)
 #define IMPEDANCE										  (IMPEDANCE_10K)
 

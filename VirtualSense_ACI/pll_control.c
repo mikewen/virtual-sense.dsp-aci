@@ -82,7 +82,7 @@ PLL_Handle hPll;
 //const PLL_Config pllCfg_60MHz       = {0x8724, 0x8000, 0x0806, 0x0000};
 //const PLL_Config pllCfg_75MHz       = {0x88ED, 0x8000, 0x0806, 0x0000};
 const PLL_Config pllCfg_100MHz      = {0x8BE8, 0x8000, 0x0806, 0x0000};
-//const PLL_Config pllCfg_120MHz      = {0x8E4A, 0x8000, 0x0806, 0x0000};
+const PLL_Config pllCfg_120MHz      = {0x8E4A, 0x8000, 0x0806, 0x0000};
 //const PLL_Config pllCfg_100MHz_ExtClk12Mhz  = {0x8645, 0x00BD, 0x0806, 0x0000};
 //const PLL_Config pllCfg_120MHz_ExtClk12Mhz  = {0x87CC, 0x00C4, 0x0806, 0x0000};
 //const PLL_Config pllCfg_144MHz_ExtClk12Mhz  = {0x8960, 0x00C4, 0x0806, 0x0000}; // debug
@@ -124,7 +124,7 @@ CSL_Status pll_sample()
 
     /* Configure the PLL */
     //pConfigInfo = (PLL_Config *)&pllCfg_40MHz;
-    pConfigInfo = (PLL_Config *)&pllCfg_100MHz;
+    pConfigInfo = (PLL_Config *)&pllCfg_120MHz;
     //pConfigInfo = (PLL_Config *)&pllCfg_100MHz_ExtClk12Mhz;
     //pConfigInfo = (PLL_Config *)&pllCfg_120MHz_ExtClk12Mhz;
 
