@@ -22,6 +22,7 @@
 
 #include "main_config.h"
 #include "circular_buffer.h"
+#include "rtc.h"
 
 #include "ff.h"
 #include "make_wav.h"
@@ -112,6 +113,9 @@ void DataSaveTask(void)
         printstring("Done ");
         printstring(file_name);
         debug_printf("File saved %s\n",file_name);
+        // Put DSP into RTC only mode
+        RTC_scheduleAlarmAfterMinutes(1);
+        RTC_shutdownToRTCOnlyMonde();
      }
 }
 

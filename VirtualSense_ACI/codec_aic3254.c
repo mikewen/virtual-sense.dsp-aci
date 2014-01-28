@@ -32,6 +32,8 @@
 #include "app_globals.h"
 #include "codec_aic3254.h"
 
+#include "debug_uart.h" // to redirect debug_printf over UART
+
 #define I2C_OWN_ADDR            (0x2F)
 #define I2C_BUS_FREQ            (10000u)
 #define I2C_CODEC_ADDR          (0x18)
@@ -39,6 +41,35 @@
 PSP_Handle    hi2c = NULL;
 
 
+PSP_Result codec_sleep_mode(){
+	PSP_Result result = PSP_SOK;
+
+	if (hi2c)
+	{
+		result = AIC3254_Write(0, 1, hi2c); // select page 1 write 1 to page register to select page 1
+	    if (result != PSP_SOK)
+	    {
+	        return result;
+	    }
+
+	    // disable analog power
+	    result = AIC3254_Write(1, 0x08, hi2c);
+	    if (result != PSP_SOK)
+	    {
+	        return result;
+	    }
+
+	    // disable digital power
+	    result = AIC3254_Write(2, 0x04, hi2c);
+	    if (result != PSP_SOK)
+	    {
+	        return result;
+	    }
+
+	}else {
+		debug_printf("ERROR codec handler null\n");
+	}
+}
 PSP_Result set_sampling_frequency_gain_impedence(unsigned long SamplingFrequency, unsigned int ADCgain, unsigned int impedance)
 {
 	PSP_Result result = PSP_SOK;

@@ -139,6 +139,9 @@ void main(void)
     CSL_SYSCTRL_REGS->PCGCR1 = 0x7FFF;
     CSL_SYSCTRL_REGS->PCGCR2 = 0x007F;
 
+    // turn on led to turn on oscillator
+    CSL_CPU_REGS->ST1_55 |= CSL_CPU_ST1_55_XF_MASK;
+
     /* SP0 Mode 2 (GP[5:0]) -- GPIO02/GPIO04 for debug  */
     CSL_FINST(CSL_SYSCTRL_REGS->EBSR, SYS_EBSR_SP0MODE, MODE2);
 
@@ -201,7 +204,7 @@ void CSL_acTest(void)
     /* Initialize audio module */
     result = set_sampling_frequency_gain_impedence(FREQUENCY, GAIN, IMPEDANCE);
     Set_Mute_State(TRUE);
-    debug_printf("Set_Mute_State true");
+    debug_printf("Set_Mute_State true\n");
     if (result != 0)
     {
         debug_printf("ERROR: Unable to configure audio codec\n");
@@ -215,7 +218,6 @@ void CSL_acTest(void)
         debug_printf("oled init\n");
 #endif
         initRTC();
-        
         i2sTxBuffSz = 2*DMA_BUFFER_SZ;
         /* Reset codec output buffer */
         reset_codec_output_buffer();

@@ -187,7 +187,7 @@ void initRTC()
 
 		/* Set the RTC interrupts */
 	}
-	status = RTC_setPeriodicInterval(CSL_RTC_SEC_PERIODIC_INTERRUPT);
+	/*status = RTC_setPeriodicInterval(CSL_RTC_SEC_PERIODIC_INTERRUPT);
 	if(status != CSL_SOK)
 	{
 		debug_printf("RTC_setPeriodicInterval Failed\n");
@@ -197,7 +197,7 @@ void initRTC()
 	{
 		debug_printf("RTC_setPeriodicInterval Successful\n");
 	}
-
+	*/
 	/* Enable the RTC SEC interrupts */
 	/*status = RTC_eventEnable(CSL_RTC_SECEVENT_INTERRUPT);
 	if(status != CSL_SOK)
@@ -249,6 +249,88 @@ void initRTC()
 		GetTime.hours,GetTime.mins,GetTime.secs,GetTime.mSecs,GetDate.day,GetDate.month,GetDate.year);
 	} */
 }
+
+
+void RTC_scheduleAlarmAfterMinutes(unsigned short minutes){
+	CSL_RtcTime 	 actualTime;
+	CSL_RtcDate 	 actualDate;
+	CSL_RtcAlarm     nextAlarmTime;
+
+
+	RTC_getDate(&actualDate);
+	RTC_getTime(&actualTime);
+
+	nextAlarmTime.year  = actualDate.year;
+	nextAlarmTime.month = actualDate.month;
+	nextAlarmTime.day   = actualDate.day;
+
+	nextAlarmTime.hours = actualTime.hours;
+	nextAlarmTime.mins  = actualTime.mins+minutes;
+	if(actualTime.mins > 59){
+		actualTime.mins = 0;
+		actualTime.hours = actualTime.hours +1;
+	}
+	nextAlarmTime.secs  = actualTime.secs;
+	nextAlarmTime.mSecs = 00;
+
+	RTC_setAlarm(&nextAlarmTime);
+}
+
+
+void RTC_shutdownToRTCOnlyMonde(){
+	unsigned int temp1920,temp1924;
+
+	debug_printf("Set condec into low power mode\n");
+	codec_sleep_mode();
+
+	debug_printf("Preparing RTCOnlyMode\n");
+
+	// shutdown led to shutdown extrernal oscillator
+	CSL_CPU_REGS->ST1_55 &= ~CSL_CPU_ST1_55_XF_MASK;
+
+    asm("        @#IFR0_L = #0xffff || mmap() "); // clear int flags
+              asm("    @#IER0_L = #0x0000 || mmap() "); // set RTC int
+              asm("    @#IFR1_L = #0xffff || mmap() "); // clear int flags
+              asm("    @#IER1_L = #0x0004 || mmap() "); // set RTC int
+              asm(" bit(ST1,#11) = #0 "); // GLOBAL INTERRUPT ENABLE
+
+
+
+              // RTC configure
+
+
+              asm("    *port(#0x1920) = #0x803F "); //clear interrupt flags
+              asm("    *port(#0x1900) = #0x0001 "); //RTCINTEN enabled
+              asm("    *port(#0x1924) = #0x8020 "); //EXTINTEN enabled
+              asm("    *port(#0x1930) = #0x0000 "); //WU_DIR input
+
+              do // waiting until RTC interrupt is enabled in the RTC domain could take 2 RTC clocks for write to propagate
+              {
+              temp1924 = *(volatile ioport unsigned int *) (0x1924);
+              }        while ((temp1924&0x0020)==0);
+
+              temp1920 = *(volatile ioport unsigned int *) (0x1920);
+              if ((temp1920&0x0020)!=0)
+              {
+              asm("    *port(#0x1920) = #0x803F "); //clear interrupt flags
+              }
+              asm("    *port(#0x1930) = #0x0006 "); //WU_DIR input & LDO & BG shutdown
+              asm("    *port(#0x1920) = #0x803F "); //clear interrupt flags
+
+          // power down to RTC only mode
+          while (1)
+              {
+              temp1920 = *(volatile ioport unsigned int *) (0x1920);
+              if ((temp1920&0x0020)!=0)
+              {
+              asm("    *port(#0x1920) = #0x803F "); //clear interrupt flags
+              asm("    *port(#0x1930) = #0x0006 "); //WU_DIR input & LDO & BG shutdown
+              asm("    *port(#0x1920) = #0x803F "); //clear interrupt flags
+              }
+              }
+	debug_printf("----should never happen ----\n");
+}
+
 
 interrupt void rtc_isr(void)
 {
