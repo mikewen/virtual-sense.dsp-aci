@@ -1429,8 +1429,13 @@ BYTE sum_sfn (
 {
 	BYTE sum = 0;
 	UINT n = 11;
+	UINT i = 0;
+	unsigned char tmp = 0x00;
 
-	do sum = (sum >> 1) + (sum << 7) + *dir++; while (--n);
+	for(i=0; i < 11; i++){
+		sum = ((sum & 0xFF) >> 1) + (((sum & 0xFF) & 1) << 7);
+		sum += (dir[i] & 0xFF);
+	}
 	return sum;
 }
 #endif
@@ -1622,7 +1627,7 @@ FRESULT dir_register (	/* FR_OK:Successful, FR_DENIED:No free entry or too many 
 			mem_set(dj->dir, 0, SZ_DIR);	/* Clean the entry */
 			mem_cpy(dj->dir, dj->fn, 11);	/* Put SFN */
 #if _USE_LFN
-			dj->dir[DIR_NTres] = *(dj->fn+NS) & (NS_BODY | NS_EXT);	/* Put NT flag */
+			dj->dir[DIR_NTres] = dj->fn[NS] & (NS_BODY | NS_EXT);	/* Put NT flag */
 #endif
 			dj->fs->wflag = 1;
 		}

@@ -54,35 +54,95 @@ void DataSaveTask(void)
 {
     // display the play audio message
     //print_playaudio();
-	//CSL_RtcTime 	 GetTime;
+	CSL_RtcTime 	 GetTime;
 	CSL_RtcDate 	 GetDate;
 	CSL_Status    status;
-	char file_name[12];
+	char file_name[128];
 	Uint32 burts_size_bytes = DMA_BUFFER_SZ * 2;
 	Uint32 b_size = PROCESS_BUFFER_SIZE;
+
+	FIL rtc_time_file;
+	UINT bw;
+	Uint16 field = 0;
+
+
     rc = f_mount(0, &fatfs);
     debug_printf("Mounting volume\n");
     if(rc) debug_printf("Error mounting volume\n");
+
+    // look for RTC update time file "time.rtc"
+    //FRESULT f_open (FIL* fp, const TCHAR* path, BYTE mode);				/* Open or create a file */
+    //FRESULT f_read (FIL* fp, void* buff, UINT btr, UINT* br);			/* Read data from a file */
+
+    rc = f_open(&rtc_time_file, "time.rtc", FA_READ);
+    if(rc) debug_printf("Error opening time.rtc file\n");
+    else {
+    	// update rtc time
+    	// first 2 bites are day
+    	rc = f_read(&rtc_time_file,  &field, 2, &bw);
+    	debug_printf(" Day is %d \n", field);
+    	GetDate.day = field;
+
+    	rc = f_read(&rtc_time_file,  &field, 2, &bw);
+    	debug_printf(" Month is %d \n", field);
+    	GetDate.month = field;
+
+    	rc = f_read(&rtc_time_file,  &field, 2, &bw);
+    	debug_printf(" Year is %d \n", field);
+    	GetDate.year = field;
+
+    	rc = f_read(&rtc_time_file,  &field, 2, &bw);
+    	debug_printf(" Hour is %d \n", field);
+    	GetTime.hours = field;
+
+    	rc = f_read(&rtc_time_file,  &field, 2, &bw);
+    	debug_printf(" Min is %d \n", field);
+    	GetTime.mins = field;
+
+    	debug_printf("Setting RTC date time to %d-%d-%d-_%d:%d.wav",GetDate.day,GetDate.month,GetDate.year, GetTime.hours, GetTime.mins);
+    	/* Set the RTC time */
+    	status = RTC_setTime(&GetTime);
+    	if(status != CSL_SOK)
+    	{
+    		debug_printf("RTC_setTime Failed\n");
+    		return;
+    	}
+    	else
+    	{
+    		debug_printf("RTC_setTime Successful\n");
+    	}
+
+    	/* Set the RTC date */
+    	status = RTC_setDate(&GetDate);
+    	if(status != CSL_SOK)
+    	{
+    		debug_printf("RTC_setDate Failed\n");
+    		return;
+    	}
+    	else
+    	{
+    		debug_printf("RTC_setDate Successful\n");
+    	}
+    }
+
+
     //main loop
     while (1)
     {
 
     	//wait on semaphore released from a timer function
     	SEM_pend(&SEM_TimerSave, SYS_FOREVER);
-    	//status = RTC_getTime(&GetTime);
-    	status |= RTC_getDate(&GetDate);
-
-    	if(!status)
-    		sprintf(file_name, "%d%d%d%d.wav",GetDate.day,GetDate.month,GetDate.year,file_counter);
-    	else
-    		sprintf(file_name, "test%d.wav",file_counter);
+    	RTC_getDate(&GetDate);
+    	RTC_getTime(&GetTime);
+   		sprintf(file_name, "%d_%d_%d__%d-%d.wav",GetDate.day,GetDate.month,GetDate.year, GetTime.hours, GetTime.mins);
     	clear_lcd();
     	printstring("Creating   ");
     	printstring(file_name);
     	debug_printf("Creating a new file %s\n",file_name);
-    	rc = open_wave_file(&wav_file, file_name, FREQUENCY,SECONDS);
+
+    	rc = open_wave_file(&wav_file, file_name, FREQUENCY, SECONDS);
     	if(rc)
-    		debug_printf("Error openin a new wav file %d\n",rc);
+    		debug_printf("Error opening a new wav file %d\n",rc);
     	else
     		file_is_open = 1;
     	putDataIntoOpenFile((void *)circular_buffer, 468); // to fill first sector in order to increase performance

@@ -59,13 +59,13 @@
 
 
 
-#define FREQUENCY 								           (S_RATE_192KHZ)
-#define GAIN														 (48)
-#define IMPEDANCE										  (IMPEDANCE_10K)
+#define FREQUENCY 								           (S_RATE_48KHZ)
+#define GAIN														 (20)
+#define IMPEDANCE										  (IMPEDANCE_40K)
 
 #define FFT_LENGHT                                            	   (1024)
 
-#define SECONDS                                                       (5)
+#define SECONDS                                                      (60)
 #define PROCESS_BUFFER_SIZE                              		   (512L)
 
 //number of DMA_BUFFER to cover one second

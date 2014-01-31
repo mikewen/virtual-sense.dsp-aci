@@ -11,7 +11,7 @@
 #include "ff.h"
 
 
-void write_wav(char * filename, unsigned long num_samples, short int * data, int s_rate);
+void write_wav(const TCHAR * filename, unsigned long num_samples, short int * data, int s_rate);
     /* open a file named filename, write signed 16-bit values as a
         monoaural WAV file at the specified sampling rate
         and close the file
@@ -19,7 +19,7 @@ void write_wav(char * filename, unsigned long num_samples, short int * data, int
 
 FRESULT close_wave_file(FIL *file);
 FRESULT write_data_to_wave(FIL *file, const void *buff, unsigned int number_of_bytes);
-FRESULT open_wave_file(FIL *file, char *filename, unsigned long sample_per_second, unsigned long seconds);
+FRESULT open_wave_file(FIL *file, const TCHAR *filename, unsigned long sample_per_second, unsigned long seconds);
 FRESULT directory_listing();
 
 #endif /* MAKE_WAV_H_ */

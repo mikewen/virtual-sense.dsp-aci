@@ -124,7 +124,8 @@ CSL_Status pll_sample()
 
     /* Configure the PLL */
     //pConfigInfo = (PLL_Config *)&pllCfg_40MHz;
-    pConfigInfo = (PLL_Config *)&pllCfg_120MHz;
+    pConfigInfo = (PLL_Config *)&pllCfg_100MHz;
+    //pConfigInfo = (PLL_Config *)&pllCfg_120MHz;
     //pConfigInfo = (PLL_Config *)&pllCfg_100MHz_ExtClk12Mhz;
     //pConfigInfo = (PLL_Config *)&pllCfg_120MHz_ExtClk12Mhz;
 

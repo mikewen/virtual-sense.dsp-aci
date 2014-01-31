@@ -27,7 +27,7 @@ static unsigned char header_index = 0;
 void write_little_endian(unsigned long word, int num_bytes);
 void print_header();
 
-FRESULT open_wave_file(FIL *file, char *filename, unsigned long sample_per_second, unsigned long seconds){
+FRESULT open_wave_file(FIL *file, const TCHAR *filename, unsigned long sample_per_second, unsigned long seconds){
 	//FIL wav_file;
 	UINT bw;
 	FRESULT rc;
@@ -151,7 +151,7 @@ http://ccrma.stanford.edu/courses/422/projects/WaveFormat/
 
  */
 
-void write_wav(char * filename, unsigned long num_samples, short int * data, int s_rate)
+void write_wav(const TCHAR * filename, unsigned long num_samples, short int * data, int s_rate)
 {
     FIL wav_file;
     UINT bw;

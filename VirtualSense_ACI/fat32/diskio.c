@@ -67,6 +67,7 @@ Uint16 computeClkRate(void);
 /* Initialize Disk Drive                                                 */
 /*-----------------------------------------------------------------------*/
 
+
 DSTATUS disk_initialize (BYTE pdrv)
 {
         // Put your code here
@@ -195,7 +196,7 @@ DRESULT disk_write (
                 //printf("writing sector %d starting from add %d\n",count,cardAddr);
                  for(i=0; i < 256; i++){
                         writer_buffer[i] = ((buff[j*512+i*2+1] << 8)|(buff[j*512+i*2]));
-                        //printf("i = %d -- 0x%04x\n",i,writer_buffer[i]);
+                        //debug_printf("%02x %02x\n",buff[j*512+i*2+1], buff[j*512+i*2]);
 
                 }
                 status = MMC_write(mmcsdHandle, cardAddr, noOfBytes, writer_buffer);

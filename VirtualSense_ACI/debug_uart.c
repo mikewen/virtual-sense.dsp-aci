@@ -27,7 +27,7 @@ void init_debug_over_uart(){
 
 	    uartSetup.afeEnable = CSL_UART_NO_AFE;
 	    uartSetup.baud = 57600;
-	    uartSetup.clkInput = 120000000;
+	    uartSetup.clkInput = 100000000;
 	    uartSetup.fifoControl = CSL_UART_FIFO_DISABLE;
 	    uartSetup.loopBackEnable = CSL_UART_NO_LOOPBACK;
 	    uartSetup.parity =  CSL_UART_DISABLE_PARITY;
