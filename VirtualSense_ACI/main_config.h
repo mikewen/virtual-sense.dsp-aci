@@ -46,7 +46,7 @@
                       ADC_FS = PLL_CLK/(2 * 7 * 128) = 16000
 
 *****************************************************************************/
-
+/*
 #define S_RATE_192KHZ										   (192000L)
 #define S_RATE_96KHZ										 	(96000L)
 #define S_RATE_48KHZ										 	(48000L)
@@ -56,26 +56,34 @@
 #define IMPEDANCE_10K											  (0x10)
 #define IMPEDANCE_20K											  (0x20)
 #define IMPEDANCE_40K											  (0x30)
+*/
 
 
-
-#define FREQUENCY 								           (S_RATE_48KHZ)
-#define GAIN														 (20)
-#define IMPEDANCE										  (IMPEDANCE_40K)
+//#define FREQUENCY 								           (S_RATE_48KHZ)
+//#define GAIN														 (35)
+//#define IMPEDANCE										  (IMPEDANCE_40K)
 
 #define FFT_LENGHT                                            	   (1024)
 
-#define SECONDS                                                      (60)
+//#define SECONDS                                                      (10)
 #define PROCESS_BUFFER_SIZE                              		   (512L)
 
 //number of DMA_BUFFER to cover one second
-#define STEP_PER_SECOND                         (FREQUENCY/DMA_BUFFER_SZ)
+//#define STEP_PER_SECOND                         (FREQUENCY/DMA_BUFFER_SZ)
 
 #define DMA_BUFFER_SZ      					   				       (256L) // number of sample in fat sector
 #define DMA_TARNSFER_SZ            						(2*DMA_BUFFER_SZ)
 
 #define RTC_FILE_CONFIG											"time.rtc"
+#define FILE_SHEDULER											"scheduler.bin"
 #endif
+
+extern unsigned char mode;
+extern Uint32 frequency;
+extern Uint16 step_per_second;
+extern unsigned char gain;
+extern unsigned char impedence;
+extern Uint16 seconds;
 
 /*****************************************************************************/
 /* End of main_config.h                                                        */

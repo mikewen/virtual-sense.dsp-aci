@@ -86,6 +86,14 @@
 
 CSL_Status  CSL_i2cPowerTest(void);
 void calculate_FFT(unsigned char *input, int size);
+
+FATFS fatfs;			/* File system object */
+unsigned char mode;
+Uint32 frequency;
+Uint16 step_per_second;
+unsigned char gain;
+unsigned char impedence;
+Uint16 seconds;
 // Demo switch flag: 0 - power display, 1 - spectrum analyzer
 Uint16 DemoSwitchFlag = 1;
 
@@ -198,13 +206,21 @@ void CSL_acTest(void)
     CSL_UsbConfig usbConfig;
     PSP_Result result;
     Int16 status;
-
+    FRESULT rc;
+	UINT bw;
+	Uint16 field = 0;
+	FIL file_config;
 
     debug_printf("Start Configuration....\n");
+    //mount sdcard
+    rc = f_mount(0, &fatfs);
+    debug_printf("Mounting volume\n");
+    if(rc) debug_printf("Error mounting volume\n");
+
     /* Initialize audio module */
-    result = set_sampling_frequency_gain_impedence(FREQUENCY, GAIN, IMPEDANCE);
-    Set_Mute_State(TRUE);
-    debug_printf("Set_Mute_State true\n");
+    result = 0;//set_sampling_frequency_gain_impedence(FREQUENCY, GAIN, IMPEDANCE);
+//    Set_Mute_State(TRUE);
+//    debug_printf("Set_Mute_State true\n");
     if (result != 0)
     {
         debug_printf("ERROR: Unable to configure audio codec\n");
@@ -267,11 +283,61 @@ void CSL_acTest(void)
         //ClockGating(); //LELE test UART
         //debug_printf("ClokGating\n");
         DDC_I2S_transEnable((DDC_I2SHandle)i2sHandleTx, TRUE); /* enable I2S transmit and receive */
-
     }
 
+    //read config from file
+	rc = f_open(&file_config, FILE_SHEDULER, FA_READ);
+	if(!rc){
+  	// update rtc time
+    	// first 2 bites are day
+    	rc = f_read(&file_config,  &field, 1, &bw);
+    	debug_printf(" Mode is %d \n", field);
+    	mode = field;
+    	if(mode == 1) {
+    		//frequency
+        	rc = f_read(&file_config,  &field, 1, &bw);
+        	if(field == 1)
+        		frequency = 16000; // S_RATE_16KHZ
+        	else if(field == 2)
+        		frequency = 24000; // S_RATE_24KHZ
+        	else if(field == 3)
+        		frequency = 48000; // S_RATE_48KHZ
+        	else if(field == 4)
+        		frequency = 96000; // S_RATE_96KHZ
+        	else if(field == 5)
+        		frequency = 192000; // S_RATE_192KHz
+        	step_per_second = frequency/DMA_BUFFER_SZ;
+        	debug_printf(" Field: %d Freq is %d step per second: %d\n", field, frequency, step_per_second);
+        	//gain
+        	rc = f_read(&file_config,  &field, 1, &bw);
+        	gain = field;
+        	debug_printf(" Gain is %d \n", gain);
+        	//impedence
+        	rc = f_read(&file_config,  &field, 1, &bw);
+        	if(field == 1)
+        		impedence = 0x10; // IMPEDANCE_10K
+        	else if(field == 2)
+        		impedence = 0x20; // IMPEDANCE_20K
+           	else if(field == 3)
+           		impedence = 0x30; // IMPEDANCE_40K
+        	debug_printf(" Impedence is 0x%x \n", impedence);
+        	// seconds
+        	rc = f_read(&file_config,  &field, 2, &bw);
+        	debug_printf(" Seconds is %d \n", field);
+        	seconds = field;
+    	}
+    	else
+    		debug_printf(" Mode not valid\n");
+	}
+	else
+		debug_printf("Read config file error\n"); //error: file don't exist
 
-    debug_printf("Initialization complete\n");
+    // Initialize audio module
+    result = set_sampling_frequency_gain_impedence(frequency, gain, impedence);
+    Set_Mute_State(TRUE);
+    debug_printf("Set_Mute_State true\n");
+
+    debug_printf("Initialization completed\n");
 }
 
 /* Resets C5515 */

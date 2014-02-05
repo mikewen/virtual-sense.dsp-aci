@@ -30,8 +30,8 @@
 #define ICR 0x0001
 
 
-FRESULT rc;
-FATFS fatfs;			/* File system object */
+//FRESULT rc;
+
 FIL wav_file;
 Uint32 step = 0;
 Uint32 my_step = 0;
@@ -56,16 +56,17 @@ void DataSaveTask(void)
     //print_playaudio();
 	CSL_RtcTime 	 GetTime;
 	CSL_RtcDate 	 GetDate;
+	FRESULT rc;
 
 	char file_name[128];
 	Uint32 burts_size_bytes = DMA_BUFFER_SZ * 2;
 	Uint32 b_size = PROCESS_BUFFER_SIZE;
 
-
+/* moved in main.c
     rc = f_mount(0, &fatfs);
     debug_printf("Mounting volume\n");
     if(rc) debug_printf("Error mounting volume\n");
-
+*/
     // look for RTC update time file "time.rtc"
     //FRESULT f_open (FIL* fp, const TCHAR* path, BYTE mode);				/* Open or create a file */
     //FRESULT f_read (FIL* fp, void* buff, UINT btr, UINT* br);			/* Read data from a file */
@@ -87,7 +88,8 @@ void DataSaveTask(void)
     	printstring(file_name);
     	debug_printf("Creating a new file %s\n",file_name);
 
-    	rc = open_wave_file(&wav_file, file_name, FREQUENCY, SECONDS);
+    	//rc = open_wave_file(&wav_file, file_name, FREQUENCY, SECONDS);
+    	rc = open_wave_file(&wav_file, file_name, frequency, seconds);
     	if(rc)
     		debug_printf("Error opening a new wav file %d\n",rc);
     	else
@@ -131,7 +133,8 @@ void putDataIntoOpenFile(const void *buff, unsigned int number_of_bytes){
 		write_data_to_wave(&wav_file, buff, number_of_bytes);
 		my_step++;
 	}
-	if(my_step == ((SECONDS * STEP_PER_SECOND)+1)){
+	//if(my_step == ((SECONDS * STEP_PER_SECOND)+1)){
+	if(my_step == ((seconds * step_per_second)+1)){
 		file_is_open = 0;
 		my_step = 0;
 		SEM_post(&SEM_CloseFile);
