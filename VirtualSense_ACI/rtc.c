@@ -10,6 +10,8 @@
 #include <csl_rtc.h>
 #include <csl_intc.h>
 #include <csl_general.h>
+#include "ff.h"
+#include "main_config.h"
 
 //#include "VC5505_CSL_BIOS_cfg.h"
 #include "VirtualSense_ACIcfg.h"
@@ -276,6 +278,70 @@ void RTC_scheduleAlarmAfterMinutes(unsigned short minutes){
 	RTC_setAlarm(&nextAlarmTime);
 }
 
+unsigned char RTC_configRtcFromFile(){
+
+	FIL rtc_time_file;
+	UINT bw;
+	Uint16 field = 0;
+	CSL_Status    status;
+	FRESULT rc_fat;
+	CSL_RtcTime 	 GetTime;
+	CSL_RtcDate 	 GetDate;
+
+	rc_fat = f_open(&rtc_time_file, RTC_FILE_CONFIG, FA_READ);
+	if(!rc_fat){
+  	// update rtc time
+    	// first 2 bites are day
+    	rc_fat = f_read(&rtc_time_file,  &field, 2, &bw);
+    	debug_printf(" Day is %d \n", field);
+    	GetDate.day = field;
+
+    	rc_fat = f_read(&rtc_time_file,  &field, 2, &bw);
+    	debug_printf(" Month is %d \n", field);
+    	GetDate.month = field;
+
+    	rc_fat = f_read(&rtc_time_file,  &field, 2, &bw);
+    	debug_printf(" Year is %d \n", field);
+    	GetDate.year = field;
+
+    	rc_fat = f_read(&rtc_time_file,  &field, 2, &bw);
+    	debug_printf(" Hour is %d \n", field);
+    	GetTime.hours = field;
+
+    	rc_fat = f_read(&rtc_time_file,  &field, 2, &bw);
+    	debug_printf(" Min is %d \n", field);
+    	GetTime.mins = field;
+
+    	debug_printf("Setting RTC date time to %d-%d-%d-_%d:%d.wav",GetDate.day,GetDate.month,GetDate.year, GetTime.hours, GetTime.mins);
+    	/* Set the RTC time */
+    	status = RTC_setTime(&GetTime);
+    	if(status != CSL_SOK)
+    	{
+    		debug_printf("RTC_setTime Failed\n");
+    		return;
+    	}
+    	else
+    	{
+    		debug_printf("RTC_setTime Successful\n");
+    	}
+
+    	/* Set the RTC date */
+    	status = RTC_setDate(&GetDate);
+    	if(status != CSL_SOK)
+    	{
+    		debug_printf("RTC_setDate Failed\n");
+    		return;
+    	}
+    	else
+    	{
+    		debug_printf("RTC_setDate Successful\n");
+    	}
+
+    	return 0;
+	}
+	else
+		return 1; //error: file don't exist
+}
 
 void RTC_shutdownToRTCOnlyMonde(){
 	unsigned int temp1920,temp1924;

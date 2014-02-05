@@ -74,6 +74,7 @@
 #define DMA_BUFFER_SZ      					   				       (256L) // number of sample in fat sector
 #define DMA_TARNSFER_SZ            						(2*DMA_BUFFER_SZ)
 
+#define RTC_FILE_CONFIG											"time.rtc"
 #endif
 
 /*****************************************************************************/
