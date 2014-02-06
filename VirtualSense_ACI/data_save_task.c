@@ -72,7 +72,7 @@ void DataSaveTask(void)
     //FRESULT f_read (FIL* fp, void* buff, UINT btr, UINT* br);			/* Read data from a file */
 
     //
-    if( RTC_configRtcFromFile() )
+    if( RTC_initRtcFromFile() )
     	debug_printf("Error opening time.rtc file\n");
 
     //main loop
@@ -123,7 +123,7 @@ void DataSaveTask(void)
         printstring(file_name);
         debug_printf("File saved %s\n",file_name);
         // Put DSP into RTC only mode
-        RTC_scheduleAlarmAfterMinutes(1);
+        //RTC_scheduleAlarmAfterMinutes(1);
         RTC_shutdownToRTCOnlyMonde();
      }
 }

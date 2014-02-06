@@ -88,12 +88,12 @@ CSL_Status  CSL_i2cPowerTest(void);
 void calculate_FFT(unsigned char *input, int size);
 
 FATFS fatfs;			/* File system object */
-unsigned char mode;
-Uint32 frequency;
+unsigned char mode = 1;
+Uint32 frequency = 3;
 Uint16 step_per_second;
-unsigned char gain;
-unsigned char impedence;
-Uint16 seconds;
+unsigned char gain = 40;
+unsigned char impedence = 3;
+Uint16 seconds = 5;
 // Demo switch flag: 0 - power display, 1 - spectrum analyzer
 Uint16 DemoSwitchFlag = 1;
 

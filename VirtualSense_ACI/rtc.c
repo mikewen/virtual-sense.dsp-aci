@@ -176,7 +176,7 @@ void initRTC()
 		}
 
 		/* Set the RTC Alarm time */
-		status = RTC_setAlarm(&AlarmTime);
+		/*status = RTC_setAlarm(&AlarmTime);
 		if(status != CSL_SOK)
 		{
 			debug_printf("RTC_setAlarm Failed\n");
@@ -185,11 +185,11 @@ void initRTC()
 		else
 		{
 			debug_printf("RTC_setAlarm Successful\n");
-		}
+		}*/
 
 		/* Set the RTC interrupts */
 	}
-	/*status = RTC_setPeriodicInterval(CSL_RTC_SEC_PERIODIC_INTERRUPT);
+	status = RTC_setPeriodicInterval(CSL_RTC_MINS_PERIODIC_INTERRUPT);
 	if(status != CSL_SOK)
 	{
 		debug_printf("RTC_setPeriodicInterval Failed\n");
@@ -199,18 +199,18 @@ void initRTC()
 	{
 		debug_printf("RTC_setPeriodicInterval Successful\n");
 	}
-	*/
-	/* Enable the RTC SEC interrupts */
-	/*status = RTC_eventEnable(CSL_RTC_SECEVENT_INTERRUPT);
+
+	/* Enable the RTC MINS interrupts */
+	status = RTC_eventEnable(CSL_RTC_MINSEVENT_INTERRUPT);
 	if(status != CSL_SOK)
 	{
-		debug_printf("RTC_eventEnable for SEC EVENT Failed\n");
+		debug_printf("RTC_eventEnable for MINS EVENT Failed\n");
 		return;
 	}
 	else
 	{
-		debug_printf("RTC_eventEnable for SEC EVENT Successful\n");
-	}*/
+		debug_printf("RTC_eventEnable for MINS EVENT Successful\n");
+	}
 
 	/* Enable the RTC alarm interrupts */
 	/*status = RTC_eventEnable(CSL_RTC_ALARM_INTERRUPT);
@@ -278,7 +278,7 @@ void RTC_scheduleAlarmAfterMinutes(unsigned short minutes){
 	RTC_setAlarm(&nextAlarmTime);
 }
 
-unsigned char RTC_configRtcFromFile(){
+unsigned char RTC_initRtcFromFile(){
 
 	FIL rtc_time_file;
 	UINT bw;
@@ -367,7 +367,7 @@ void RTC_shutdownToRTCOnlyMonde(){
 
               asm("    *port(#0x1920) = #0x803F "); //clear interrupt flags
               asm("    *port(#0x1900) = #0x0001 "); //RTCINTEN enabled
-              asm("    *port(#0x1924) = #0x8020 "); //EXTINTEN enabled
+              asm("    *port(#0x1924) = #0x8024 "); //EXTINTEN enabled ALARM INT enabled MINUTES INT enabled
               asm("    *port(#0x1930) = #0x0000 "); //WU_DIR input
 
               do // waiting until RTC interrupt is enabled in the RTC domain could take 2 RTC clocks for write to propagate
@@ -476,7 +476,11 @@ void rtc_secIntc(void)
 
 void rtc_minIntc(void)
 {
+	CSL_RtcTime 	 GetTime;
     CSL_FINST(CSL_RTC_REGS->RTCINTFL, RTC_RTCINTFL_MINFL, SET);
+    RTC_getTime(&GetTime);
+    debug_printf("\nMIN INTERRUPT RTC actual time %d:%d:%d\n\n",GetTime.hours, GetTime.mins,GetTime.secs);
+    SEM_post(&SEM_TimerSave);
 }
 
 void rtc_hourIntc(void)
