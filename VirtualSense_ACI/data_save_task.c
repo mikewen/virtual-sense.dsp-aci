@@ -62,19 +62,6 @@ void DataSaveTask(void)
 	Uint32 burts_size_bytes = DMA_BUFFER_SZ * 2;
 	Uint32 b_size = PROCESS_BUFFER_SIZE;
 
-/* moved in main.c
-    rc = f_mount(0, &fatfs);
-    debug_printf("Mounting volume\n");
-    if(rc) debug_printf("Error mounting volume\n");
-*/
-    // look for RTC update time file "time.rtc"
-    //FRESULT f_open (FIL* fp, const TCHAR* path, BYTE mode);				/* Open or create a file */
-    //FRESULT f_read (FIL* fp, void* buff, UINT btr, UINT* br);			/* Read data from a file */
-
-    //
-    if( RTC_initRtcFromFile() )
-    	debug_printf("Error opening time.rtc file\n");
-
     //main loop
     while (1)
     {
@@ -115,7 +102,7 @@ void DataSaveTask(void)
     	SEM_pend(&SEM_CloseFile, SYS_FOREVER);
     	close_wave_file(&wav_file);
     	file_is_open = 0;
-        directory_listing();
+        //directory_listing();
         file_counter++;
         step = 0;
         clear_lcd();
@@ -124,6 +111,7 @@ void DataSaveTask(void)
         debug_printf("File saved %s\n",file_name);
         // Put DSP into RTC only mode
         //RTC_scheduleAlarmAfterMinutes(1);
+        //ToDo add check mode
         RTC_shutdownToRTCOnlyMonde();
      }
 }

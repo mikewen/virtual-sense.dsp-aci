@@ -167,7 +167,6 @@ void main(void)
     status = pll_sample();
     if (status != CSL_SOK)
     {
-
         exit(EXIT_FAILURE);
     }
 
@@ -212,82 +211,78 @@ void CSL_acTest(void)
 	FIL file_config;
 
     debug_printf("Start Configuration....\n");
-    //mount sdcard
+    //mount sdcard: must be High capacity(>4GB), standard capacuty have a problem
     rc = f_mount(0, &fatfs);
-    debug_printf("Mounting volume\n");
-    if(rc) debug_printf("Error mounting volume\n");
+    if(rc)
+    	debug_printf("Error mounting volume\n");
+    else
+    	debug_printf("Mounting volume\n");
 
-    /* Initialize audio module */
-    result = 0;//set_sampling_frequency_gain_impedence(FREQUENCY, GAIN, IMPEDANCE);
-//    Set_Mute_State(TRUE);
-//    debug_printf("Set_Mute_State true\n");
-    if (result != 0)
+#ifdef C5535_EZDSP_DEMO
+    /* Initialize the OLED display */
+    oled_init();
+    debug_printf("oled init\n");
+#endif
+    //Initialize RTC
+    initRTC();
+    //Initialize I2S
+    i2sTxBuffSz = 2*DMA_BUFFER_SZ;
+    /* Reset codec output buffer */
+    reset_codec_output_buffer();
+    debug_printf("reset codec output buffer\n");
+
+    /* Initialize DMA hardware and driver */
+    DMA_init(); // To enable MMCSD DMA
+    debug_printf("DMA INIT\n");
+
+    DMA_HwInit();
+    debug_printf("DMA HW INIT\n");
+    DMA_DrvInit();
+    debug_printf("DMA DrvInit\n");
+
+    /* Initialize I2S and DMA channels for Playback and Record */
+    /* playback */
+    i2sInitPrms.enablePlayback = TRUE;
+    i2sInitPrms.enableStereoPb = TRUE;
+    i2sInitPrms.pingPongI2sTxLeftBuf = (Int16 *)my_i2sTxLeftBuf;  /* note: only Tx Left used for stereo, sample-by-sample Pb */
+    i2sInitPrms.sampleBySamplePb = FALSE;
+    i2sInitPrms.pingPongI2sTxRightBuf = (Int16 *)my_i2sTxRightBuf;
+    i2sInitPrms.i2sPb = PSP_I2S_TX_INST_ID;
+    /* record */
+    i2sInitPrms.enableRecord = TRUE;
+    i2sInitPrms.enableStereoRec = FALSE;
+    i2sInitPrms.pingPongI2sRxLeftBuf = (Int16 *)my_i2sRxLeftBuf;
+    i2sInitPrms.i2sRec = PSP_I2S_RX_INST_ID;
+    status = i2sInit(&i2sInitPrms);
+    if (status != I2SSAMPLE_SOK)
     {
-        debug_printf("ERROR: Unable to configure audio codec\n");
+        debug_printf("ERROR: Unable to initialize I2S\n");
         exit(EXIT_FAILURE);
     }
-    else
-    {
-#ifdef C5535_EZDSP_DEMO
-        /* Initialize the OLED display */
-        oled_init();
-        debug_printf("oled init\n");
-#endif
-        initRTC();
-        i2sTxBuffSz = 2*DMA_BUFFER_SZ;
-        /* Reset codec output buffer */
-        reset_codec_output_buffer();
-        debug_printf("reset codec output buffer\n");
 
-        /* Initialize DMA hardware and driver */
-        DMA_init(); // To enable MMCSD DMA
-        debug_printf("DMA INIT\n");
+    /* Start left Rx DMA */
+    DMA_StartTransfer(hDmaRxLeft);
+    debug_printf("DMA Start Transfer\n");
+    /* Set HWAI ICR */
+    *(volatile ioport Uint16 *)0x0001 = 0xFC0E | (1<<9);
+    asm("   idle");
 
-        DMA_HwInit();
-        debug_printf("DMA HW INIT\n");
-        DMA_DrvInit();
-        debug_printf("DMA DrvInit\n");
+    /* Clock gate usused peripherals */
 
-        /* Initialize I2S and DMA channels for Playback and Record */
-        /* playback */
-        i2sInitPrms.enablePlayback = TRUE;
-        i2sInitPrms.enableStereoPb = TRUE;
-        i2sInitPrms.pingPongI2sTxLeftBuf = (Int16 *)my_i2sTxLeftBuf;  /* note: only Tx Left used for stereo, sample-by-sample Pb */
-        i2sInitPrms.sampleBySamplePb = FALSE;
-        i2sInitPrms.pingPongI2sTxRightBuf = (Int16 *)my_i2sTxRightBuf;
-        i2sInitPrms.i2sPb = PSP_I2S_TX_INST_ID;
-        /* record */
-        i2sInitPrms.enableRecord = TRUE;
-        i2sInitPrms.enableStereoRec = FALSE;
-        i2sInitPrms.pingPongI2sRxLeftBuf = (Int16 *)my_i2sRxLeftBuf;
-        i2sInitPrms.i2sRec = PSP_I2S_RX_INST_ID;
-        status = i2sInit(&i2sInitPrms);
-        if (status != I2SSAMPLE_SOK)
-        {
+    //ClockGating(); //LELE test UART
+    //debug_printf("ClokGating\n");
+    DDC_I2S_transEnable((DDC_I2SHandle)i2sHandleTx, TRUE); /* enable I2S transmit and receive */
 
-            debug_printf("ERROR: Unable to initialize I2S\n");
-            exit(EXIT_FAILURE);
-        }
-
-
-        /* Start left Rx DMA */
-        DMA_StartTransfer(hDmaRxLeft);
-        debug_printf("DMA Start Transfer\n");
-        /* Set HWAI ICR */
-        *(volatile ioport Uint16 *)0x0001 = 0xFC0E | (1<<9);
-        asm("   idle");
-
-        /* Clock gate usused peripherals */
-
-
-        //ClockGating(); //LELE test UART
-        //debug_printf("ClokGating\n");
-        DDC_I2S_transEnable((DDC_I2SHandle)i2sHandleTx, TRUE); /* enable I2S transmit and receive */
+    //RTC initilization from file
+    if( RTC_initRtcFromFile() )
+    	debug_printf("time.rtc doesn't exists\n");
+    else{
+    	debug_printf("RTC initialized from time.rtc file\n");
     }
 
     //read config from file
 	rc = f_open(&file_config, FILE_SHEDULER, FA_READ);
-	if(!rc){
+	if(!rc) {
   	// update rtc time
     	// first 2 bites are day
     	rc = f_read(&file_config,  &field, 1, &bw);
@@ -307,7 +302,7 @@ void CSL_acTest(void)
         	else if(field == 5)
         		frequency = 192000; // S_RATE_192KHz
         	step_per_second = frequency/DMA_BUFFER_SZ;
-        	debug_printf(" Field: %d Freq is %d step per second: %d\n", field, frequency, step_per_second);
+        	debug_printf(" Field: %d Freq is %ld step per second: %ld\n", field, frequency, step_per_second);
         	//gain
         	rc = f_read(&file_config,  &field, 1, &bw);
         	gain = field;
@@ -334,6 +329,11 @@ void CSL_acTest(void)
 
     // Initialize audio module
     result = set_sampling_frequency_gain_impedence(frequency, gain, impedence);
+    if (result != 0)
+    {
+        debug_printf("ERROR: Unable to configure audio codec\n");
+        exit(EXIT_FAILURE);
+    }
     Set_Mute_State(TRUE);
     debug_printf("Set_Mute_State true\n");
 
