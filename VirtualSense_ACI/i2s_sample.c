@@ -701,7 +701,6 @@ void I2S_DmaRxLChCallBack(
         {
             // NOTE: since we need datapack to be disabled on I2S tx, we need it disabled on I2S rx therefore
             // we get 2 words per DMA transfer so the offset into DMA buffers has to be twice as big
-
             recInLeftBuf = *ptrRxLeft;
             ptrRxLeft += 2;
             //circular_buffer_put(recInLeftBuf);

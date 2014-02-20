@@ -189,30 +189,9 @@ void initRTC()
 
 		/* Set the RTC interrupts */
 	}
-	//todo add check mode 1
-	status = RTC_setPeriodicInterval(CSL_RTC_MINS_PERIODIC_INTERRUPT);
-	if(status != CSL_SOK)
-	{
-		debug_printf("RTC_setPeriodicInterval Failed\n");
-		return;
-	}
-	else
-	{
-		debug_printf("RTC_setPeriodicInterval Successful\n");
-	}
 
-	/* Enable the RTC MINS interrupts */
-	status = RTC_eventEnable(CSL_RTC_MINSEVENT_INTERRUPT);
-	if(status != CSL_SOK)
-	{
-		debug_printf("RTC_eventEnable for MINS EVENT Failed\n");
-		return;
-	}
-	else
-	{
-		debug_printf("RTC_eventEnable for MINS EVENT Successful\n");
-	}
-//end todo
+	//RTC_initializaEventAfterMinute() removed 1min interrupt from here to main
+
 	/* Enable the RTC alarm interrupts */
 	/*status = RTC_eventEnable(CSL_RTC_ALARM_INTERRUPT);
 	if(status != CSL_SOK)
@@ -253,6 +232,32 @@ void initRTC()
 	} */
 }
 
+void RTC_initializaEventEveryMinute(){
+	CSL_Status    status;
+
+	status = RTC_setPeriodicInterval(CSL_RTC_MINS_PERIODIC_INTERRUPT);
+	if(status != CSL_SOK)
+	{
+		debug_printf("RTC_setPeriodicInterval Failed\n");
+		return;
+	}
+	else
+	{
+		debug_printf("RTC_setPeriodicInterval Successful\n");
+	}
+
+	/* Enable the RTC MINS interrupts */
+	status = RTC_eventEnable(CSL_RTC_MINSEVENT_INTERRUPT);
+	if(status != CSL_SOK)
+	{
+		debug_printf("RTC_eventEnable for MINS EVENT Failed\n");
+		return;
+	}
+	else
+	{
+		debug_printf("RTC_eventEnable for MINS EVENT Successful\n");
+	}
+}
 
 void RTC_scheduleAlarmAfterMinutes(unsigned short minutes){
 	CSL_RtcTime 	 actualTime;
@@ -279,7 +284,7 @@ void RTC_scheduleAlarmAfterMinutes(unsigned short minutes){
 	RTC_setAlarm(&nextAlarmTime);
 }
 
-unsigned char RTC_initRtcFromFile(){
+Int16 RTC_initRtcFromFile() {
 
 	FIL rtc_time_file;
 	UINT bw;
@@ -289,6 +294,7 @@ unsigned char RTC_initRtcFromFile(){
 	CSL_RtcTime 	 GetTime;
 	CSL_RtcDate 	 GetDate;
 
+	debug_printf("RTC_initRtcFromFile\n");
 	rc_fat = f_open(&rtc_time_file, RTC_FILE_CONFIG, FA_READ);
 	if(!rc_fat){
   	// update rtc time
@@ -313,30 +319,31 @@ unsigned char RTC_initRtcFromFile(){
     	debug_printf(" Min is %d \n", field);
     	GetTime.mins = field;
 
-    	debug_printf("Setting RTC date time to %d-%d-%d-_%d:%d.wav",GetDate.day,GetDate.month,GetDate.year, GetTime.hours, GetTime.mins);
+    	debug_printf(" Setting RTC date time to %d-%d-%d_%d:%d\n",GetDate.day,GetDate.month,GetDate.year, GetTime.hours, GetTime.mins);
     	/* Set the RTC time */
     	status = RTC_setTime(&GetTime);
     	if(status != CSL_SOK)
     	{
-    		debug_printf("RTC_setTime Failed\n");
+    		debug_printf(" RTC_setTime Failed\n");
     		return;
     	}
     	else
     	{
-    		debug_printf("RTC_setTime Successful\n");
+    		debug_printf(" RTC_setTime Successful\n");
     	}
 
     	/* Set the RTC date */
     	status = RTC_setDate(&GetDate);
     	if(status != CSL_SOK)
     	{
-    		debug_printf("RTC_setDate Failed\n");
+    		debug_printf(" RTC_setDate Failed\n");
     		return;
     	}
     	else
     	{
-    		debug_printf("RTC_setDate Successful\n");
+    		debug_printf(" RTC_setDate Successful\n");
     	}
+    	debug_printf("\n");
 
     	return 0;
 	}
@@ -364,6 +371,7 @@ unsigned char RTC_shutdownToRTCOnlyMonde(){
     // RTC configure
     asm("    *port(#0x1920) = #0x803F "); //clear interrupt flags
     asm("    *port(#0x1900) = #0x0001 "); //RTCINTEN enabled
+    //asm("    *port(#0x1924) = #0x8020 "); //EXTINTEN enabled
     asm("    *port(#0x1924) = #0x8024 "); //EXTINTEN enabled ALARM INT enabled MINUTES INT enabled
     asm("    *port(#0x1930) = #0x0000 "); //WU_DIR input
     count = 0;
@@ -398,7 +406,7 @@ unsigned char RTC_shutdownToRTCOnlyMonde(){
      }
      debug_printf("----should never happen ----\n");
      goto start;
-     return 1;//reset();
+     return 1;//todo reset();
 }
 
 

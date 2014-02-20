@@ -23,10 +23,14 @@
 #ifndef RTC_CONFIG_H
 #define RTC_CONFIG_H
 
+//#include <stdlib.h>
+//#include <stdio.h>
+
 unsigned short RTCNeedUpdate();
 void initRTC();
 void RTC_scheduleAlarmAfterMinutes(unsigned short minutes);
 void RTC_shutdownToRTCOnlyMonde();
+//Int16 RTC_initRtcFromFile();
 
 #endif
 

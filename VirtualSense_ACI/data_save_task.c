@@ -24,6 +24,8 @@
 #include "circular_buffer.h"
 #include "rtc.h"
 
+#include "wdt.h"
+
 #include "ff.h"
 #include "make_wav.h"
 
@@ -36,7 +38,6 @@ FIL wav_file;
 Uint32 step = 0;
 Uint32 my_step = 0;
 Uint16 file_is_open = 0;
-Uint16 file_counter = 0;
 
 void putDataIntoOpenFile(const void *buff, unsigned int number_of_bytes);
 extern unsigned char circular_buffer[PROCESS_BUFFER_SIZE];
@@ -63,9 +64,11 @@ void DataSaveTask(void)
 	Uint32 b_size = PROCESS_BUFFER_SIZE;
 
     //main loop
+	if(seconds > 0) //if second==0 don't save nothings
     while (1)
     {
     	//wait on semaphore released from a timer function
+    	wdt_Refresh();
     	SEM_pend(&SEM_TimerSave, SYS_FOREVER);
     	RTC_getDate(&GetDate);
     	RTC_getTime(&GetTime);
@@ -101,6 +104,7 @@ void DataSaveTask(void)
     	}*/
     	SEM_pend(&SEM_CloseFile, SYS_FOREVER);
     	close_wave_file(&wav_file);
+        wdt_Refresh();
     	file_is_open = 0;
         //directory_listing();
         file_counter++;
@@ -112,7 +116,9 @@ void DataSaveTask(void)
         // Put DSP into RTC only mode
         //RTC_scheduleAlarmAfterMinutes(1);
         //ToDo add check mode
-        RTC_shutdownToRTCOnlyMonde();
+        if(mode != MODE_ALWAYS_ON) {
+        	RTC_shutdownToRTCOnlyMonde();
+        }
      }
 }
 
@@ -120,6 +126,7 @@ void putDataIntoOpenFile(const void *buff, unsigned int number_of_bytes){
 	if(file_is_open){
 		write_data_to_wave(&wav_file, buff, number_of_bytes);
 		my_step++;
+        wdt_Refresh();
 	}
 	//if(my_step == ((SECONDS * STEP_PER_SECOND)+1)){
 	if(my_step == ((seconds * step_per_second)+1)){

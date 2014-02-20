@@ -76,15 +76,48 @@
 
 #define RTC_FILE_CONFIG											"time.rtc"
 #define FILE_SHEDULER											"scheduler.bin"
+#define FILE_COUNTER											"pc.bin"
+
+#define FW_VER "0.1"
+
+#define MODE_ALWAYS_ON	1
+#define MODE_EVERY_MINUT 2
+#define MODE_CALENDAR 3
 #endif
 
-extern unsigned char mode;
+/* Operation mode:
+ * 0 error
+ * 1 interrupt evry minute
+ * 2
+ */
+extern Uint8 mode;
+/* Frequency:
+ * 0 error
+ * 1 16KHZ
+ * 2 24KHZ
+ * 3 48KHZ
+ * 4 96KHZ
+ * 5 192KHz
+ */
 extern Uint32 frequency;
-extern Uint16 step_per_second;
-extern unsigned char gain;
-extern unsigned char impedence;
+extern Uint32 step_per_second;
+/* Gain:
+ * 1 byte from 0 to 50
+ */
+extern Uint8 gain;
+/* Impdence:
+ * 0x10 10K
+ * 0x20 20K
+ * 0x30 30K
+ */
+extern Uint8 impedence;
+/* Wav lenght:
+ * 0 no file
+ * 2 byte for lenght
+ */
 extern Uint16 seconds;
 
+extern Uint16 file_counter;
 /*****************************************************************************/
 /* End of main_config.h                                                        */
 /*****************************************************************************/

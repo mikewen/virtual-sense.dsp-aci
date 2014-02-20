@@ -75,6 +75,7 @@
 #include "cslr.h"
 #include "cslr_sysctrl.h"
 
+#include "wdt.h"
 #include "main_config.h"
 #include "circular_buffer.h"
 
@@ -88,12 +89,14 @@ CSL_Status  CSL_i2cPowerTest(void);
 void calculate_FFT(unsigned char *input, int size);
 
 FATFS fatfs;			/* File system object */
-unsigned char mode = 1;
+Uint8 mode = 1;
 Uint32 frequency = 3;
-Uint16 step_per_second;
-unsigned char gain = 40;
-unsigned char impedence = 3;
+Uint32 step_per_second = 187;//frequency/DMA_BUFFER_SZ;
+Uint8 gain = 40;
+Uint8 impedence = 3;
 Uint16 seconds = 5;
+Uint16 file_counter = 0;
+
 // Demo switch flag: 0 - power display, 1 - spectrum analyzer
 Uint16 DemoSwitchFlag = 1;
 
@@ -140,7 +143,7 @@ void main(void)
 {
     CSL_Status status;
     Uint32 gpioIoDir;
-    Uint32 j = 0;
+    //Uint32 j = 0;
 
 
     /* Clock gate all peripherals */
@@ -190,6 +193,14 @@ void main(void)
      /* Enable the USB LDO */
     //*(volatile ioport unsigned int *)(0x7004) |= 0x0001;
     init_debug_over_uart();
+
+    debug_printf(FW_VER);
+    //Initialize and start Watch dog
+    wdt_Init();
+
+    //wdt_test();
+       //debug_printf("fine wdg....\n");
+       //while(1);
 }
 
 /**
@@ -211,6 +222,7 @@ void CSL_acTest(void)
 	FIL file_config;
 
     debug_printf("Start Configuration....\n");
+
     //mount sdcard: must be High capacity(>4GB), standard capacuty have a problem
     rc = f_mount(0, &fatfs);
     if(rc)
@@ -225,6 +237,7 @@ void CSL_acTest(void)
 #endif
     //Initialize RTC
     initRTC();
+
     //Initialize I2S
     i2sTxBuffSz = 2*DMA_BUFFER_SZ;
     /* Reset codec output buffer */
@@ -236,9 +249,9 @@ void CSL_acTest(void)
     debug_printf("DMA INIT\n");
 
     DMA_HwInit();
-    debug_printf("DMA HW INIT\n");
+    debug_printf(" DMA HW INIT\n");
     DMA_DrvInit();
-    debug_printf("DMA DrvInit\n");
+    debug_printf(" DMA DrvInit\n");
 
     /* Initialize I2S and DMA channels for Playback and Record */
     /* playback */
@@ -256,13 +269,13 @@ void CSL_acTest(void)
     status = i2sInit(&i2sInitPrms);
     if (status != I2SSAMPLE_SOK)
     {
-        debug_printf("ERROR: Unable to initialize I2S\n");
+        debug_printf(" ERROR: Unable to initialize I2S\n");
         exit(EXIT_FAILURE);
     }
 
     /* Start left Rx DMA */
     DMA_StartTransfer(hDmaRxLeft);
-    debug_printf("DMA Start Transfer\n");
+    debug_printf(" DMA Start Transfer\n");
     /* Set HWAI ICR */
     *(volatile ioport Uint16 *)0x0001 = 0xFC0E | (1<<9);
     asm("   idle");
@@ -275,12 +288,30 @@ void CSL_acTest(void)
 
     //RTC initilization from file
     if( RTC_initRtcFromFile() )
-    	debug_printf("time.rtc doesn't exists\n");
+    	debug_printf("RTC: time.rtc doesn't exists\n");
     else{
-    	debug_printf("RTC initialized from time.rtc file\n");
+    	debug_printf("RTC: initialized from time.rtc file\n");
+    	//to enable delete: change _FS_MINIMIZE to 0 in ffconf.h
+    	//f_unlink (RTC_FILE_CONFIG);
+    	//debug_printf("time.rtc file deleted\n");
     }
 
+    //read file counter from file
+	rc = f_open(&file_config, FILE_COUNTER, FA_READ);
+	if(!rc) {
+  	// update rtc time
+    	// first 2 bites are day
+    	rc = f_read(&file_config,  &file_counter, 2, &bw);
+    	//file_counter = 16909060;
+    	if(rc == FR_OK)
+    		debug_printf("Program Counter is %ld \n", file_counter);
+    	else
+    		debug_printf("Program Counter Error\n");
+	}
+	else
+		debug_printf("Read program counter file error\n"); //error: file don't exist
     //read config from file
+	debug_printf("Read config file\n");
 	rc = f_open(&file_config, FILE_SHEDULER, FA_READ);
 	if(!rc) {
   	// update rtc time
@@ -288,7 +319,7 @@ void CSL_acTest(void)
     	rc = f_read(&file_config,  &field, 1, &bw);
     	debug_printf(" Mode is %d \n", field);
     	mode = field;
-    	if(mode == 1) {
+    	if(mode == MODE_EVERY_MINUT) {
     		//frequency
         	rc = f_read(&file_config,  &field, 1, &bw);
         	if(field == 1)
@@ -302,11 +333,9 @@ void CSL_acTest(void)
         	else if(field == 5)
         		frequency = 192000; // S_RATE_192KHz
         	step_per_second = frequency/DMA_BUFFER_SZ;
-        	debug_printf(" Field: %d Freq is %ld step per second: %ld\n", field, frequency, step_per_second);
         	//gain
         	rc = f_read(&file_config,  &field, 1, &bw);
         	gain = field;
-        	debug_printf(" Gain is %d \n", gain);
         	//impedence
         	rc = f_read(&file_config,  &field, 1, &bw);
         	if(field == 1)
@@ -315,7 +344,6 @@ void CSL_acTest(void)
         		impedence = 0x20; // IMPEDANCE_20K
            	else if(field == 3)
            		impedence = 0x30; // IMPEDANCE_40K
-        	debug_printf(" Impedence is 0x%x \n", impedence);
         	// seconds
         	rc = f_read(&file_config,  &field, 2, &bw);
         	debug_printf(" Seconds is %d \n", field);
@@ -325,13 +353,21 @@ void CSL_acTest(void)
     		debug_printf(" Mode not valid\n");
 	}
 	else
-		debug_printf("Read config file error\n"); //error: file don't exist
+		debug_printf(" Read config file error: default initialization value\n"); //error: file don't exist
+
+	if(mode == MODE_EVERY_MINUT) { //set 1min interrupt
+//		RTC_initializaEventEveryMinute();
+		debug_printf(" RTC_initializaEventAfterMinute()\n");
+	}
 
     // Initialize audio module
+	debug_printf(" Field: %d Freq is %ld step per second: %ld\n", field, frequency, step_per_second);
+	debug_printf(" Gain is %d \n", gain);
+	debug_printf(" Impedence is 0x%x \n", impedence);
     result = set_sampling_frequency_gain_impedence(frequency, gain, impedence);
     if (result != 0)
     {
-        debug_printf("ERROR: Unable to configure audio codec\n");
+        debug_printf(" ERROR: Unable to configure audio codec\n");
         exit(EXIT_FAILURE);
     }
     Set_Mute_State(TRUE);
