@@ -39,38 +39,38 @@ FRESULT open_wave_file(FIL *file, const TCHAR *filename, unsigned long sample_pe
 
 	byte_rate = sample_rate*num_channels*bytes_per_sample;
 
-	debug_printf("\nCreate a new file %s.\n", filename);
-	debug_printf("\nSampling rate %ld.\n", sample_rate);
+	//debug_printf("\nCreate a new file %s.\n", filename);
+	//debug_printf("\nSampling rate %ld.\n", sample_rate);
 	rc = f_open(file, filename, FA_WRITE | FA_CREATE_ALWAYS);
 	if (rc) debug_printf("Error creating file %d\n",rc);
 
 
-	debug_printf(  "\nWrite headers\n");
+	//debug_printf(  "\nWrite headers\n");
 	/* write RIFF header */
 	rc = f_write(file, "RIFF", 4, &bw);
 	if (rc) debug_printf("Error writing file %d\n",rc);
-	debug_printf("%u bytes written.\n", bw);
+	//debug_printf("%u bytes written.\n", bw);
 
 	write_little_endian(36 + bytes_per_sample* sample_rate*seconds*num_channels, 4); //TODO size in second
-	debug_printf("write the header  subchunk");
+	//debug_printf("write the header  subchunk");
 	/* write the header  subchunk */
 	rc = f_write(file, header, 4, &bw);
 	if (rc) debug_printf("Error writing file %d\n",rc);
-	debug_printf("%u bytes written.\n", bw);
+	//debug_printf("%u bytes written.\n", bw);
 	//print_header();
 
 	header_index = 0;
 
     rc = f_write(file, "WAVE", 4, &bw);
     if (rc) debug_printf("Error writing file %d\n",rc);
-    debug_printf("%u bytes written.\n", bw);
+    //debug_printf("%u bytes written.\n", bw);
 
     /* write fmt  subchunk */
     rc = f_write(file, "fmt ", 4, &bw);
     if (rc) debug_printf("Error writing file %d\n",rc);
-    debug_printf("%u bytes written.\n", bw);
+    //debug_printf("%u bytes written.\n", bw);
 
-    debug_printf("writing format\n");
+    //debug_printf("writing format\n");
     write_little_endian(16, 4);   /* SubChunk1Size is 16 */
     write_little_endian(1, 2);    /* PCM is format 1 */
     write_little_endian(num_channels, 2);
@@ -83,7 +83,7 @@ FRESULT open_wave_file(FIL *file, const TCHAR *filename, unsigned long sample_pe
     /* write the header  subchunk */
     rc = f_write(file, header, 20, &bw);
     if (rc) debug_printf("Error writing file %d\n",rc);
-    debug_printf("%u bytes written.\n", bw);
+    //debug_printf("%u bytes written.\n", bw);
     header_index = 0;
 
     //write header
@@ -91,15 +91,15 @@ FRESULT open_wave_file(FIL *file, const TCHAR *filename, unsigned long sample_pe
     /* write data subchunk */
     rc = f_write(file, "data", 4, &bw);
     if (rc) debug_printf("Error writing file %d\n",rc);
-    debug_printf("%u bytes written.\n", bw);
+    //debug_printf("%u bytes written.\n", bw);
 
-    debug_printf("write bytes_per_sample* num_samples*num_channels\n");
+    //debug_printf("write bytes_per_sample* num_samples*num_channels\n");
     write_little_endian(bytes_per_sample* sample_rate*seconds*num_channels, 4);
 
     /* write the header  subchunk */
     rc = f_write(file, header, 4, &bw);
     if (rc)debug_printf("Error writing file %d\n",rc);
-    debug_printf("%u bytes written.\n", bw);
+    //debug_printf("%u bytes written.\n", bw);
     //print_header();
     header_index = 0;
 

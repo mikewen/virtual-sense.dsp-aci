@@ -77,7 +77,7 @@ PLL_Handle hPll;
 #if ((defined(CHIP_5515)) || (defined(CHIP_5514)))
 
 //const PLL_Config pllCfg_12p288MHz   = {0x8173, 0x8000, 0x0806, 0x0000};
-//const PLL_Config pllCfg_40MHz       = {0x8988, 0x8000, 0x0806, 0x0201};
+const PLL_Config pllCfg_40MHz       = {0x8988, 0x8000, 0x0806, 0x0201};
 //const PLL_Config pllCfg_50MHz       = {0x8BE8, 0x8000, 0x0806, 0x0201};
 //const PLL_Config pllCfg_60MHz       = {0x8724, 0x8000, 0x0806, 0x0000};
 //const PLL_Config pllCfg_75MHz       = {0x88ED, 0x8000, 0x0806, 0x0000};
@@ -101,7 +101,7 @@ const PLL_Config pllCfg_120MHz    = {0x8392, 0xA000, 0x0806, 0x0000};
 
 PLL_Config *pConfigInfo;
 
-CSL_Status pll_sample()
+CSL_Status pll_sample(Uint16 clock)
 {
     CSL_Status status;
 	volatile int i;
@@ -124,8 +124,14 @@ CSL_Status pll_sample()
 
     /* Configure the PLL */
     //pConfigInfo = (PLL_Config *)&pllCfg_40MHz;
-    pConfigInfo = (PLL_Config *)&pllCfg_100MHz;
-    //pConfigInfo = (PLL_Config *)&pllCfg_120MHz;
+    if(clock == 40)
+       	pConfigInfo = (PLL_Config *)&pllCfg_40MHz;
+    else if(clock == 100)
+    	pConfigInfo = (PLL_Config *)&pllCfg_100MHz;
+    else if (clock == 120)
+    	pConfigInfo = (PLL_Config *)&pllCfg_120MHz;
+    else
+    	pConfigInfo = (PLL_Config *)&pllCfg_100MHz;
     //pConfigInfo = (PLL_Config *)&pllCfg_100MHz_ExtClk12Mhz;
     //pConfigInfo = (PLL_Config *)&pllCfg_120MHz_ExtClk12Mhz;
 

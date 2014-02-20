@@ -22,12 +22,12 @@ CSL_UartSetup uartSetup;
 
 
 
-void init_debug_over_uart(){
+void init_debug_over_uart(Uint16 clock){
 
 
 	    uartSetup.afeEnable = CSL_UART_NO_AFE;
 	    uartSetup.baud = 57600;
-	    uartSetup.clkInput = 100000000;
+	    uartSetup.clkInput = 1000000*clock;
 	    uartSetup.fifoControl = CSL_UART_FIFO_DISABLE;
 	    uartSetup.loopBackEnable = CSL_UART_NO_LOOPBACK;
 	    uartSetup.parity =  CSL_UART_DISABLE_PARITY;

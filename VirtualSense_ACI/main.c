@@ -89,7 +89,7 @@ CSL_Status  CSL_i2cPowerTest(void);
 void calculate_FFT(unsigned char *input, int size);
 
 FATFS fatfs;			/* File system object */
-Uint8 mode = 1;
+Uint8 mode = MODE_ALWAYS_ON;
 Uint32 frequency = 3;
 Uint32 step_per_second = 187;//frequency/DMA_BUFFER_SZ;
 Uint8 gain = 40;
@@ -167,7 +167,7 @@ void main(void)
     C5515_reset();
 
     /* Initialize DSP PLL */
-    status = pll_sample();
+    status = pll_sample(100);
     if (status != CSL_SOK)
     {
         exit(EXIT_FAILURE);
@@ -192,7 +192,7 @@ void main(void)
 
      /* Enable the USB LDO */
     //*(volatile ioport unsigned int *)(0x7004) |= 0x0001;
-    init_debug_over_uart();
+    init_debug_over_uart(100);
 
     debug_printf(FW_VER);
     //Initialize and start Watch dog
@@ -229,6 +229,101 @@ void CSL_acTest(void)
     	debug_printf("Error mounting volume\n");
     else
     	debug_printf("Mounting volume\n");
+
+
+    //RTC initilization from file
+	if( RTC_initRtcFromFile() )
+		debug_printf("RTC: time.rtc doesn't exists\n");
+	else{
+		debug_printf("RTC: initialized from time.rtc file\n");
+		//to enable delete: change _FS_MINIMIZE to 0 in ffconf.h
+		//f_unlink (RTC_FILE_CONFIG);
+		//debug_printf("time.rtc file deleted\n");
+	}
+
+	//read file counter from file
+	rc = f_open(&file_config, FILE_COUNTER, FA_READ);
+	if(!rc) {
+	// update rtc time
+		// first 2 bites are day
+		rc = f_read(&file_config,  &file_counter, 2, &bw);
+		//file_counter = 16909060;
+		if(rc == FR_OK)
+			debug_printf("Program Counter is %ld \n", file_counter);
+		else
+			debug_printf("Program Counter Error\n");
+	}
+	else
+		debug_printf("Read program counter file error\n"); //error: file don't exist
+	//read config from file
+	debug_printf("Read config file\n");
+	rc = f_open(&file_config, FILE_SHEDULER, FA_READ);
+	if(!rc) {
+	// update rtc time
+		// first 2 bites are day
+		rc = f_read(&file_config,  &field, 1, &bw);
+		debug_printf(" Mode is %d \n", field);
+		mode = field;
+		if( (mode == MODE_ALWAYS_ON) || (mode == MODE_EVERY_MINUT) ) {
+			//frequency
+			rc = f_read(&file_config,  &field, 1, &bw);
+			if(field == 1)
+				frequency = 16000; // S_RATE_16KHZ
+			else if(field == 2)
+				frequency = 24000; // S_RATE_24KHZ
+			else if(field == 3)
+				frequency = 48000; // S_RATE_48KHZ
+			else if(field == 4)
+				frequency = 96000; // S_RATE_96KHZ
+			else if(field == 5)
+				frequency = 192000; // S_RATE_192KHz
+			step_per_second = frequency/DMA_BUFFER_SZ;
+			//gain
+			rc = f_read(&file_config,  &field, 1, &bw);
+			gain = field;
+			//impedence
+			rc = f_read(&file_config,  &field, 1, &bw);
+			if(field == 1)
+				impedence = 0x10; // IMPEDANCE_10K
+			else if(field == 2)
+				impedence = 0x20; // IMPEDANCE_20K
+			else if(field == 3)
+				impedence = 0x30; // IMPEDANCE_40K
+			// seconds
+			rc = f_read(&file_config,  &field, 2, &bw);
+			debug_printf(" Seconds is %d \n", field);
+			seconds = field;
+		}
+		else
+			debug_printf(" Mode not valid\n");
+	}
+	else
+		debug_printf(" Read config file error: default initialization value\n"); //error: file don't exist
+
+	if(mode == MODE_EVERY_MINUT) { //set 1min interrupt
+		RTC_initializaEventEveryMinute();
+	}
+
+	// setting new clock
+	 /* Initialize DSP PLL */
+
+	if(frequency == 192000){
+		debug_printf(" Changing frequency\n");
+		status = pll_sample(120);
+		if (status != CSL_SOK)
+		{
+			exit(EXIT_FAILURE);
+		}
+		init_debug_over_uart(120);
+	}
+
+	// Initialize audio module
+	debug_printf(" Field: %d Freq is %ld step per second: %ld\n", field, frequency, step_per_second);
+	debug_printf(" Gain is %d \n", gain);
+	debug_printf(" Impedence is 0x%x \n", impedence);
+
+
+
 
 #ifdef C5535_EZDSP_DEMO
     /* Initialize the OLED display */
@@ -286,84 +381,7 @@ void CSL_acTest(void)
     //debug_printf("ClokGating\n");
     DDC_I2S_transEnable((DDC_I2SHandle)i2sHandleTx, TRUE); /* enable I2S transmit and receive */
 
-    //RTC initilization from file
-    if( RTC_initRtcFromFile() )
-    	debug_printf("RTC: time.rtc doesn't exists\n");
-    else{
-    	debug_printf("RTC: initialized from time.rtc file\n");
-    	//to enable delete: change _FS_MINIMIZE to 0 in ffconf.h
-    	//f_unlink (RTC_FILE_CONFIG);
-    	//debug_printf("time.rtc file deleted\n");
-    }
 
-    //read file counter from file
-	rc = f_open(&file_config, FILE_COUNTER, FA_READ);
-	if(!rc) {
-  	// update rtc time
-    	// first 2 bites are day
-    	rc = f_read(&file_config,  &file_counter, 2, &bw);
-    	//file_counter = 16909060;
-    	if(rc == FR_OK)
-    		debug_printf("Program Counter is %ld \n", file_counter);
-    	else
-    		debug_printf("Program Counter Error\n");
-	}
-	else
-		debug_printf("Read program counter file error\n"); //error: file don't exist
-    //read config from file
-	debug_printf("Read config file\n");
-	rc = f_open(&file_config, FILE_SHEDULER, FA_READ);
-	if(!rc) {
-  	// update rtc time
-    	// first 2 bites are day
-    	rc = f_read(&file_config,  &field, 1, &bw);
-    	debug_printf(" Mode is %d \n", field);
-    	mode = field;
-    	if(mode == MODE_EVERY_MINUT) {
-    		//frequency
-        	rc = f_read(&file_config,  &field, 1, &bw);
-        	if(field == 1)
-        		frequency = 16000; // S_RATE_16KHZ
-        	else if(field == 2)
-        		frequency = 24000; // S_RATE_24KHZ
-        	else if(field == 3)
-        		frequency = 48000; // S_RATE_48KHZ
-        	else if(field == 4)
-        		frequency = 96000; // S_RATE_96KHZ
-        	else if(field == 5)
-        		frequency = 192000; // S_RATE_192KHz
-        	step_per_second = frequency/DMA_BUFFER_SZ;
-        	//gain
-        	rc = f_read(&file_config,  &field, 1, &bw);
-        	gain = field;
-        	//impedence
-        	rc = f_read(&file_config,  &field, 1, &bw);
-        	if(field == 1)
-        		impedence = 0x10; // IMPEDANCE_10K
-        	else if(field == 2)
-        		impedence = 0x20; // IMPEDANCE_20K
-           	else if(field == 3)
-           		impedence = 0x30; // IMPEDANCE_40K
-        	// seconds
-        	rc = f_read(&file_config,  &field, 2, &bw);
-        	debug_printf(" Seconds is %d \n", field);
-        	seconds = field;
-    	}
-    	else
-    		debug_printf(" Mode not valid\n");
-	}
-	else
-		debug_printf(" Read config file error: default initialization value\n"); //error: file don't exist
-
-	if(mode == MODE_EVERY_MINUT) { //set 1min interrupt
-//		RTC_initializaEventEveryMinute();
-		debug_printf(" RTC_initializaEventAfterMinute()\n");
-	}
-
-    // Initialize audio module
-	debug_printf(" Field: %d Freq is %ld step per second: %ld\n", field, frequency, step_per_second);
-	debug_printf(" Gain is %d \n", gain);
-	debug_printf(" Impedence is 0x%x \n", impedence);
     result = set_sampling_frequency_gain_impedence(frequency, gain, impedence);
     if (result != 0)
     {

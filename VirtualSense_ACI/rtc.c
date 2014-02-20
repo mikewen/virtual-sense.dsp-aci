@@ -71,7 +71,7 @@ void initRTC()
 	rtcConfig.rtcseca   = 8;
 	rtcConfig.rtcmSeca  = 10;
 
-	rtcConfig.rtcintcr  = 0x803F;
+	rtcConfig.rtcintcr  = 0;//0x803F;
 
 	/* Set the RTC init structure */
 	/* RTC will be initialized with Giulia's born day
@@ -133,6 +133,7 @@ void initRTC()
 
 	IRQ_enable(RTC_EVENT);
 	IRQ_globalEnable();
+	RTC_eventDisable(CSL_RTC_MINSEVENT_INTERRUPT);
 
 	/* Reset the RTC */
 
@@ -207,29 +208,6 @@ void initRTC()
 	debug_printf("\nStarting the RTC\n\n");
 	/* Start the RTC */
 	RTC_start();
-
-	/* This loop will display the RTC time for 255 times */
-	/*while(rtcTimeCount--)
-	{
-	 	status = RTC_getTime(&GetTime);
-		if(status != CSL_SOK)
-		{
-			debug_printf("RTC_getTime Failed\n");
-			return;
-		}
-
-	 	status = RTC_getDate(&GetDate);
-		if(status != CSL_SOK)
-		{
-			debug_printf("RTC_getDate Failed\n");
-			return;
-		}
-
-		debug_printf("Iteration %d: ",iteration++);
-
-	    debug_printf("Time and Date is : %02d:%02d:%02d:%04d, %02d-%02d-%02d\n",
-		GetTime.hours,GetTime.mins,GetTime.secs,GetTime.mSecs,GetDate.day,GetDate.month,GetDate.year);
-	} */
 }
 
 void RTC_initializaEventEveryMinute(){
@@ -263,6 +241,7 @@ void RTC_scheduleAlarmAfterMinutes(unsigned short minutes){
 	CSL_RtcTime 	 actualTime;
 	CSL_RtcDate 	 actualDate;
 	CSL_RtcAlarm     nextAlarmTime;
+	CSL_Status		 status;
 
 
 	RTC_getDate(&actualDate);
@@ -281,7 +260,14 @@ void RTC_scheduleAlarmAfterMinutes(unsigned short minutes){
 	nextAlarmTime.secs  = actualTime.secs;
 	nextAlarmTime.mSecs = 00;
 
-	RTC_setAlarm(&nextAlarmTime);
+	status = RTC_setAlarm(&nextAlarmTime);
+
+	if(status != CSL_SOK)
+	{
+		debug_printf("RTC: setAlarm Failed\n");
+	} else {
+		debug_printf("RTC: setAlarm Successful\n");
+	}
 }
 
 Int16 RTC_initRtcFromFile() {
@@ -492,7 +478,7 @@ void rtc_minIntc(void)
     CSL_FINST(CSL_RTC_REGS->RTCINTFL, RTC_RTCINTFL_MINFL, SET);
     RTC_getTime(&GetTime);
     debug_printf("\nMIN INTERRUPT RTC actual time %d:%d:%d\n\n",GetTime.hours, GetTime.mins,GetTime.secs);
-    SEM_post(&SEM_TimerSave);
+    //SEM_post(&SEM_TimerSave);
 }
 
 void rtc_hourIntc(void)

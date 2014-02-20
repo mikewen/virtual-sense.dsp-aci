@@ -64,60 +64,47 @@ void DataSaveTask(void)
 	Uint32 b_size = PROCESS_BUFFER_SIZE;
 
     //main loop
-	if(seconds > 0) //if second==0 don't save nothings
     while (1)
     {
     	//wait on semaphore released from a timer function
     	wdt_Refresh();
-    	SEM_pend(&SEM_TimerSave, SYS_FOREVER);
-    	RTC_getDate(&GetDate);
-    	RTC_getTime(&GetTime);
-   		sprintf(file_name, "%d_%d_%d__%d-%d.wav",GetDate.day,GetDate.month,GetDate.year, GetTime.hours, GetTime.mins);
-    	clear_lcd();
-    	printstring("Creating   ");
-    	printstring(file_name);
-    	debug_printf("Creating a new file %s\n",file_name);
+    	if(seconds > 0) {//if second==0 don't save nothings
+			SEM_pend(&SEM_TimerSave, SYS_FOREVER);
+			RTC_getDate(&GetDate);
+			RTC_getTime(&GetTime);
+			sprintf(file_name, "%d_%d_%d__%d-%d-%d.wav",GetDate.day,GetDate.month,GetDate.year, GetTime.hours, GetTime.mins, GetTime.secs);
+			clear_lcd();
+			printstring("Creating   ");
+			printstring(file_name);
+			debug_printf("Creating a new file %s\n",file_name);
 
-    	//rc = open_wave_file(&wav_file, file_name, FREQUENCY, SECONDS);
-    	rc = open_wave_file(&wav_file, file_name, frequency, seconds);
-    	if(rc)
-    		debug_printf("Error opening a new wav file %d\n",rc);
-    	else
-    		file_is_open = 1;
-    	putDataIntoOpenFile((void *)circular_buffer, 468); // to fill first sector in order to increase performance
-    	// wave header is 44 bytes length
-    	//clear_lcd();
-    	SEM_reset(&SEM_BufferFull,0);
-    	//bufferOutIdx = 0;
-    	//bufferInIdx = 0;
-    	/*while (step < (SECONDS * STEP_PER_SECOND))
-    	{
-    		// wait on bufferIn ready semaphore
-    		SEM_pend(&SEM_BufferFull, SYS_FOREVER);
-
-    		write_data_to_wave(&wav_file, &circular_buffer[bufferOutIdx], burts_size_bytes);
-    		bufferOutIdx = ((bufferOutIdx + burts_size_bytes) % b_size);
-    		//debug_debug_printf(  "out log %ld\n",bufferOutIdx);
-        	//debug_debug_printf(   "buff %d in %d out %d\n",SEM_count(&SEM_BufferFull),bufferInIdx,bufferOutIdx);
-        	//printstring(".!");
-    		step++;
-    	}*/
-    	SEM_pend(&SEM_CloseFile, SYS_FOREVER);
-    	close_wave_file(&wav_file);
+			//rc = open_wave_file(&wav_file, file_name, FREQUENCY, SECONDS);
+			rc = open_wave_file(&wav_file, file_name, frequency, seconds);
+			if(rc)
+				debug_printf("Error opening a new wav file %d\n",rc);
+			else
+				file_is_open = 1;
+			putDataIntoOpenFile((void *)circular_buffer, 468); // to fill first sector in order to increase performance
+			// wave header is 44 bytes length
+			//clear_lcd();
+			SEM_reset(&SEM_BufferFull,0);
+			SEM_pend(&SEM_CloseFile, SYS_FOREVER);
+			close_wave_file(&wav_file);
+			file_is_open = 0;
+			//directory_listing();
+			file_counter++;
+			step = 0;
+	        //clear_lcd();
+	        //printstring("Done ");
+	        //printstring(file_name);
+	        debug_printf("File saved %s\n",file_name);
+    	}
         wdt_Refresh();
-    	file_is_open = 0;
-        //directory_listing();
-        file_counter++;
-        step = 0;
-        clear_lcd();
-        printstring("Done ");
-        printstring(file_name);
-        debug_printf("File saved %s\n",file_name);
         // Put DSP into RTC only mode
-        //RTC_scheduleAlarmAfterMinutes(1);
-        //ToDo add check mode
         if(mode != MODE_ALWAYS_ON) {
         	RTC_shutdownToRTCOnlyMonde();
+        } else {
+        	SEM_post(&SEM_TimerSave);
         }
      }
 }
