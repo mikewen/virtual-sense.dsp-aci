@@ -190,14 +190,12 @@ DRESULT disk_write (
         Uint16                  j = 0;
 
 
-
-        //printf("Writing %d bytes at address %d\n",noOfBytes,cardAddr);
+        //debug_printf("Writing %d bytes at address %d\n", noOfBytes, cardAddr);
         for(j=0; j < count; j++){
-                //printf("writing sector %d starting from add %d\n",count,cardAddr);
-                 for(i=0; i < 256; i++){
-                        writer_buffer[i] = ((buff[j*512+i*2+1] << 8)|(buff[j*512+i*2]));
-                        //debug_printf("%02x %02x\n",buff[j*512+i*2+1], buff[j*512+i*2]);
-
+        		//debug_printf("writing sector %d starting from add %d\n",count, cardAddr);
+                for(i=0; i < 256; i++){
+                        writer_buffer[i] = ((buff[j*512+i*2] << 8)|(buff[j*512+i*2+1]));
+                        //debug_printf("%x %x\n", buff[j*512+i*2+1], buff[j*512+i*2]);
                 }
                 status = MMC_write(mmcsdHandle, cardAddr, noOfBytes, writer_buffer);
                 if(status !=  CSL_SOK)
