@@ -67,7 +67,7 @@ void DataSaveTask(void)
     while (1)
     {
     	//wait on semaphore released from a timer function
-    	wdt_Refresh();
+    	//wdt_Refresh();
     	if(seconds > 0) {//if second==0 don't save nothings
 			SEM_pend(&SEM_TimerSave, SYS_FOREVER);
 			RTC_getDate(&GetDate);
@@ -99,7 +99,7 @@ void DataSaveTask(void)
 	        //printstring(file_name);
 	        debug_printf("File saved %s\n",file_name);
     	}
-        wdt_Refresh();
+        //wdt_Refresh();
         // Put DSP into RTC only mode
         if(mode != MODE_ALWAYS_ON) {
         	RTC_shutdownToRTCOnlyMonde();
@@ -113,7 +113,7 @@ void putDataIntoOpenFile(const void *buff, unsigned int number_of_bytes){
 	if(file_is_open){
 		write_data_to_wave(&wav_file, buff, number_of_bytes);
 		my_step++;
-        wdt_Refresh();
+        //wdt_Refresh();
 	}
 	//if(my_step == ((SECONDS * STEP_PER_SECOND)+1)){
 	if(my_step == ((seconds * step_per_second)+1)){

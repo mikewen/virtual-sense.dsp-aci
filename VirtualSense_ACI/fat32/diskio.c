@@ -194,7 +194,7 @@ DRESULT disk_write (
         for(j=0; j < count; j++){
         		//debug_printf("writing sector %d starting from add %d\n",count, cardAddr);
                 for(i=0; i < 256; i++){
-                        writer_buffer[i] = ((buff[j*512+i*2] << 8)|(buff[j*512+i*2+1]));
+                        writer_buffer[i] = ((buff[j*512+i*2+1] << 8)|(buff[j*512+i*2]));
                         //debug_printf("%x %x\n", buff[j*512+i*2+1], buff[j*512+i*2]);
                 }
                 status = MMC_write(mmcsdHandle, cardAddr, noOfBytes, writer_buffer);

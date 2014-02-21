@@ -193,10 +193,11 @@ void main(void)
      /* Enable the USB LDO */
     //*(volatile ioport unsigned int *)(0x7004) |= 0x0001;
     init_debug_over_uart(100);
-
+    debug_printf("Firmware version:");
     debug_printf(FW_VER);
+    debug_printf("\n");
     //Initialize and start Watch dog
-    wdt_Init();
+    //wdt_Init();
 
     //wdt_test();
        //debug_printf("fine wdg....\n");
