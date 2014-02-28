@@ -49,6 +49,14 @@
 								<option id="com.ti.ccstudio.buildDefinitions.C5500_4.4.compilerID.DEBUGGING_MODEL.203230480" name="Debugging model" superClass="com.ti.ccstudio.buildDefinitions.C5500_4.4.compilerID.DEBUGGING_MODEL" value="com.ti.ccstudio.buildDefinitions.C5500_4.4.compilerID.DEBUGGING_MODEL.SYMDEBUG__DWARF" valueType="enumerated"/>
 								<option id="com.ti.ccstudio.buildDefinitions.C5500_4.4.compilerID.INCLUDE_PATH.1501205806" name="Add dir to #include search path (--include_path, -I)" superClass="com.ti.ccstudio.buildDefinitions.C5500_4.4.compilerID.INCLUDE_PATH" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${CG_TOOL_ROOT}/include&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;C:\TI\ccsv5\tools\compiler\c5500_4.4.2\include&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;C:\c55_lp\c55_caf_02.00.02.04\dsplib\inc&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;C:\c55_lp\c55_caf_02.00.02.04\asrc\inc&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;C:\c55_lp\c55_caf_02.00.02.04\c55xx_csl\inc&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/fat32}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/wav_file}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;C:\c55_lp\c55_caf_02.00.02.04\inc&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${TCONF_OUTPUT_DIR}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${BIOS_INCLUDE_DIR}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${RTDX_INCLUDE_DIR}&quot;"/>
@@ -335,7 +343,7 @@
 			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="com.ti.ccstudio.buildDefinitions.C5500.Debug.909927643.1467903248" moduleId="org.eclipse.cdt.core.settings" name="Debug_c5535_eZdsp">
 				<macros>
 					<stringMacro name="ORIGINAL_PROJECT_ROOT" type="VALUE_PATH_DIR" value="C:/c55_lp/c55_caf_02.00.02.04/build/ccsv5"/>
-					<stringMacro name="COMMON_ROOT" type="VALUE_PATH_DIR" value="${ORIGINAL_PROJECT_ROOT}/../.."/>
+					<stringMacro name="COMMON_ROOT" type="VALUE_PATH_DIR" value="C:\c55_lp\c55_caf_02.00.02.04"/>
 				</macros>
 				<externalSettings/>
 				<extensions>

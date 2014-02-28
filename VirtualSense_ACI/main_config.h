@@ -83,6 +83,9 @@
 #define MODE_ALWAYS_ON	1
 #define MODE_EVERY_MINUT 2
 #define MODE_CALENDAR 3
+
+#define DEBUG_UART 0
+
 #endif
 
 /* Operation mode:

@@ -5,13 +5,14 @@
  *      Author: Emanuele Lattanzi
  */
 
-#if 1
 #include <stdio.h>
+
 #include "csl_uart.h"
 #include "csl_uartAux.h"
 #include "csl_general.h"
 
 #include "cslr_sysctrl.h"
+#include "main_config.h"
 
 CSL_UartObj 		uartObj;
 CSL_Status 			status;
@@ -23,7 +24,7 @@ CSL_UartSetup uartSetup;
 
 
 void init_debug_over_uart(Uint16 clock){
-
+#if DEBUG_UART
 
 	    uartSetup.afeEnable = CSL_UART_NO_AFE;
 	    uartSetup.baud = 57600;
@@ -64,16 +65,17 @@ void init_debug_over_uart(Uint16 clock){
        {
    		printf("UART_setup Successful\n");
        }
+#endif
 }
 
 
 void printdebug(const char *format, ...){
-
+#if DEBUG_UART
 	va_list arg;
 	int done;
 	va_start (arg, format);
 	done = vsprintf (uart_debugBuffer, format, arg);
     status = UART_fputs(hUart,uart_debugBuffer,0);
-}
 #endif
+}
 

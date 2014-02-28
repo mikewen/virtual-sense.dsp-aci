@@ -192,7 +192,9 @@ void main(void)
 
      /* Enable the USB LDO */
     //*(volatile ioport unsigned int *)(0x7004) |= 0x0001;
+#if DEBUG_UART
     init_debug_over_uart(100);
+#endif
     debug_printf("Firmware version:");
     debug_printf(FW_VER);
     debug_printf("\n");
@@ -377,8 +379,9 @@ void CSL_acTest(void)
     asm("   idle");
 
     /* Clock gate usused peripherals */
-
+#if !DEBUG_UART
     //ClockGating(); //LELE test UART
+#endif
     //debug_printf("ClokGating\n");
     DDC_I2S_transEnable((DDC_I2SHandle)i2sHandleTx, TRUE); /* enable I2S transmit and receive */
 
@@ -441,8 +444,10 @@ void ClockGating(void)
     CSL_FSET(CSL_SYSCTRL_REGS->CLKSTOP, 15, 0, clkstop_value);
     // wait for acknowledge
     while (CSL_FEXT(CSL_SYSCTRL_REGS->CLKSTOP, SYS_CLKSTOP_URTCLKSTPACK)==0);
+#if !DEBUG_UART
     // clock gating UART
-    //LELE to use UART pcgcr_value |= CSL_FMKT(SYS_PCGCR1_UARTCG, DISABLED);
+    pcgcr_value |= CSL_FMKT(SYS_PCGCR1_UARTCG, DISABLED);
+#endif
     // clock stop request for EMIF
     //clkstop_value = CSL_FMKT(SYS_CLKSTOP_EMFCLKSTPREQ, REQ);
     // write to CLKSTOP
