@@ -375,6 +375,7 @@
 							<tool id="com.ti.ccstudio.buildDefinitions.C5500_4.4.exe.compilerDebug.1196752203" name="C5500 Compiler" superClass="com.ti.ccstudio.buildDefinitions.C5500_4.4.exe.compilerDebug">
 								<option id="com.ti.ccstudio.buildDefinitions.C5500_4.4.compilerID.DEBUGGING_MODEL.1289507205" name="Debugging model" superClass="com.ti.ccstudio.buildDefinitions.C5500_4.4.compilerID.DEBUGGING_MODEL" value="com.ti.ccstudio.buildDefinitions.C5500_4.4.compilerID.DEBUGGING_MODEL.SYMDEBUG__DWARF" valueType="enumerated"/>
 								<option id="com.ti.ccstudio.buildDefinitions.C5500_4.4.compilerID.INCLUDE_PATH.285658521" name="Add dir to #include search path (--include_path, -I)" superClass="com.ti.ccstudio.buildDefinitions.C5500_4.4.compilerID.INCLUDE_PATH" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;C:\c55_lp\c55_csl_3.03\c55_csl_3.03\c55xx_csl\inc&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${CG_TOOL_ROOT}/include&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/fat32}&quot;"/>
@@ -385,7 +386,6 @@
 									<listOptionValue builtIn="false" value="&quot;${XDAIS_CG_ROOT}/packages/ti/xdais&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${COMMON_ROOT}/build&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${COMMON_ROOT}/inc&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${COMMON_ROOT}/c55xx_csl/inc&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${COMMON_ROOT}/c55x5_drivers/inc&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${COMMON_ROOT}/c55x5_drivers/i2c/inc&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${COMMON_ROOT}/c55x5_drivers/i2s/inc&quot;"/>
@@ -425,7 +425,7 @@
 								<option id="com.ti.ccstudio.buildDefinitions.C5500_4.4.linkerID.OUTPUT_FILE.739196473" name="Specify output file name (--output_file, -o)" superClass="com.ti.ccstudio.buildDefinitions.C5500_4.4.linkerID.OUTPUT_FILE" value="&quot;${PROJECT_BUILD_DIR}/CSL_USB_IsoFullSpeedExample_Out.out&quot;" valueType="string"/>
 								<option id="com.ti.ccstudio.buildDefinitions.C5500_4.4.linkerID.MAP_FILE.496952678" name="Input and output sections listed into &lt;file&gt; (--map_file, -m)" superClass="com.ti.ccstudio.buildDefinitions.C5500_4.4.linkerID.MAP_FILE" value="&quot;${PROJECT_BUILD_DIR}/CSL_USB_IsoFullSpeedExample_Out.map&quot;" valueType="string"/>
 								<option id="com.ti.ccstudio.buildDefinitions.C5500_4.4.linkerID.LIBRARY.1694217805" name="Include library file or command file as input (--library, -l)" superClass="com.ti.ccstudio.buildDefinitions.C5500_4.4.linkerID.LIBRARY" valueType="libs">
-									<listOptionValue builtIn="false" value="&quot;C:\c55_lp\c55_caf_02.00.02.04\c55xx_csl\build\ccsv5\Debug\cslVC5505_Lib.lib&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/C55XXCSL_LP/Release/C55XXCSL_LP.lib}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;dma_bios_drv_lib.lib&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;palos_bios_lib.lib&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;i2c_bios_drv_lib.lib&quot;"/>
@@ -435,6 +435,7 @@
 									<listOptionValue builtIn="false" value="&quot;55xdspx.lib&quot;"/>
 								</option>
 								<option id="com.ti.ccstudio.buildDefinitions.C5500_4.4.linkerID.SEARCH_PATH.476262718" name="Add &lt;dir&gt; to library search path (--search_path, -i)" superClass="com.ti.ccstudio.buildDefinitions.C5500_4.4.linkerID.SEARCH_PATH" valueType="stringList">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/C55XXCSL_LP/Release}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${CG_TOOL_ROOT}/lib&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${CG_TOOL_ROOT}/include&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${RTDX_LIB_DIR}&quot;"/>
@@ -448,7 +449,6 @@
 									<listOptionValue builtIn="false" value="&quot;${COMMON_ROOT}/c55x5_drivers/i2s/build/ccsv5/Debug&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${COMMON_ROOT}/c55x5_drivers/pal_os/build/ccsv5/Debug&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${COMMON_ROOT}/c55x5_drivers/pal_sys/build/ccsv5/Debug&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${COMMON_ROOT}/c55xx_csl/build/ccsv5/Debug&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${COMMON_ROOT}/dsplib/lib&quot;"/>
 								</option>
 								<option id="com.ti.ccstudio.buildDefinitions.C5500_4.4.linkerID.STACK_SIZE.1009154833" name="Set C system stack size (--stack_size, -stack)" superClass="com.ti.ccstudio.buildDefinitions.C5500_4.4.linkerID.STACK_SIZE" value="0x200" valueType="string"/>
@@ -495,7 +495,7 @@
 				<externalSettings containerId="i2s_bios_drv_lib;com.ti.ccstudio.buildDefinitions.C5500.Debug.1436042229" factoryId="org.eclipse.cdt.core.cfg.export.settings.sipplier"/>
 				<externalSettings containerId="palos_bios_lib;com.ti.ccstudio.buildDefinitions.C5500.Debug.918468723" factoryId="org.eclipse.cdt.core.cfg.export.settings.sipplier"/>
 				<externalSettings containerId="pal_sys_bios_lib;com.ti.ccstudio.buildDefinitions.C5500.Debug.378999123" factoryId="org.eclipse.cdt.core.cfg.export.settings.sipplier"/>
-				<externalSettings containerId="cslVC5505;" factoryId="org.eclipse.cdt.core.cfg.export.settings.sipplier"/>
+				<externalSettings containerId="C55XXCSL_LP;com.ti.ccstudio.buildDefinitions.C5500.Debug.2093066058" factoryId="org.eclipse.cdt.core.cfg.export.settings.sipplier"/>
 			</storageModule>
 		</cconfiguration>
 		<cconfiguration id="com.ti.ccstudio.buildDefinitions.C5500.Release.10488754.1655958476">

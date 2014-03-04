@@ -15,10 +15,12 @@
 #include <stdio.h>
 #include "debug_uart.h" // to redirect debug_printf over UART
 #include <csl_rtc.h>
+#include <csl_intc.h>
 #include "app_asrc.h"
 #include "VirtualSense_ACIcfg.h"
 #include "psp_i2s.h"
 #include "lcd_osd.h"
+#include "gpio_control.h"
 
 #include "main_config.h"
 #include "circular_buffer.h"
@@ -62,6 +64,8 @@ void DataSaveTask(void)
 	char file_name[128];
 	Uint32 burts_size_bytes = DMA_BUFFER_SZ * 2;
 	Uint32 b_size = PROCESS_BUFFER_SIZE;
+	Uint32 iterations = 0;
+	Uint32 index2 = 0;
 
     //main loop
     while (1)
@@ -85,6 +89,10 @@ void DataSaveTask(void)
 			else
 				file_is_open = 1;
 			putDataIntoOpenFile((void *)circular_buffer, 468); // to fill first sector in order to increase performance
+			for(iterations = 0; iterations <= ((seconds * step_per_second)+1); iterations++){
+							putDataIntoOpenFile((void *)circular_buffer, 512);
+							for(index2 =0; index2<10000;index2++); // is a wait loop
+			}
 			// wave header is 44 bytes length
 			//clear_lcd();
 			SEM_reset(&SEM_BufferFull,0);

@@ -6,13 +6,14 @@
 #include <csl_rtc.h>
 #include "diskio.h"             /* FatFs lower layer API */
 
-//#include <csl_mmcsd.h>
-//#include "chk_mmc.h"
-//#include "csl_sysctrl.h"
-//#include "sdcard.h"           /* Example: MMC/SDC contorl */
 
-#define CSL_SD_CLOCK_MAX_KHZ      (25000u)
 
+
+#include <csl_pll.h>
+#include "csl_sysctrl.h"
+
+
+#include "gpio_control.h"
 
 #define CSL_PLL_DIV_000    (0)
 #define CSL_PLL_DIV_001    (1u)
@@ -23,6 +24,9 @@
 #define CSL_PLL_DIV_006    (6u)
 #define CSL_PLL_DIV_007    (7u)
 #define CSL_PLL_CLOCKIN    (32768u)
+
+#define CSL_SD_CLOCK_MAX_KHZ      (20000u)
+#define CSL_MMC_CLOCK_MAX_KHZ     (5000u)
 
 
 
@@ -38,8 +42,10 @@ Uint16 writer_buffer[256];
 CSL_MMCControllerObj    pMmcsdContObj;
 CSL_MmcsdHandle                 mmcsdHandle;
 CSL_MMCCardObj                  mmcCardObj;
-CSL_MMCCardIdObj                sdCardIdObj;
-CSL_MMCCardCsdObj               sdCardCsdObj;
+CSL_MMCCardIdObj                cardIdObj;
+CSL_MMCCardObj					mmcCardObj;
+
+CSL_MMCCardCsdObj 		cardCsdObj;
 
 /* CSL DMA data structures */
 CSL_DMA_Handle        dmaWrHandle;
@@ -55,8 +61,7 @@ CSL_RtcDate      GetDate;
 
 
 CSL_Status configSdCard (CSL_MMCSDOpMode    opMode);
-Uint16 computeClkRate(void);
-
+Uint16 computeClkRate(Uint32    memMaxClk);
 
 
 /*-----------------------------------------------------------------------*/
@@ -190,6 +195,7 @@ DRESULT disk_write (
         Uint16                  j = 0;
 
 
+        dbgGpio2Write(1);
         //debug_printf("Writing %d bytes at address %d\n", noOfBytes, cardAddr);
         for(j=0; j < count; j++){
         		//debug_printf("writing sector %d starting from add %d\n",count, cardAddr);
@@ -203,6 +209,7 @@ DRESULT disk_write (
                 //printf("status = %d\n",status);
                 cardAddr++;
         }
+        dbgGpio2Write(0);
         return res;
 }
 #endif
@@ -260,239 +267,245 @@ DRESULT disk_ioctl (
 CSL_Status configSdCard (CSL_MMCSDOpMode    opMode)
 {
         CSL_Status     status;
+        CSL_Status     mmcStatus;
         CSL_MMCConfig  mm_config;
         Uint16             actCard;
         Uint16         clockDiv;
         Uint16         rca;
+        CSL_CardType       cardType;
 
-        /* Get the clock divider value for the current CPU frequency */
-        //clockDiv = computeClkRate();
-        clockDiv = 1;//computeClkRate(); //LELE: setting MMCSD bus speed to 25MHz
+    	cardType  = CSL_CARD_NONE;
 
-        /* Initialize MMCSD CSL module */
-        status = MMC_init();
+    	opMode    = CSL_MMCSD_OPMODE_DMA;
 
-
-
-        /* Open MMCSD CSL module */
-#ifdef C5515_EZDSP
-        mmcsdHandle = MMC_open(&pMmcsdContObj, CSL_MMCSD1_INST,
-                                                   opMode, &status);
-#else
-        mmcsdHandle = MMC_open(&pMmcsdContObj, CSL_MMCSD0_INST,
-                                                   opMode, &status);
-#endif
-        if(mmcsdHandle == NULL)
+    	/* Initialize MMCSD module */
+    	mmcStatus = MMC_init();
+        if (mmcStatus != CSL_SOK)
         {
-                printf("MMC_open Failed\n");
-                return (status);
-        }
-
-
-        /* Configure the DMA in case of operating mode is set to DMA */
-        if(opMode == CSL_MMCSD_OPMODE_DMA)
-        {
-                /* Initialize Dma */
-                /*status = DMA_init();
-                if (status != CSL_SOK)
-                {
-                        printf("DMA_init Failed!\n");
-                        return(status);
-                }*/
-
-                /* Open Dma channel for MMCSD write */
-                dmaWrHandle = DMA_open(CSL_DMA_CHAN0, &dmaWrChanObj, &status);
-                if((dmaWrHandle == NULL) || (status != CSL_SOK))
-                {
-                        printf("DMA_open for MMCSD Write Failed!\n");
-                        return(status);
-                }
-
-                /* Open Dma channel for MMCSD read */
-                dmaRdHandle = DMA_open(CSL_DMA_CHAN1, &dmaRdChanObj, &status);
-                if((dmaRdHandle == NULL) || (status != CSL_SOK))
-                {
-                        printf("DMA_open for MMCSD Read Failed!\n");
-                        return(status);
-                }
-
-                /* Set the DMA handle for MMC read */
-                status = MMC_setDmaHandle(mmcsdHandle, dmaWrHandle, dmaRdHandle);
-                if(status != CSL_SOK)
-                {
-                        printf("API: MMC_setDmaHandle for MMCSD Failed\n");
-                        return(status);
-                }
-        }
-
-        /* Reset the SD card */
-        status = MMC_sendGoIdle(mmcsdHandle);
-        if(status != CSL_SOK)
-        {
-                printf("MMC_sendGoIdle Failed\n");
-                return (status);
-        }
-
-        /* Check for the card */
-    status = MMC_selectCard(mmcsdHandle, &mmcCardObj);
-        if((status == CSL_ESYS_BADHANDLE) ||
-           (status == CSL_ESYS_INVPARAMS))
-        {
-                printf("MMC_selectCard Failed\n");
-                return (status);
-        }
-
-        /* Verify whether the SD card is detected or not */
-        if(mmcCardObj.cardType == CSL_SD_CARD)
-        {
-                printf("SD Card detected\n");
-
-                /* Check if the card is high capacity card */
-                if(mmcsdHandle->cardObj->sdHcDetected == TRUE)
-                {
-                        printf("SD card is High Capacity Card\n");
-                        printf("Memory Access will use Block Addressing\n");
-                }
-                else
-                {
-                        printf("SD card is Standard Capacity Card\n");
-                        printf("Memory Access will use Byte Addressing\n");
-                }
-        }
-        else
-        {
-                if(mmcCardObj.cardType == CSL_CARD_NONE)
-                {
-                        printf("No Card detected\n");
-                }
-                else
-                {
-                        printf("SD Card not detected\n");
-                }
-                printf("Please Insert SD Card\n");
-                return(CSL_ESYS_FAIL);
-        }
-
-        /* Set the init clock */
-    status = MMC_sendOpCond(mmcsdHandle, 70);
-        if(status != CSL_SOK)
-        {
-                printf("MMC_sendOpCond Failed\n");
-                return (status);
-        }
-
-        /* Send the card identification Data */
-        status = SD_sendAllCID(mmcsdHandle, &sdCardIdObj);
-        if(status != CSL_SOK)
-        {
-                printf("SD_sendAllCID Failed\n");
-                return (status);
-        }
-
-        /* Set the Relative Card Address */
-        status = SD_sendRca(mmcsdHandle, &mmcCardObj, &rca);
-        if(status != CSL_SOK)
-        {
-                printf("SD_sendRca Failed\n");
-                return (status);
-        }
-
-        /* Read the SD Card Specific Data */
-        status = SD_getCardCsd(mmcsdHandle, &sdCardCsdObj);
-        if(status != CSL_SOK)
-        {
-                printf("SD_getCardCsd Failed\n");
-                return (status);
-        }
-
-        /* Set the card type in internal data structures */
-        status = MMC_setCardType(&mmcCardObj, CSL_SD_CARD);
-        if(status != CSL_SOK)
-        {
-                printf("MMC_setCardType Failed\n");
-                return (status);
-        }
-
-        /* Set the card pointer in internal data structures */
-        status = MMC_setCardPtr(mmcsdHandle, &mmcCardObj);
-        if(status != CSL_SOK)
-        {
-                printf("MMC_setCardPtr Failed\n");
-                return (status);
-        }
-
-        /* Get the number of cards */
-        status = MMC_getNumberOfCards(mmcsdHandle, &actCard);
-        if(status != CSL_SOK)
-        {
-                printf("MMC_getNumberOfCards Failed\n");
-                return (status);
-        }
-
-
-        /* Set bus width - Optional */
-        status = SD_setBusWidth(mmcsdHandle, 1);
-        if(status != CSL_SOK)
-        {
-                printf("API: SD_setBusWidth Failed\n");
-                return(status);
-        }
-
-        /* Disable SD card pull-up resistors - Optional */
-        status = SD_configurePullup(mmcsdHandle, 0);
-        if(status != CSL_SOK)
-        {
-                printf("API: SD_configurePullup Failed\n");
-                return(status);
+            printf("API: MMC_init Failed!\n");
+            return(mmcStatus);
         }
 
 
 
-        /* Set clock for read-write access */
-    status = MMC_sendOpCond(mmcsdHandle, clockDiv);
-        if(status != CSL_SOK)
+    	/* Initialize Dma */
+        mmcStatus = DMA_init();
+        if (mmcStatus != CSL_SOK)
         {
-                printf("MMC_sendOpCond Failed\n");
-                return (status);
+            printf("API: DMA_init Failed!\n");
+            return(mmcStatus);
         }
 
-        /* Set Endian mode for read and write operations */
-        status = MMC_setEndianMode(mmcsdHandle, CSL_MMCSD_ENDIAN_LITTLE,
-                                   CSL_MMCSD_ENDIAN_LITTLE);
-        if(status != CSL_SOK)
+    	/* Open Dma channel for MMCSD write */
+    	dmaWrHandle = DMA_open(CSL_DMA_CHAN0, &dmaWrChanObj, &mmcStatus);
+        if((dmaWrHandle == NULL) || (mmcStatus != CSL_SOK))
         {
-                printf("MMC_setEndianMode Failed\n");
-                return(status);
+            printf("API: DMA_open for MMCSD Write Failed!\n");
+            return(mmcStatus);
         }
 
-        /* Set block length for the memory card
-         * For high capacity cards setting the block length will have
-         * no effect
-         */
-        status = MMC_setBlockLength(mmcsdHandle, CSL_MMCSD_BLOCK_LENGTH);
-        if(status != CSL_SOK)
+    	/* Open Dma channel for MMCSD read */
+    	dmaRdHandle = DMA_open(CSL_DMA_CHAN1, &dmaRdChanObj, &mmcStatus);
+        if((dmaRdHandle == NULL) || (mmcStatus != CSL_SOK))
         {
-                printf("MMC_setBlockLength Failed\n");
-                return(status);
+            printf("API: DMA_open for MMCSD Read Failed!\n");
+            return(mmcStatus);
         }
 
-        // LELE to enable 4 bit bus
-        /*      status = MMC_getConfig(mmcsdHandle, &mm_config);
-                if(status != CSL_SOK){
-                        printf("get config  Failed!\n");
-                        return(status);
-                }
+    	/* Open the MMCSD module */
+    #ifdef C5515_EZDSP
+    	mmcsdHandle = MMC_open(&pMmcsdContObj, CSL_MMCSD1_INST,	opMode, &mmcStatus);
+    #else
+    	mmcsdHandle = MMC_open(&pMmcsdContObj, CSL_MMCSD0_INST,	opMode, &mmcStatus);
+    #endif
+    	if((mmcStatus != CSL_SOK) || (mmcsdHandle == NULL))
+    	{
+    		printf("API: MMC_open Failed\n");
+            return(mmcStatus);
+    	}
 
-                mm_config.mmcctl |= 0x4;
-                status = MMC_config(mmcsdHandle, &mm_config);
-                if(status != CSL_SOK){
-                        printf("set  config  Failed!\n");
-                        return(status);
-                }
-                // LELE end to enable 4 bit bus
+    	/* Set the DMA handles */
+    	if(opMode == CSL_MMCSD_OPMODE_DMA)
+    	{
+    		/* Set the DMA handle for MMC read */
+    		mmcStatus = MMC_setDmaHandle(mmcsdHandle, dmaWrHandle, dmaRdHandle);
+    		if(mmcStatus != CSL_SOK)
+    		{
+    			printf("API: MMC_setDmaHandle for MMCSD Failed\n");
+    	        return(mmcStatus);
+    		}
+    	}
 
-        */
-        return (status);
+    	/* Send CMD0 to the card */
+    	mmcStatus = MMC_sendGoIdle(mmcsdHandle);
+    	if(mmcStatus != CSL_SOK)
+    	{
+    		printf("API: MMC_sendGoIdle Failed\n");
+    		return(mmcStatus);
+    	}
+
+    	/* Check for the card */
+        mmcStatus = MMC_selectCard(mmcsdHandle, &mmcCardObj);
+    	if((mmcStatus == CSL_ESYS_BADHANDLE) ||
+    	   (mmcStatus == CSL_ESYS_INVPARAMS))
+    	{
+    		printf("API: MMC_selectCard Failed\n");
+    		return(mmcStatus);
+    	}
+
+    	/* Verify whether valid memory card is detected or not */
+    	if(mmcCardObj.cardType == CSL_MMC_CARD)
+    	{
+    		printf("MMC Card Detected!\n\n");
+    		cardType = CSL_MMC_CARD;
+
+
+    		/* Send the MMC card identification Data */
+    		mmcStatus = MMC_sendAllCID(mmcsdHandle, &cardIdObj);
+    		if(mmcStatus != CSL_SOK)
+    		{
+    			printf("API: MMC_sendAllCID Failed\n");
+    			return(mmcStatus);
+    		}
+
+    		/* Set the MMC Relative Card Address */
+    		mmcStatus = MMC_setRca(mmcsdHandle, &mmcCardObj, 0x0001);
+    		if(mmcStatus != CSL_SOK)
+    		{
+    			printf("API: MMC_setRca Failed\n");
+    			return(mmcStatus);
+    		}
+
+    		/* Read the MMC Card Specific Data */
+    		mmcStatus = MMC_getCardCsd(mmcsdHandle, &cardCsdObj);
+    		if(mmcStatus != CSL_SOK)
+    		{
+    			printf("API: MMC_getCardCsd Failed\n");
+    			return(mmcStatus);
+    		}
+
+    		/* Get the clock divider value for the current CPU frequency */
+    		clockDiv = computeClkRate(CSL_MMC_CLOCK_MAX_KHZ);
+    	}
+    	else if(mmcCardObj.cardType == CSL_SD_CARD)
+    	{
+    		printf("SD Card Detected!\n");
+    		cardType = CSL_SD_CARD;
+
+    		/* Check if the card is high capacity card */
+    		if(mmcsdHandle->cardObj->sdHcDetected == TRUE)
+    		{
+    			printf("SD card is High Capacity Card\n");
+    			printf("Memory Access Uses Block Addressing\n\n");
+
+    			/* For the SDHC card Block addressing will be used.
+    			   Sector address will be same as sector number */
+
+    		}
+    		else
+    		{
+    			printf("SD card is Standard Capacity Card\n");
+    			printf("Memory Access Uses Byte Addressing\n\n");
+
+    			/* For the SD card Byte addressing will be used.
+    			   Sector address will be product of  sector number and sector size */
+
+    		}
+
+    		/* Set the init clock */
+    	    mmcStatus = MMC_sendOpCond(mmcsdHandle, 70);
+    		if(mmcStatus != CSL_SOK)
+    		{
+    			printf("API: MMC_sendOpCond Failed\n");
+    			return(mmcStatus);
+    		}
+
+    		/* Send the SD card identification Data */
+    		mmcStatus = SD_sendAllCID(mmcsdHandle, &cardIdObj);
+    		if(mmcStatus != CSL_SOK)
+    		{
+    			printf("API: SD_sendAllCID Failed\n");
+    			return(mmcStatus);
+    		}
+
+    		/* Set the SD Relative Card Address */
+    		mmcStatus = SD_sendRca(mmcsdHandle, &mmcCardObj, &rca);
+    		if(mmcStatus != CSL_SOK)
+    		{
+    			printf("API: SD_sendRca Failed\n");
+    			return(mmcStatus);
+    		}
+
+    		/* Read the SD Card Specific Data */
+    		mmcStatus = SD_getCardCsd(mmcsdHandle, &cardCsdObj);
+    		if(mmcStatus != CSL_SOK)
+    		{
+    			printf("API: SD_getCardCsd Failed\n");
+    			return(mmcStatus);
+    		}
+
+    		/* Get the clock divider value for the current CPU frequency */
+    		clockDiv = computeClkRate(CSL_SD_CLOCK_MAX_KHZ);
+    	}
+    	else
+    	{
+    		printf("NO Card Detected!\n");
+    		printf("Insert MMC/SD Card!\n");
+    		return(CSL_ESYS_FAIL);
+    	}
+
+    	/* Set the card type in internal data structures */
+    	mmcStatus = MMC_setCardType(&mmcCardObj, cardType);
+    	if(mmcStatus != CSL_SOK)
+    	{
+    		printf("API: MMC_setCardType Failed\n");
+    		return(mmcStatus);
+    	}
+
+    	/* Set the card pointer in internal data structures */
+    	mmcStatus = MMC_setCardPtr(mmcsdHandle, &mmcCardObj);
+    	if(mmcStatus != CSL_SOK)
+    	{
+    		printf("API: MMC_setCardPtr Failed\n");
+    		return(mmcStatus);
+    	}
+
+    	/* Get the number of cards */
+    	mmcStatus = MMC_getNumberOfCards(mmcsdHandle, &actCard);
+    	if(mmcStatus != CSL_SOK)
+    	{
+    		printf("API: MMC_getNumberOfCards Failed\n");
+    		return(mmcStatus);
+    	}
+
+    	/* Set clock for read-write access */
+    	mmcStatus = MMC_sendOpCond(mmcsdHandle, clockDiv);
+    	if(mmcStatus != CSL_SOK)
+    	{
+    		printf("API: MMC_sendOpCond Failed\n");
+    		return(mmcStatus);
+    	}
+
+    	/* Set Endian mode for read and write operations */
+      	mmcStatus = MMC_setEndianMode(mmcsdHandle, CSL_MMCSD_ENDIAN_LITTLE,
+      	                              CSL_MMCSD_ENDIAN_LITTLE);
+    	if(mmcStatus != CSL_SOK)
+    	{
+    		printf("API: MMC_setEndianMode Failed\n");
+    		return(mmcStatus);
+    	}
+
+    	/* Set block length for the memory card
+    	 * For high capacity cards setting the block length will have
+    	 * no effect
+    	 */
+    	mmcStatus = MMC_setBlockLength(mmcsdHandle, CSL_MMCSD_BLOCK_LENGTH);
+    	if(mmcStatus != CSL_SOK)
+    	{
+    		printf("API: MMC_setBlockLength Failed\n");
+    		return(mmcStatus);
+    	}
+    	return (mmcStatus);
 }
 
 /**
@@ -502,85 +515,83 @@ CSL_Status configSdCard (CSL_MMCSDOpMode    opMode)
  * CPU frequency. This value is used as clock divider value for
  * calling the API MMC_sendOpCond(). Value of the clock rate computed
  * by this function will change depending on the system clock value
- * and MMC maximum clock value defined by macro 'CSL_SD_CLOCK_MAX_KHZ'.
+ * and MMC maximum clock value passed as parameter to this function.
  * Minimum clock rate value returned by this function is 0 and
  * maximum clock rate value returned by this function is 255.
  * Clock derived using the clock rate returned by this API will be
- * the nearest value to 'CSL_SD_CLOCK_MAX_KHZ'.
+ * the nearest value to 'memMaxClk'.
  *
- *  \param    none
+ *  \param    memMaxClk  - Maximum memory clock rate
  *
  *  \return   MMC clock rate value
  */
-Uint16 computeClkRate(void)
+Uint16 computeClkRate(Uint32    memMaxClk)
 {
-        Uint32    sysClock;
-        Uint32    remainder;
-        Uint32    memMaxClk;
-        Uint16    clkRate;
+	Uint32    sysClock;
+	Uint32    remainder;
+	Uint16    clkRate;
 
-        sysClock  = 0;
-        remainder = 0;
-        memMaxClk = CSL_SD_CLOCK_MAX_KHZ;
-        clkRate   = 0;
+	sysClock  = 0;
+	remainder = 0;
+	clkRate   = 0;
 
-        /* Get the clock value at which CPU is running */
-        sysClock = getSysClk();
+	/* Get the clock value at which CPU is running */
+	sysClock = getSysClk();
 
-        if (sysClock > memMaxClk)
-        {
-                if (memMaxClk != 0)
-                {
-                        clkRate   = sysClock / memMaxClk;
-                        remainder = sysClock % memMaxClk;
+	if (sysClock > memMaxClk)
+	{
+		if (memMaxClk != 0)
+		{
+			clkRate   = sysClock / memMaxClk;
+			remainder = sysClock % memMaxClk;
 
             /*
              * If the remainder is not equal to 0, increment clock rate to make
              * sure that memory clock value is less than the value of
-             * 'CSL_SD_CLOCK_MAX_KHZ'.
+             * 'memMaxClk'.
              */
-                        if (remainder != 0)
-                        {
-                                clkRate++;
-                        }
+			if (remainder != 0)
+			{
+				clkRate++;
+			}
 
             /*
              * memory clock divider '(2 * (CLKRT + 1)' will always
              * be an even number. Increment the clock rate in case of
-             * clock rate is not an even number
+             * clock rate is not an even number.
              */
-                        if (clkRate%2 != 0)
-                        {
-                                clkRate++;
-                        }
+			if (clkRate%2 != 0)
+			{
+				clkRate++;
+			}
 
-                        /*
-                         * AT this point 'clkRate' holds the value of (2 * (CLKRT + 1).
-                         * Get the value of CLKRT.
-                         */
-                        clkRate = clkRate/2;
-                        clkRate = clkRate - 1;
+			/*
+			 * AT this point 'clkRate' holds the value of (2 * (CLKRT + 1).
+			 * Get the value of CLKRT.
+			 */
+			clkRate = clkRate/2;
+			clkRate = clkRate - 1;
 
-                        /*
-                         * If the clock rate is more than the maximum allowed clock rate
-                         * set the value of clock rate to maximum value.
-                         * This case will become true only when the value of
-                         * 'CSL_SD_CLOCK_MAX_KHZ' is less than the minimum possible
-                         * memory clock that can be generated at a particular CPU clock.
-                         *
-                         */
-                        if (clkRate > CSL_MMC_MAX_CLOCK_RATE)
-                        {
-                                clkRate = CSL_MMC_MAX_CLOCK_RATE;
-                        }
-                }
-                else
-                {
-                        clkRate = CSL_MMC_MAX_CLOCK_RATE;
-                }
-        }
+			/*
+			 * If the clock rate is more than the maximum allowed clock rate
+			 * set the value of clock rate to maximum value.
+			 * This case will become true only when the value of
+			 * 'memMaxClk' is less than the minimum possible
+			 * memory clock that can be generated at a particular CPU clock.
+			 *
+			 */
+			if (clkRate > CSL_MMC_MAX_CLOCK_RATE)
+			{
+				clkRate = CSL_MMC_MAX_CLOCK_RATE;
+			}
+		}
+		else
+		{
+			clkRate = CSL_MMC_MAX_CLOCK_RATE;
+		}
+	}
 
-        return (clkRate);
+	return 1;//LELE to speedup MMC(clkRate);
 }
 
 

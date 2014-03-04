@@ -45,6 +45,9 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+
+#include "csl_sysctrl.h"
+
 #include "debug_uart.h" // to redirect debug_printf over UART
 #include "rtc.h"
 #include "csl_types.h"
@@ -153,12 +156,20 @@ void main(void)
     // turn on led to turn on oscillator
     CSL_CPU_REGS->ST1_55 |= CSL_CPU_ST1_55_XF_MASK;
 
+#if 0
     /* SP0 Mode 2 (GP[5:0]) -- GPIO02/GPIO04 for debug  */
     CSL_FINST(CSL_SYSCTRL_REGS->EBSR, SYS_EBSR_SP0MODE, MODE2);
 
 
     /* SP1 Mode 2 (GP[11:6]) */
     CSL_FINST(CSL_SYSCTRL_REGS->EBSR, SYS_EBSR_SP1MODE, MODE2); /* need GPIO10 for AIC3204 reset */
+#endif
+
+    SYS_setEBSR(CSL_EBSR_FIELD_SP0MODE,
+                                   CSL_EBSR_SP0MODE_0);
+    SYS_setEBSR(CSL_EBSR_FIELD_SP1MODE,
+                                    CSL_EBSR_SP1MODE_0);
+
 
     /* PP Mode 1 (SPI, GPIO[17:12], UART, and I2S2) */
     CSL_FINST(CSL_SYSCTRL_REGS->EBSR, SYS_EBSR_PPMODE, MODE1);
@@ -180,15 +191,21 @@ void main(void)
 
     /* GPIO02 and GPIO04 for debug */
     /* GPIO10 for AIC3204 reset */
-    gpioIoDir = (((Uint32)CSL_GPIO_DIR_OUTPUT)<<CSL_GPIO_PIN2) | 
+    gpioIoDir = (((Uint32)CSL_GPIO_DIR_OUTPUT)<<CSL_GPIO_PIN2) |
         (((Uint32)CSL_GPIO_DIR_OUTPUT)<<CSL_GPIO_PIN4) |
-        (((Uint32)CSL_GPIO_DIR_OUTPUT)<<CSL_GPIO_PIN10);
+        (((Uint32)CSL_GPIO_DIR_OUTPUT)<<CSL_GPIO_PIN15)|
+        (((Uint32)CSL_GPIO_DIR_OUTPUT)<<CSL_GPIO_PIN16);
 
     status = gpioInit(gpioIoDir, 0x00000000, 0x00000000);
     if (status != GPIOCTRL_SOK)
     {
         exit(EXIT_FAILURE);
     }
+
+    dbgGpio1Write(0); //RED
+
+    dbgGpio2Write(0); // WHITE
+
 
      /* Enable the USB LDO */
     //*(volatile ioport unsigned int *)(0x7004) |= 0x0001;
@@ -204,6 +221,9 @@ void main(void)
     //wdt_test();
        //debug_printf("fine wdg....\n");
        //while(1);
+
+    // set the GPIO pin 10 - 11 to output, set SYS_GPIO_DIR0 (0x1C06) bit 10 and 11 to 1
+    //LELE *(volatile ioport unsigned int *)(0x1C06) |= 0x600;
 }
 
 /**
@@ -371,6 +391,7 @@ void CSL_acTest(void)
         exit(EXIT_FAILURE);
     }
 
+#if 1 // to remove sampling
     /* Start left Rx DMA */
     DMA_StartTransfer(hDmaRxLeft);
     debug_printf(" DMA Start Transfer\n");
@@ -396,6 +417,7 @@ void CSL_acTest(void)
     debug_printf("Set_Mute_State true\n");
 
     debug_printf("Initialization completed\n");
+#endif
 }
 
 /* Resets C5515 */

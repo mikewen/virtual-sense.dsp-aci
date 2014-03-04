@@ -30,8 +30,8 @@
 CSL_GpioObj gGpioObj;
 CSL_GpioObj *hGpio;
 
-#define DBG_GPIO1   ( CSL_GPIO_PIN2 )
-#define DBG_GPIO2   ( CSL_GPIO_PIN4 )
+#define DBG_GPIO1   ( CSL_GPIO_PIN15 )
+#define DBG_GPIO2   ( CSL_GPIO_PIN16 )
 
 // Debug GPIO's
 Int16 dbgGpio1State =0;

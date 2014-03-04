@@ -23,7 +23,7 @@ SECTIONS
     .scratch_buf		: > DARAM
     .data_br_buf 		: > DARAM
     .uart_debugBuffer	: > DARAM
-    .circular_buffer	: > SARAM
+    .circular_buffer	: > DARAM
 
     .charrom    : >  CROM
 }
