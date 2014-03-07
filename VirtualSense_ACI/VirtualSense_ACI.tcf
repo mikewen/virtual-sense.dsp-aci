@@ -58,6 +58,21 @@ bios.MEM.USERCOMMANDFILE = 0;
 bios.MEM.TEXTSEG = prog.get("SARAM");
 bios.MEM.USERCOMMANDFILE = 1;
 bios.SEM.create("SEM_CloseFile");
+bios.SEM.instance("SEM_BufferFull").destroy();
+bios.SEM.create("SEM_BufferNotEmpty");
+bios.SEM.instance("SEM_BufferEmpty").destroy();
+bios.SEM.create("SEM_BufferNotFull");
+bios.SEM.instance("SEM_BufferNotFull").count = 250;
+bios.SEM.instance("SEM_BufferNotFull").count = 1;
+bios.SEM.instance("SEM_BufferNotFull").count = 0;
+bios.SEM.instance("SEM_BufferNotEmpty").destroy();
+bios.SEM.create("SEM_BufferFull");
+bios.SEM.instance("SEM_BufferNotFull").destroy();
+bios.SEM.create("SEM_BufferEmpty");
+bios.SEM.instance("SEM_BufferFull").count = 70000;
+bios.SEM.instance("SEM_BufferFull").count = 273;
+bios.SEM.instance("SEM_BufferInReady").destroy();
+bios.SEM.instance("SEM_TimerSave").destroy();
 // !GRAPHICAL_CONFIG_TOOL_SCRIPT_INSERT_POINT!
 
 prog.gen();

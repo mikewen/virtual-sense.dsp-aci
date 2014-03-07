@@ -41,6 +41,7 @@
 #include "i2s_sample.h"
 #include "gpio_control.h"
 #include "VirtualSense_ACIcfg.h"
+
 #include <clk.h>
 
 #include "dbg_sdram.h"
@@ -56,9 +57,12 @@ PSP_Handle       i2sHandleRx;
 
 Uint16    fsError1 = 0;    /**< FSYNC gobal parameter                 */
 Uint16    ouError1 = 0;    /**< under/over run global parameter    */
+Int16 sample;
 //Uint16 outwrap = 0;
 
 extern Uint32 bufferInIdx;// = 0; //logical pointers
+extern Uint16 in_record;
+extern Int32 bufferInside;
 extern void putDataIntoOpenFile(const void *buff, unsigned int number_of_bytes);
 extern unsigned char circular_buffer[PROCESS_BUFFER_SIZE];
 
@@ -684,6 +688,7 @@ void I2S_DmaRxLChCallBack(
         Uint16 *ptrRxLeft;
         Uint16 i;
 
+
         dbgGpio1Write(0);
 #ifdef ENABLE_RECORD
     if ((dataCallback != NULL) && (dmaStatus == PSP_DMA_TRANSFER_COMPLETE))
@@ -697,24 +702,30 @@ void I2S_DmaRxLChCallBack(
         }
         left_rx_buf_sel ^= 0x1; /* update ping/pong */
         // copy data to the
+
         for (i = 0; i < DMA_BUFFER_SZ; i++)
         {
             // NOTE: since we need datapack to be disabled on I2S tx, we need it disabled on I2S rx therefore
             // we get 2 words per DMA transfer so the offset into DMA buffers has to be twice as big
             recInLeftBuf = *ptrRxLeft;
             ptrRxLeft += 2;
-            //circular_buffer_put(recInLeftBuf);
-            circular_buffer[bufferInIdx] =  (recInLeftBuf & 0xFF);
-            bufferInIdx = ((bufferInIdx+1) % PROCESS_BUFFER_SIZE);
-            circular_buffer[bufferInIdx] =  ((recInLeftBuf >> 8) & 0xFF);
-            bufferInIdx = ((bufferInIdx+1) % PROCESS_BUFFER_SIZE);
+
+            if(in_record && (bufferInside < PROCESS_BUFFER_SIZE/2)){
+
+            	circular_buffer[bufferInIdx] =  (recInLeftBuf & 0xFF);
+            	bufferInIdx = ((bufferInIdx+1) % PROCESS_BUFFER_SIZE);
+            	circular_buffer[bufferInIdx] =  ((recInLeftBuf >> 8) & 0xFF);
+            	bufferInIdx = ((bufferInIdx+1) % PROCESS_BUFFER_SIZE);
+            	bufferInside++;
+            }
         }
+       	//SEM_post(&SEM_BufferEmpty); // release a permit
+       	// a new sector is just inserted on the buffer
         //HIGHT_10();
         dbgGpio1Write(1);
-        putDataIntoOpenFile((void *)circular_buffer, PROCESS_BUFFER_SIZE);
+        //putDataIntoOpenFile((void *)circular_buffer, PROCESS_BUFFER_SIZE);
         //LOW_10();
-
-        bufferInIdx = 0;
+        //bufferInIdx = 0;
     }
     else
     {

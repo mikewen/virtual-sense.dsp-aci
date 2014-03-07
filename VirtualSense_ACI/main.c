@@ -187,7 +187,7 @@ void main(void)
 	/* GPIO10 for AIC3204 reset */
 	gpioIoDir = (((Uint32)CSL_GPIO_DIR_OUTPUT)<<CSL_GPIO_PIN2) |
 		  (((Uint32)CSL_GPIO_DIR_OUTPUT)<<CSL_GPIO_PIN4) |
-		   (((Uint32)CSL_GPIO_DIR_OUTPUT)<<CSL_GPIO_PIN15)|
+		   (((Uint32)CSL_GPIO_DIR_OUTPUT)<<CSL_GPIO_PIN14)| //WAS 15
 		   (((Uint32)CSL_GPIO_DIR_OUTPUT)<<CSL_GPIO_PIN16);
 
 	gpioInit(gpioIoDir, 0x00000000, 0x00000000);
@@ -225,10 +225,12 @@ void main(void)
     // set the GPIO pin 10 - 11 to output, set SYS_GPIO_DIR0 (0x1C06) bit 10 and 11 to 1
     //LELE *(volatile ioport unsigned int *)(0x1C06) |= 0x600;
     //mount sdcard: must be High capacity(>4GB), standard capacuty have a problem
-
+    init_all_peripheral();
 
 }
+void CSL_acTest(void){
 
+}
 /**
  *  \brief  Audio Class intialization function
  *
@@ -236,7 +238,7 @@ void main(void)
  *
  *  \return None
  */
-void CSL_acTest(void)
+init_all_peripheral(void)
 {
     I2sInitPrms i2sInitPrms;
     CSL_UsbConfig usbConfig;

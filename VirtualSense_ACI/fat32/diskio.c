@@ -202,7 +202,7 @@ DRESULT disk_write (
                 }
                 /*for(h=0;h<100000;h++){ */
                 	dbgGpio2Write(1);
-                	status = MMC_setWriteBlkEraseCnt(mmcsdHandle, 1);
+                	status = MMC_setWriteBlkEraseCnt(mmcsdHandle, 256);
 
                 	status |= MMC_write(mmcsdHandle, cardAddr, noOfBytes, writer_buffer);
                 	dbgGpio2Write(0);

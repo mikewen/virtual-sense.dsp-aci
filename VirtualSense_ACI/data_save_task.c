@@ -44,12 +44,14 @@ Uint16 file_is_open = 0;
 void putDataIntoOpenFile(const void *buff, unsigned int number_of_bytes);
 extern unsigned char circular_buffer[PROCESS_BUFFER_SIZE];
 //extern Uint32 bufferInIdx; //logical pointer
-//extern Uint32 bufferOutIdx; //logical pointer
+extern Uint32 bufferOutIdx; //logical pointer
+extern Int32 bufferInside; //number of item in buffer
+extern Uint16 in_record; //logical pointer
 
 // PRD function. Runs every 10 minutes to start sampling a new file
 void CreateNewFile(void){
 	debug_printf(  "Timer executes\n");
-	SEM_post(&SEM_TimerSave);
+
 }
 
 
@@ -73,7 +75,7 @@ void DataSaveTask(void)
     	//wait on semaphore released from a timer function
     	//wdt_Refresh();
     	if(seconds > 0) {//if second==0 don't save nothings
-			SEM_pend(&SEM_TimerSave, SYS_FOREVER);
+
 			RTC_getDate(&GetDate);
 			RTC_getTime(&GetTime);
 			sprintf(file_name, "%d_%d_%d__%d-%d-%d.wav",GetDate.day,GetDate.month,GetDate.year, GetTime.hours, GetTime.mins, GetTime.secs);
@@ -83,9 +85,19 @@ void DataSaveTask(void)
 			rc = open_wave_file(&wav_file, file_name, frequency, seconds);
 			if(rc)
 				debug_printf("Error opening a new wav file %d\n",rc);
-			else
+			else{
 				file_is_open = 1;
+				in_record = 1;
+			}
 			putDataIntoOpenFile((void *)circular_buffer, 468); // to fill first sector in order to increase performance
+			while(file_is_open){ // should be controlled by the file size????
+				while(bufferInside <= 255);//spin-lock to wait buffer samples
+
+				putDataIntoOpenFile((void *)(circular_buffer+bufferOutIdx), 512);
+				bufferOutIdx = ((bufferOutIdx + 512) % b_size);
+				bufferInside-=256; // sample number
+
+			}
 #if 0
 			for(iterations = 0; iterations <= 100000/*((seconds * step_per_second)+1)*/; iterations++){
 							putDataIntoOpenFile((void *)circular_buffer, 512);
@@ -96,10 +108,11 @@ void DataSaveTask(void)
 #endif
 			// wave header is 44 bytes length
 			//clear_lcd();
-			SEM_reset(&SEM_BufferFull,0);
+			//SEM_reset(&SEM_BufferFull,0);
 			SEM_pend(&SEM_CloseFile, SYS_FOREVER);
 			close_wave_file(&wav_file);
 			file_is_open = 0;
+			in_record = 0;
 			//directory_listing();
 			file_counter++;
 			step = 0;
@@ -111,7 +124,7 @@ void DataSaveTask(void)
         if(mode != MODE_ALWAYS_ON) {
         	RTC_shutdownToRTCOnlyMonde();
         } else {
-        	SEM_post(&SEM_TimerSave);
+        	//SEM_post(&SEM_TimerSave);
         }
      }
 }
@@ -125,6 +138,7 @@ void putDataIntoOpenFile(const void *buff, unsigned int number_of_bytes){
 	//if(my_step == ((SECONDS * STEP_PER_SECOND)+1)){
 	if(my_step == ((seconds * step_per_second)+1)){
 		file_is_open = 0;
+		in_record = 0;
 		my_step = 0;
 		SEM_post(&SEM_CloseFile);
 	}

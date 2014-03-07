@@ -500,7 +500,7 @@ void rtc_alarmEvt(void)
 {
     CSL_FINST(CSL_RTC_REGS->RTCINTFL, RTC_RTCINTFL_ALARMFL, SET);
     debug_printf("\nRTC Alarm Interrupt\n\n");
-    SEM_post(&SEM_TimerSave);
+    //SEM_post(&SEM_TimerSave);
 }
 
 

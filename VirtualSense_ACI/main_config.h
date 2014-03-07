@@ -66,12 +66,12 @@
 #define FFT_LENGHT                                            	   (1024)
 
 //#define SECONDS                                                      (10)
-#define PROCESS_BUFFER_SIZE                              		   (512L)
+#define PROCESS_BUFFER_SIZE                              		   (32768L)// multiple of number of sample in fat sector
 
 //number of DMA_BUFFER to cover one second
 //#define STEP_PER_SECOND                         (FREQUENCY/DMA_BUFFER_SZ)
 
-#define DMA_BUFFER_SZ      					   				       (256L) // number of sample in fat sector
+#define DMA_BUFFER_SZ      					   				       (256L)
 #define DMA_TARNSFER_SZ            						(2*DMA_BUFFER_SZ)
 
 #define RTC_FILE_CONFIG											"time.rtc"
