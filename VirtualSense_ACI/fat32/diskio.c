@@ -6,9 +6,6 @@
 #include <csl_rtc.h>
 #include "diskio.h"             /* FatFs lower layer API */
 
-
-
-
 #include <csl_pll.h>
 #include "csl_sysctrl.h"
 
@@ -27,7 +24,6 @@
 
 #define CSL_SD_CLOCK_MAX_KHZ      (20000u)
 #define CSL_MMC_CLOCK_MAX_KHZ     (5000u)
-
 
 
 static DWORD totalSectors;
@@ -193,9 +189,10 @@ DRESULT disk_write (
         Uint16          noOfBytes = (Uint16)512;
         Uint16                  i = 0;
         Uint16                  j = 0;
+        Uint32  				h = 0;
+        Uint32					index2 = 0;
 
 
-        dbgGpio2Write(1);
         //debug_printf("Writing %d bytes at address %d\n", noOfBytes, cardAddr);
         for(j=0; j < count; j++){
         		//debug_printf("writing sector %d starting from add %d\n",count, cardAddr);
@@ -203,13 +200,23 @@ DRESULT disk_write (
                         writer_buffer[i] = ((buff[j*512+i*2+1] << 8)|(buff[j*512+i*2]));
                         //debug_printf("%x %x\n", buff[j*512+i*2+1], buff[j*512+i*2]);
                 }
-                status = MMC_write(mmcsdHandle, cardAddr, noOfBytes, writer_buffer);
-                if(status !=  CSL_SOK)
-                        res = RES_ERROR;
+                /*for(h=0;h<100000;h++){ */
+                	dbgGpio2Write(1);
+                	status = MMC_setWriteBlkEraseCnt(mmcsdHandle, 1);
+
+                	status |= MMC_write(mmcsdHandle, cardAddr, noOfBytes, writer_buffer);
+                	dbgGpio2Write(0);
+                	if(status !=  CSL_SOK)
+                		res = RES_ERROR;
+                	/*cardAddr++;
+                	for(index2 =0; index2<100000;index2++){
+                		asm(" nop "); // is a wait loop
+                	}*/
+                /*}*/
                 //printf("status = %d\n",status);
                 cardAddr++;
         }
-        dbgGpio2Write(0);
+
         return res;
 }
 #endif
@@ -264,248 +271,257 @@ DRESULT disk_ioctl (
  *
  *  \return Test result
  */
-CSL_Status configSdCard (CSL_MMCSDOpMode    opMode)
+CSL_Status configSdCard (CSL_MMCSDOpMode    opModes)
 {
-        CSL_Status     status;
-        CSL_Status     mmcStatus;
-        CSL_MMCConfig  mm_config;
-        Uint16             actCard;
-        Uint16         clockDiv;
-        Uint16         rca;
-        CSL_CardType       cardType;
+	Uint32             sectCount;
+		Uint32             cardAddr;
+		Uint32             index;
+		Uint32             index2;
+		CSL_Status	       mmcStatus;
+		CSL_Status	       status;
+		Uint16		       count;
+		Uint16		       actCard;
+		Uint16             rca;
+		Uint16             clockDiv;
+		CSL_CardType       cardType;
+		CSL_MMCSDOpMode    opMode;
+		Uint32 gpioIoDir;
 
-    	cardType  = CSL_CARD_NONE;
+		cardType  = CSL_CARD_NONE;
+		sectCount = 0;
+		opMode    = CSL_MMCSD_OPMODE_DMA;
 
-    	opMode    = CSL_MMCSD_OPMODE_DMA;
+		/* Initialize MMCSD module */
 
-    	/* Initialize MMCSD module */
-    	mmcStatus = MMC_init();
-        if (mmcStatus != CSL_SOK)
-        {
-            printf("API: MMC_init Failed!\n");
-            return(mmcStatus);
-        }
+		dbgGpio1Write(0); //RED
 
-
-
-    	/* Initialize Dma */
-        mmcStatus = DMA_init();
-        if (mmcStatus != CSL_SOK)
-        {
-            printf("API: DMA_init Failed!\n");
-            return(mmcStatus);
-        }
-
-    	/* Open Dma channel for MMCSD write */
-    	dmaWrHandle = DMA_open(CSL_DMA_CHAN0, &dmaWrChanObj, &mmcStatus);
-        if((dmaWrHandle == NULL) || (mmcStatus != CSL_SOK))
-        {
-            printf("API: DMA_open for MMCSD Write Failed!\n");
-            return(mmcStatus);
-        }
-
-    	/* Open Dma channel for MMCSD read */
-    	dmaRdHandle = DMA_open(CSL_DMA_CHAN1, &dmaRdChanObj, &mmcStatus);
-        if((dmaRdHandle == NULL) || (mmcStatus != CSL_SOK))
-        {
-            printf("API: DMA_open for MMCSD Read Failed!\n");
-            return(mmcStatus);
-        }
-
-    	/* Open the MMCSD module */
-    #ifdef C5515_EZDSP
-    	mmcsdHandle = MMC_open(&pMmcsdContObj, CSL_MMCSD1_INST,	opMode, &mmcStatus);
-    #else
-    	mmcsdHandle = MMC_open(&pMmcsdContObj, CSL_MMCSD0_INST,	opMode, &mmcStatus);
-    #endif
-    	if((mmcStatus != CSL_SOK) || (mmcsdHandle == NULL))
-    	{
-    		printf("API: MMC_open Failed\n");
-            return(mmcStatus);
-    	}
-
-    	/* Set the DMA handles */
-    	if(opMode == CSL_MMCSD_OPMODE_DMA)
-    	{
-    		/* Set the DMA handle for MMC read */
-    		mmcStatus = MMC_setDmaHandle(mmcsdHandle, dmaWrHandle, dmaRdHandle);
-    		if(mmcStatus != CSL_SOK)
-    		{
-    			printf("API: MMC_setDmaHandle for MMCSD Failed\n");
-    	        return(mmcStatus);
-    		}
-    	}
-
-    	/* Send CMD0 to the card */
-    	mmcStatus = MMC_sendGoIdle(mmcsdHandle);
-    	if(mmcStatus != CSL_SOK)
-    	{
-    		printf("API: MMC_sendGoIdle Failed\n");
-    		return(mmcStatus);
-    	}
-
-    	/* Check for the card */
-        mmcStatus = MMC_selectCard(mmcsdHandle, &mmcCardObj);
-    	if((mmcStatus == CSL_ESYS_BADHANDLE) ||
-    	   (mmcStatus == CSL_ESYS_INVPARAMS))
-    	{
-    		printf("API: MMC_selectCard Failed\n");
-    		return(mmcStatus);
-    	}
-
-    	/* Verify whether valid memory card is detected or not */
-    	if(mmcCardObj.cardType == CSL_MMC_CARD)
-    	{
-    		printf("MMC Card Detected!\n\n");
-    		cardType = CSL_MMC_CARD;
+	    dbgGpio2Write(0); // WHITE
 
 
-    		/* Send the MMC card identification Data */
-    		mmcStatus = MMC_sendAllCID(mmcsdHandle, &cardIdObj);
-    		if(mmcStatus != CSL_SOK)
-    		{
-    			printf("API: MMC_sendAllCID Failed\n");
-    			return(mmcStatus);
-    		}
+	    if(CSL_SOK != mmcStatus)
+	    {
+	        printf("SYS_setEBSR failed\n");
+	        return (mmcStatus);
+	    }
 
-    		/* Set the MMC Relative Card Address */
-    		mmcStatus = MMC_setRca(mmcsdHandle, &mmcCardObj, 0x0001);
-    		if(mmcStatus != CSL_SOK)
-    		{
-    			printf("API: MMC_setRca Failed\n");
-    			return(mmcStatus);
-    		}
+		/* Initialize Dma */
+	    mmcStatus = DMA_init();
+	    if (mmcStatus != CSL_SOK)
+	    {
+	        printf("API: DMA_init Failed!\n");
+	        return(mmcStatus);
+	    }
 
-    		/* Read the MMC Card Specific Data */
-    		mmcStatus = MMC_getCardCsd(mmcsdHandle, &cardCsdObj);
-    		if(mmcStatus != CSL_SOK)
-    		{
-    			printf("API: MMC_getCardCsd Failed\n");
-    			return(mmcStatus);
-    		}
+		/* Open Dma channel for MMCSD write */
+		dmaWrHandle = DMA_open(CSL_DMA_CHAN0, &dmaWrChanObj, &mmcStatus);
+	    if((dmaWrHandle == NULL) || (mmcStatus != CSL_SOK))
+	    {
+	        printf("API: DMA_open for MMCSD Write Failed!\n");
+	        return(mmcStatus);
+	    }
 
-    		/* Get the clock divider value for the current CPU frequency */
-    		clockDiv = computeClkRate(CSL_MMC_CLOCK_MAX_KHZ);
-    	}
-    	else if(mmcCardObj.cardType == CSL_SD_CARD)
-    	{
-    		printf("SD Card Detected!\n");
-    		cardType = CSL_SD_CARD;
+		/* Open Dma channel for MMCSD read */
+		dmaRdHandle = DMA_open(CSL_DMA_CHAN1, &dmaRdChanObj, &mmcStatus);
+	    if((dmaRdHandle == NULL) || (mmcStatus != CSL_SOK))
+	    {
+	        printf("API: DMA_open for MMCSD Read Failed!\n");
+	        return(mmcStatus);
+	    }
 
-    		/* Check if the card is high capacity card */
-    		if(mmcsdHandle->cardObj->sdHcDetected == TRUE)
-    		{
-    			printf("SD card is High Capacity Card\n");
-    			printf("Memory Access Uses Block Addressing\n\n");
+		/* Open the MMCSD module */
+	#ifdef C5515_EZDSP
+		mmcsdHandle = MMC_open(&pMmcsdContObj, CSL_MMCSD1_INST,	opMode, &mmcStatus);
+	#else
+		mmcsdHandle = MMC_open(&pMmcsdContObj, CSL_MMCSD0_INST,	opMode, &mmcStatus);
+	#endif
+		if((mmcStatus != CSL_SOK) || (mmcsdHandle == NULL))
+		{
+			printf("API: MMC_open Failed\n");
+	        return(mmcStatus);
+		}
 
-    			/* For the SDHC card Block addressing will be used.
-    			   Sector address will be same as sector number */
+		/* Set the DMA handles */
+		if(opMode == CSL_MMCSD_OPMODE_DMA)
+		{
+			/* Set the DMA handle for MMC read */
+			mmcStatus = MMC_setDmaHandle(mmcsdHandle, dmaWrHandle, dmaRdHandle);
+			if(mmcStatus != CSL_SOK)
+			{
+				printf("API: MMC_setDmaHandle for MMCSD Failed\n");
+		        return(mmcStatus);
+			}
+		}
 
-    		}
-    		else
-    		{
-    			printf("SD card is Standard Capacity Card\n");
-    			printf("Memory Access Uses Byte Addressing\n\n");
+		/* Send CMD0 to the card */
+		mmcStatus = MMC_sendGoIdle(mmcsdHandle);
+		if(mmcStatus != CSL_SOK)
+		{
+			printf("API: MMC_sendGoIdle Failed\n");
+			return(mmcStatus);
+		}
 
-    			/* For the SD card Byte addressing will be used.
-    			   Sector address will be product of  sector number and sector size */
+		/* Check for the card */
+	    mmcStatus = MMC_selectCard(mmcsdHandle, &mmcCardObj);
+		if((mmcStatus == CSL_ESYS_BADHANDLE) ||
+		   (mmcStatus == CSL_ESYS_INVPARAMS))
+		{
+			printf("API: MMC_selectCard Failed\n");
+			return(mmcStatus);
+		}
 
-    		}
+		/* Verify whether valid memory card is detected or not */
+		if(mmcCardObj.cardType == CSL_MMC_CARD)
+		{
+			printf("MMC Card Detected!\n\n");
+			cardType = CSL_MMC_CARD;
+			cardAddr = (sectCount)*(CSL_MMCSD_BLOCK_LENGTH);
 
-    		/* Set the init clock */
-    	    mmcStatus = MMC_sendOpCond(mmcsdHandle, 70);
-    		if(mmcStatus != CSL_SOK)
-    		{
-    			printf("API: MMC_sendOpCond Failed\n");
-    			return(mmcStatus);
-    		}
+			/* Send the MMC card identification Data */
+			mmcStatus = MMC_sendAllCID(mmcsdHandle, &cardIdObj);
+			if(mmcStatus != CSL_SOK)
+			{
+				printf("API: MMC_sendAllCID Failed\n");
+				return(mmcStatus);
+			}
 
-    		/* Send the SD card identification Data */
-    		mmcStatus = SD_sendAllCID(mmcsdHandle, &cardIdObj);
-    		if(mmcStatus != CSL_SOK)
-    		{
-    			printf("API: SD_sendAllCID Failed\n");
-    			return(mmcStatus);
-    		}
+			/* Set the MMC Relative Card Address */
+			mmcStatus = MMC_setRca(mmcsdHandle, &mmcCardObj, 0x0001);
+			if(mmcStatus != CSL_SOK)
+			{
+				printf("API: MMC_setRca Failed\n");
+				return(mmcStatus);
+			}
 
-    		/* Set the SD Relative Card Address */
-    		mmcStatus = SD_sendRca(mmcsdHandle, &mmcCardObj, &rca);
-    		if(mmcStatus != CSL_SOK)
-    		{
-    			printf("API: SD_sendRca Failed\n");
-    			return(mmcStatus);
-    		}
+			/* Read the MMC Card Specific Data */
+			mmcStatus = MMC_getCardCsd(mmcsdHandle, &cardCsdObj);
+			if(mmcStatus != CSL_SOK)
+			{
+				printf("API: MMC_getCardCsd Failed\n");
+				return(mmcStatus);
+			}
 
-    		/* Read the SD Card Specific Data */
-    		mmcStatus = SD_getCardCsd(mmcsdHandle, &cardCsdObj);
-    		if(mmcStatus != CSL_SOK)
-    		{
-    			printf("API: SD_getCardCsd Failed\n");
-    			return(mmcStatus);
-    		}
+			/* Get the clock divider value for the current CPU frequency */
+			clockDiv = computeClkRate(CSL_MMC_CLOCK_MAX_KHZ);
+		}
+		else if(mmcCardObj.cardType == CSL_SD_CARD)
+		{
+			printf("SD Card Detected!\n");
+			cardType = CSL_SD_CARD;
 
-    		/* Get the clock divider value for the current CPU frequency */
-    		clockDiv = computeClkRate(CSL_SD_CLOCK_MAX_KHZ);
-    	}
-    	else
-    	{
-    		printf("NO Card Detected!\n");
-    		printf("Insert MMC/SD Card!\n");
-    		return(CSL_ESYS_FAIL);
-    	}
+			/* Check if the card is high capacity card */
+			if(mmcsdHandle->cardObj->sdHcDetected == TRUE)
+			{
+				printf("SD card is High Capacity Card\n");
+				printf("Memory Access Uses Block Addressing\n\n");
 
-    	/* Set the card type in internal data structures */
-    	mmcStatus = MMC_setCardType(&mmcCardObj, cardType);
-    	if(mmcStatus != CSL_SOK)
-    	{
-    		printf("API: MMC_setCardType Failed\n");
-    		return(mmcStatus);
-    	}
+				/* For the SDHC card Block addressing will be used.
+				   Sector address will be same as sector number */
+				cardAddr = sectCount;
+			}
+			else
+			{
+				printf("SD card is Standard Capacity Card\n");
+				printf("Memory Access Uses Byte Addressing\n\n");
 
-    	/* Set the card pointer in internal data structures */
-    	mmcStatus = MMC_setCardPtr(mmcsdHandle, &mmcCardObj);
-    	if(mmcStatus != CSL_SOK)
-    	{
-    		printf("API: MMC_setCardPtr Failed\n");
-    		return(mmcStatus);
-    	}
+				/* For the SD card Byte addressing will be used.
+				   Sector address will be product of  sector number and sector size */
+				cardAddr = (sectCount)*(CSL_MMCSD_BLOCK_LENGTH);
+			}
 
-    	/* Get the number of cards */
-    	mmcStatus = MMC_getNumberOfCards(mmcsdHandle, &actCard);
-    	if(mmcStatus != CSL_SOK)
-    	{
-    		printf("API: MMC_getNumberOfCards Failed\n");
-    		return(mmcStatus);
-    	}
+			/* Set the init clock */
+		    mmcStatus = MMC_sendOpCond(mmcsdHandle, 70);
+			if(mmcStatus != CSL_SOK)
+			{
+				printf("API: MMC_sendOpCond Failed\n");
+				return(mmcStatus);
+			}
 
-    	/* Set clock for read-write access */
-    	mmcStatus = MMC_sendOpCond(mmcsdHandle, clockDiv);
-    	if(mmcStatus != CSL_SOK)
-    	{
-    		printf("API: MMC_sendOpCond Failed\n");
-    		return(mmcStatus);
-    	}
+			/* Send the SD card identification Data */
+			mmcStatus = SD_sendAllCID(mmcsdHandle, &cardIdObj);
+			if(mmcStatus != CSL_SOK)
+			{
+				printf("API: SD_sendAllCID Failed\n");
+				return(mmcStatus);
+			}
 
-    	/* Set Endian mode for read and write operations */
-      	mmcStatus = MMC_setEndianMode(mmcsdHandle, CSL_MMCSD_ENDIAN_LITTLE,
-      	                              CSL_MMCSD_ENDIAN_LITTLE);
-    	if(mmcStatus != CSL_SOK)
-    	{
-    		printf("API: MMC_setEndianMode Failed\n");
-    		return(mmcStatus);
-    	}
+			/* Set the SD Relative Card Address */
+			mmcStatus = SD_sendRca(mmcsdHandle, &mmcCardObj, &rca);
+			if(mmcStatus != CSL_SOK)
+			{
+				printf("API: SD_sendRca Failed\n");
+				return(mmcStatus);
+			}
 
-    	/* Set block length for the memory card
-    	 * For high capacity cards setting the block length will have
-    	 * no effect
-    	 */
-    	mmcStatus = MMC_setBlockLength(mmcsdHandle, CSL_MMCSD_BLOCK_LENGTH);
-    	if(mmcStatus != CSL_SOK)
-    	{
-    		printf("API: MMC_setBlockLength Failed\n");
-    		return(mmcStatus);
-    	}
-    	return (mmcStatus);
+			/* Read the SD Card Specific Data */
+			mmcStatus = SD_getCardCsd(mmcsdHandle, &cardCsdObj);
+			if(mmcStatus != CSL_SOK)
+			{
+				printf("API: SD_getCardCsd Failed\n");
+				return(mmcStatus);
+			}
+
+			/* Get the clock divider value for the current CPU frequency */
+			clockDiv = computeClkRate(CSL_SD_CLOCK_MAX_KHZ);
+		}
+		else
+		{
+			printf("NO Card Detected!\n");
+			printf("Insert MMC/SD Card!\n");
+			return(CSL_ESYS_FAIL);
+		}
+
+		/* Set the card type in internal data structures */
+		mmcStatus = MMC_setCardType(&mmcCardObj, cardType);
+		if(mmcStatus != CSL_SOK)
+		{
+			printf("API: MMC_setCardType Failed\n");
+			return(mmcStatus);
+		}
+
+		/* Set the card pointer in internal data structures */
+		mmcStatus = MMC_setCardPtr(mmcsdHandle, &mmcCardObj);
+		if(mmcStatus != CSL_SOK)
+		{
+			printf("API: MMC_setCardPtr Failed\n");
+			return(mmcStatus);
+		}
+
+		/* Get the number of cards */
+		mmcStatus = MMC_getNumberOfCards(mmcsdHandle, &actCard);
+		if(mmcStatus != CSL_SOK)
+		{
+			printf("API: MMC_getNumberOfCards Failed\n");
+			return(mmcStatus);
+		}
+
+		/* Set clock for read-write access */
+		mmcStatus = MMC_sendOpCond(mmcsdHandle, clockDiv);
+		if(mmcStatus != CSL_SOK)
+		{
+			printf("API: MMC_sendOpCond Failed\n");
+			return(mmcStatus);
+		}
+
+		/* Set Endian mode for read and write operations */
+	  	mmcStatus = MMC_setEndianMode(mmcsdHandle, CSL_MMCSD_ENDIAN_LITTLE,
+	  	                              CSL_MMCSD_ENDIAN_LITTLE);
+		if(mmcStatus != CSL_SOK)
+		{
+			printf("API: MMC_setEndianMode Failed\n");
+			return(mmcStatus);
+		}
+
+		/* Set block length for the memory card
+		 * For high capacity cards setting the block length will have
+		 * no effect
+		 */
+		mmcStatus = MMC_setBlockLength(mmcsdHandle, CSL_MMCSD_BLOCK_LENGTH);
+		if(mmcStatus != CSL_SOK)
+		{
+			printf("API: MMC_setBlockLength Failed\n");
+			return(mmcStatus);
+		}
+		return(CSL_SOK);
 }
 
 /**

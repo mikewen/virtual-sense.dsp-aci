@@ -48,7 +48,7 @@ extern unsigned char circular_buffer[PROCESS_BUFFER_SIZE];
 
 // PRD function. Runs every 10 minutes to start sampling a new file
 void CreateNewFile(void){
-	debug_debug_printf(  "Timer executes\n");
+	debug_printf(  "Timer executes\n");
 	SEM_post(&SEM_TimerSave);
 }
 
@@ -77,9 +77,6 @@ void DataSaveTask(void)
 			RTC_getDate(&GetDate);
 			RTC_getTime(&GetTime);
 			sprintf(file_name, "%d_%d_%d__%d-%d-%d.wav",GetDate.day,GetDate.month,GetDate.year, GetTime.hours, GetTime.mins, GetTime.secs);
-			clear_lcd();
-			printstring("Creating   ");
-			printstring(file_name);
 			debug_printf("Creating a new file %s\n",file_name);
 
 			//rc = open_wave_file(&wav_file, file_name, FREQUENCY, SECONDS);
@@ -89,10 +86,14 @@ void DataSaveTask(void)
 			else
 				file_is_open = 1;
 			putDataIntoOpenFile((void *)circular_buffer, 468); // to fill first sector in order to increase performance
-			for(iterations = 0; iterations <= ((seconds * step_per_second)+1); iterations++){
+#if 0
+			for(iterations = 0; iterations <= 100000/*((seconds * step_per_second)+1)*/; iterations++){
 							putDataIntoOpenFile((void *)circular_buffer, 512);
-							for(index2 =0; index2<10000;index2++); // is a wait loop
+							for(index2 =0; index2<100000;index2++){
+								asm(" nop "); // is a wait loop
+							}
 			}
+#endif
 			// wave header is 44 bytes length
 			//clear_lcd();
 			SEM_reset(&SEM_BufferFull,0);
@@ -103,8 +104,6 @@ void DataSaveTask(void)
 			file_counter++;
 			step = 0;
 	        //clear_lcd();
-	        //printstring("Done ");
-	        //printstring(file_name);
 	        debug_printf("File saved %s\n",file_name);
     	}
         //wdt_Refresh();

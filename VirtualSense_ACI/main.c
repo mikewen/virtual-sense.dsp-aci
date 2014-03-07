@@ -45,7 +45,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-
+#include <csl_mmcsd.h>
 #include "csl_sysctrl.h"
 
 #include "debug_uart.h" // to redirect debug_printf over UART
@@ -56,6 +56,7 @@
 #include "csl_gpio.h"
 #include "csl_usb.h"
 #include "csl_audioClass.h"
+
 #include "soc.h"
 //#include "psp_i2s.h"
 #include "dda_dma.h"
@@ -145,18 +146,25 @@ extern void initRTC(void);
 void main(void)
 {
     CSL_Status status;
+    CSL_Status mmcStatus;
     Uint32 gpioIoDir;
-    //Uint32 j = 0;
-
 
     /* Clock gate all peripherals */
+    // Disable all peripheral
     CSL_SYSCTRL_REGS->PCGCR1 = 0x7FFF;
     CSL_SYSCTRL_REGS->PCGCR2 = 0x007F;
 
     // turn on led to turn on oscillator
     CSL_CPU_REGS->ST1_55 |= CSL_CPU_ST1_55_XF_MASK;
 
-#if 0
+    mmcStatus = MMC_init();
+	if (mmcStatus != CSL_SOK)
+	{
+		debug_printf("API: MMC_init Failed!\n");
+
+	}
+
+    #if 0
     /* SP0 Mode 2 (GP[5:0]) -- GPIO02/GPIO04 for debug  */
     CSL_FINST(CSL_SYSCTRL_REGS->EBSR, SYS_EBSR_SP0MODE, MODE2);
 
@@ -170,44 +178,36 @@ void main(void)
     SYS_setEBSR(CSL_EBSR_FIELD_SP1MODE,
                                     CSL_EBSR_SP1MODE_0);
 
-
     /* PP Mode 1 (SPI, GPIO[17:12], UART, and I2S2) */
     CSL_FINST(CSL_SYSCTRL_REGS->EBSR, SYS_EBSR_PPMODE, MODE1);
+
+	/* Initialize GPIO module */
+
+	/* GPIO02 and GPIO04 for debug */
+	/* GPIO10 for AIC3204 reset */
+	gpioIoDir = (((Uint32)CSL_GPIO_DIR_OUTPUT)<<CSL_GPIO_PIN2) |
+		  (((Uint32)CSL_GPIO_DIR_OUTPUT)<<CSL_GPIO_PIN4) |
+		   (((Uint32)CSL_GPIO_DIR_OUTPUT)<<CSL_GPIO_PIN15)|
+		   (((Uint32)CSL_GPIO_DIR_OUTPUT)<<CSL_GPIO_PIN16);
+
+	gpioInit(gpioIoDir, 0x00000000, 0x00000000);
 
     /* Reset C5515 -- ungates all peripherals */
     C5515_reset();
 
     /* Initialize DSP PLL */
-    status = pll_sample(100);
+    status = pll_sample();
     if (status != CSL_SOK)
     {
         exit(EXIT_FAILURE);
     }
 
+
     /* Clear pending timer interrupts */
     CSL_SYSCTRL_REGS->TIAFR = 0x7;
-
     /* Initialize GPIO module */
 
-    /* GPIO02 and GPIO04 for debug */
-    /* GPIO10 for AIC3204 reset */
-    gpioIoDir = (((Uint32)CSL_GPIO_DIR_OUTPUT)<<CSL_GPIO_PIN2) |
-        (((Uint32)CSL_GPIO_DIR_OUTPUT)<<CSL_GPIO_PIN4) |
-        (((Uint32)CSL_GPIO_DIR_OUTPUT)<<CSL_GPIO_PIN15)|
-        (((Uint32)CSL_GPIO_DIR_OUTPUT)<<CSL_GPIO_PIN16);
-
-    status = gpioInit(gpioIoDir, 0x00000000, 0x00000000);
-    if (status != GPIOCTRL_SOK)
-    {
-        exit(EXIT_FAILURE);
-    }
-
-    dbgGpio1Write(0); //RED
-
-    dbgGpio2Write(0); // WHITE
-
-
-     /* Enable the USB LDO */
+    /* Enable the USB LDO */
     //*(volatile ioport unsigned int *)(0x7004) |= 0x0001;
 #if DEBUG_UART
     init_debug_over_uart(100);
@@ -224,6 +224,9 @@ void main(void)
 
     // set the GPIO pin 10 - 11 to output, set SYS_GPIO_DIR0 (0x1C06) bit 10 and 11 to 1
     //LELE *(volatile ioport unsigned int *)(0x1C06) |= 0x600;
+    //mount sdcard: must be High capacity(>4GB), standard capacuty have a problem
+
+
 }
 
 /**
@@ -243,16 +246,14 @@ void CSL_acTest(void)
 	UINT bw;
 	Uint16 field = 0;
 	FIL file_config;
+	debug_printf("Start Configuration....\n");
 
-    debug_printf("Start Configuration....\n");
-
-    //mount sdcard: must be High capacity(>4GB), standard capacuty have a problem
+    //mount sdcard: must be High capacity(>4GB), standard capacity have a problem
     rc = f_mount(0, &fatfs);
     if(rc)
     	debug_printf("Error mounting volume\n");
     else
     	debug_printf("Mounting volume\n");
-
 
     //RTC initilization from file
 	if( RTC_initRtcFromFile() )
@@ -332,7 +333,7 @@ void CSL_acTest(void)
 
 	if(frequency == 192000){
 		debug_printf(" Changing frequency\n");
-		status = pll_sample(120);
+		status = pll_sample();
 		if (status != CSL_SOK)
 		{
 			exit(EXIT_FAILURE);
@@ -348,9 +349,12 @@ void CSL_acTest(void)
 
 
 
+
+
+
 #ifdef C5535_EZDSP_DEMO
     /* Initialize the OLED display */
-    oled_init();
+    //oled_init();
     debug_printf("oled init\n");
 #endif
     //Initialize RTC
@@ -391,6 +395,7 @@ void CSL_acTest(void)
         exit(EXIT_FAILURE);
     }
 
+
 #if 1 // to remove sampling
     /* Start left Rx DMA */
     DMA_StartTransfer(hDmaRxLeft);
@@ -400,9 +405,8 @@ void CSL_acTest(void)
     asm("   idle");
 
     /* Clock gate usused peripherals */
-#if !DEBUG_UART
-    //ClockGating(); //LELE test UART
-#endif
+
+    ClockGating();
     //debug_printf("ClokGating\n");
     DDC_I2S_transEnable((DDC_I2SHandle)i2sHandleTx, TRUE); /* enable I2S transmit and receive */
 
@@ -434,7 +438,8 @@ void C5515_reset(void)
     *(volatile ioport unsigned int *)(0x0046) = 0xFFFF;
 
     // enable all peripherials
-    *(volatile ioport unsigned int *)(0x1c02) = 0;
+    *(volatile ioport unsigned int *)(0x1c02) = 0;//0x3FA5;
+    // 0011 1111 1010 0101
     *(volatile ioport unsigned int *)(0x1c03) = 0;
 
     // reset peripherals
@@ -458,26 +463,26 @@ void ClockGating(void)
     // clock gating SPI
     pcgcr_value |= CSL_FMKT(SYS_PCGCR1_SPICG, DISABLED);
     // clock gating SD/MMC
-    pcgcr_value |= CSL_FMKT(SYS_PCGCR1_MMCSD0CG, DISABLED);
+    //pcgcr_value |= CSL_FMKT(SYS_PCGCR1_MMCSD0CG, DISABLED); //LELE to use SD on MMC0
     pcgcr_value |= CSL_FMKT(SYS_PCGCR1_MMCSD1CG, DISABLED);
     // clock stop request for UART
+#if !DEBUG_UART
     clkstop_value = CSL_FMKT(SYS_CLKSTOP_URTCLKSTPREQ, REQ);
     // write to CLKSTOP
     CSL_FSET(CSL_SYSCTRL_REGS->CLKSTOP, 15, 0, clkstop_value);
     // wait for acknowledge
     while (CSL_FEXT(CSL_SYSCTRL_REGS->CLKSTOP, SYS_CLKSTOP_URTCLKSTPACK)==0);
-#if !DEBUG_UART
     // clock gating UART
     pcgcr_value |= CSL_FMKT(SYS_PCGCR1_UARTCG, DISABLED);
 #endif
     // clock stop request for EMIF
-    //clkstop_value = CSL_FMKT(SYS_CLKSTOP_EMFCLKSTPREQ, REQ);
+    clkstop_value = CSL_FMKT(SYS_CLKSTOP_EMFCLKSTPREQ, REQ);
     // write to CLKSTOP
-    //CSL_FSET(CSL_SYSCTRL_REGS->CLKSTOP, 15, 0, clkstop_value);
+    CSL_FSET(CSL_SYSCTRL_REGS->CLKSTOP, 15, 0, clkstop_value);
     // wait for acknowledge
-    //while (CSL_FEXT(CSL_SYSCTRL_REGS->CLKSTOP, SYS_CLKSTOP_EMFCLKSTPACK)==0);
+    while (CSL_FEXT(CSL_SYSCTRL_REGS->CLKSTOP, SYS_CLKSTOP_EMFCLKSTPACK)==0);
     // clock gating EMIF
-    //pcgcr_value |= CSL_FMKT(SYS_PCGCR1_EMIFCG, DISABLED);
+    pcgcr_value |= CSL_FMKT(SYS_PCGCR1_EMIFCG, DISABLED);
     // clock gating unused I2S (I2S 0, 1, 3)
     pcgcr_value |= CSL_FMKT(SYS_PCGCR1_I2S0CG, DISABLED);
     pcgcr_value |= CSL_FMKT(SYS_PCGCR1_I2S1CG, DISABLED);

@@ -101,7 +101,7 @@ const PLL_Config pllCfg_120MHz    = {0x8392, 0xA000, 0x0806, 0x0000};
 
 PLL_Config *pConfigInfo;
 
-CSL_Status pll_sample(Uint16 clock)
+CSL_Status pll_sample()
 {
     CSL_Status status;
 	volatile int i;
@@ -124,14 +124,14 @@ CSL_Status pll_sample(Uint16 clock)
 
     /* Configure the PLL */
     //pConfigInfo = (PLL_Config *)&pllCfg_40MHz;
-    if(clock == 40)
+    /*if(clock == 40)
        	pConfigInfo = (PLL_Config *)&pllCfg_40MHz;
     else if(clock == 100)
     	pConfigInfo = (PLL_Config *)&pllCfg_100MHz;
     else if (clock == 120)
     	pConfigInfo = (PLL_Config *)&pllCfg_120MHz;
-    else
-    	pConfigInfo = (PLL_Config *)&pllCfg_100MHz;
+    else*/
+    pConfigInfo = (PLL_Config *)&pllCfg_100MHz;
     //pConfigInfo = (PLL_Config *)&pllCfg_100MHz_ExtClk12Mhz;
     //pConfigInfo = (PLL_Config *)&pllCfg_120MHz_ExtClk12Mhz;
 
