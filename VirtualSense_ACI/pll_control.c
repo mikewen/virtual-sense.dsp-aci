@@ -131,7 +131,7 @@ CSL_Status pll_sample()
     else if (clock == 120)
     	pConfigInfo = (PLL_Config *)&pllCfg_120MHz;
     else*/
-    pConfigInfo = (PLL_Config *)&pllCfg_100MHz;
+    pConfigInfo = (PLL_Config *)&pllCfg_120MHz;
     //pConfigInfo = (PLL_Config *)&pllCfg_100MHz_ExtClk12Mhz;
     //pConfigInfo = (PLL_Config *)&pllCfg_120MHz_ExtClk12Mhz;
 
