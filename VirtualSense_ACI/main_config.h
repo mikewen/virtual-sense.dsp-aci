@@ -99,7 +99,7 @@ static inline void HIGHT_11(){    (*(volatile ioport unsigned int *)(0x1C0B) |= 
 
 /* Operation mode:
  * 0 error
- * 1 interrupt evry minute
+ * 1 interrupt every minute
  * 2
  */
 extern Uint8 mode;

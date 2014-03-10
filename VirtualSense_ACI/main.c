@@ -196,7 +196,7 @@ void main(void)
     C5515_reset();
 
     /* Initialize DSP PLL */
-    status = pll_sample();
+    status = pll_configure_freq(100);
     if (status != CSL_SOK)
     {
         exit(EXIT_FAILURE);
@@ -335,7 +335,7 @@ init_all_peripheral(void)
 
 	if(frequency == 192000){
 		debug_printf(" Changing frequency\n");
-		status = pll_sample();
+		status = pll_configure_freq(120);
 		if (status != CSL_SOK)
 		{
 			exit(EXIT_FAILURE);

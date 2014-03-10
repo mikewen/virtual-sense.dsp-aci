@@ -131,7 +131,67 @@ CSL_Status pll_sample()
     else if (clock == 120)
     	pConfigInfo = (PLL_Config *)&pllCfg_120MHz;
     else*/
-    pConfigInfo = (PLL_Config *)&pllCfg_120MHz;
+    pConfigInfo = (PLL_Config *)&pllCfg_100MHz;
+    //pConfigInfo = (PLL_Config *)&pllCfg_100MHz_ExtClk12Mhz;
+    //pConfigInfo = (PLL_Config *)&pllCfg_120MHz_ExtClk12Mhz;
+
+    status = PLL_config (hPll, pConfigInfo);
+    if (status != CSL_SOK)
+    {
+        return(status);
+    }
+
+    status = PLL_getConfig(hPll, &pllCfg1);
+    if (status != CSL_SOK)
+    {
+        return status;
+    }
+
+    /* Wait for PLL to stabilize */
+    for (i=0; i<100; i++);
+
+    status = PLL_enable(hPll);
+    if (status != CSL_SOK)
+    {
+        return status;
+    }
+
+    // set DSP_LDO to 1.05V
+    //*(volatile ioport unsigned int *)(0x7004) |= 0x0002;
+
+    return CSL_SOK;
+}
+
+CSL_Status pll_configure_freq(Uint16 clock)
+{
+    CSL_Status status;
+	volatile int i;
+
+    status = PLL_init(&pllObj, CSL_PLL_INST_0);
+    if (status != CSL_SOK)
+    {
+        return status;
+    }
+
+    hPll = (PLL_Handle)(&pllObj);
+
+    PLL_reset(hPll);
+
+    status = PLL_bypass(hPll);
+    if (status != CSL_SOK)
+    {
+        return status;
+    }
+
+    /* Configure the PLL */
+    if(clock == 40)
+       	pConfigInfo = (PLL_Config *)&pllCfg_40MHz;
+    else if(clock == 100)
+    	pConfigInfo = (PLL_Config *)&pllCfg_100MHz;
+    else if (clock == 120)
+    	pConfigInfo = (PLL_Config *)&pllCfg_120MHz;
+    else
+    	pConfigInfo = (PLL_Config *)&pllCfg_100MHz;
     //pConfigInfo = (PLL_Config *)&pllCfg_100MHz_ExtClk12Mhz;
     //pConfigInfo = (PLL_Config *)&pllCfg_120MHz_ExtClk12Mhz;
 

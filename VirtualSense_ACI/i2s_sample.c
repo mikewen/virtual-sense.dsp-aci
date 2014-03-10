@@ -710,13 +710,14 @@ void I2S_DmaRxLChCallBack(
             recInLeftBuf = *ptrRxLeft;
             ptrRxLeft += 2;
 
-            if(in_record && (bufferInside < PROCESS_BUFFER_SIZE/2)){
-
+            if(in_record && (bufferInside < PROCESS_BUFFER_SIZE)){
+            	circular_buffer_put(recInLeftBuf);
+            	/*
             	circular_buffer[bufferInIdx] =  (recInLeftBuf & 0xFF);
             	bufferInIdx = ((bufferInIdx+1) % PROCESS_BUFFER_SIZE);
             	circular_buffer[bufferInIdx] =  ((recInLeftBuf >> 8) & 0xFF);
             	bufferInIdx = ((bufferInIdx+1) % PROCESS_BUFFER_SIZE);
-            	bufferInside++;
+            	bufferInside++;*/
             }
         }
        	//SEM_post(&SEM_BufferEmpty); // release a permit

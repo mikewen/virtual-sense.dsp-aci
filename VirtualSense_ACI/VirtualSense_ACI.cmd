@@ -24,6 +24,7 @@ SECTIONS
     .data_br_buf 		: > DARAM
     .uart_debugBuffer	: > DARAM
     .circular_buffer	: > SARAM
+    .circular_buffer2	: > SARAM
 
     .charrom    : >  CROM
 }
