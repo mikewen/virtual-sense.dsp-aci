@@ -84,14 +84,6 @@
 #define MODE_EVERY_MINUT 2
 #define MODE_CALENDAR 3
 
-// set the GPIO 10 to 0, set SYS_GPIO_DATAOUT0 (0x1C0A) bit 10 to 0
-static inline void LOW_10(){     (*(volatile ioport unsigned int *)(0x1C0A) |= 0x0200);}
-// set the GPIO 11 to 0, set SYS_GPIO_DATAOUT0 (0x1C0A) bit 11 to 0
-static inline void LOW_11(){     (*(volatile ioport unsigned int *)(0x1C0A) |= 0x0400);}
-// set the GPIO 10 to 1, set SYS_GPIO_DATAOUT0 (0x1C0B) bit 10 to 1
-static inline void HIGHT_10(){   (*(volatile ioport unsigned int *)(0x1C0B) |= 0x0200);}
-// set the GPIO 11 to 1, set SYS_GPIO_DATAOUT0 (0x1C0B) bit 11 to 1
-static inline void HIGHT_11(){    (*(volatile ioport unsigned int *)(0x1C0B) |= 0x0400);}
 
 #define DEBUG_UART 0
 

@@ -29,7 +29,7 @@
 static DWORD totalSectors;
 
 Uint16 readed_buffer[256];
-BYTE buffer[512];
+//BYTE buffer[512];
 Uint16 writer_buffer[256];
 
 //static BYTE Buffer[BUFSIZE];

@@ -43,8 +43,11 @@ Uint16 file_is_open = 0;
 
 void putDataIntoOpenFile(const void *buff, unsigned int number_of_bytes);
 extern unsigned char circular_buffer[PROCESS_BUFFER_SIZE];
+extern unsigned char circular_buffer2[PROCESS_BUFFER_SIZE];
+unsigned char * used_buffer = circular_buffer;
 //extern Uint32 bufferInIdx; //logical pointer
 extern Uint32 bufferOutIdx; //logical pointer
+extern Uint32 buffer2OutIdx;
 extern Int32 bufferInside; //number of item in buffer
 extern Uint16 in_record; //logical pointer
 
@@ -93,8 +96,10 @@ void DataSaveTask(void)
 			while(file_is_open){ // should be controlled by the file size????
 				while(bufferInside <= 255);//spin-lock to wait buffer samples
 
-				putDataIntoOpenFile((void *)(circular_buffer+bufferOutIdx), 512);
-				bufferOutIdx = ((bufferOutIdx + 512) % b_size);
+				putDataIntoOpenFile((void *)(used_buffer+bufferOutIdx), 512);
+				bufferOutIdx = ((bufferOutIdx + 512)% b_size);
+				if(bufferOutIdx == 0) // switch buffer
+					used_buffer = used_buffer==circular_buffer?circular_buffer2:circular_buffer;
 				bufferInside-=256; // sample number
 
 			}

@@ -16,8 +16,10 @@
 unsigned char circular_buffer[PROCESS_BUFFER_SIZE];
 
 #pragma DATA_SECTION(circular_buffer2, ".circular_buffer2");
-#pragma DATA_ALIGN(circular_buffe2r, 2)
+#pragma DATA_ALIGN(circular_buffer2, 2)
 unsigned char circular_buffer2[PROCESS_BUFFER_SIZE];
+
+unsigned char * buffer = circular_buffer; // at start points to the first circular buffer
 // index for bufferIn
 Uint32 bufferInIdx = 0; //logical pointers
 Uint32 bufferOutIdx = 0;
@@ -33,28 +35,15 @@ Uint16 in_record = 0;
 
 
 void circular_buffer_put(Int16 item){
-	if(bufferInIdx <(b_size -2)) {
-		circular_buffer[bufferInIdx] =  (item & 0xFF);
-		bufferInIdx = ((bufferInIdx+1) % b_size);
-		circular_buffer[bufferInIdx] =  ((item >> 8) & 0xFF);
-		bufferInIdx = ((bufferInIdx+1) % b_size);
-	}else if(buffer2InIdx <(b_size -2)){
-		circular_buffer2[buffer2InIdx] =  (item & 0xFF);
-	    buffer2InIdx = ((buffer2InIdx+1) % b_size);
-		circular_buffer2[buffer2InIdx] =  ((item >> 8) & 0xFF);
-		buffer2InIdx = ((buffer2InIdx+1) % b_size);
-	}else {
-		// reset bufferInIdx and  buffer2InIdx
-		bufferInIdx = 0;
-		buffer2InIdx = 0;
-		circular_buffer[bufferInIdx] =  (item & 0xFF);
-	    bufferInIdx = ((bufferInIdx+1) % b_size);
-		circular_buffer[bufferInIdx] =  ((item >> 8) & 0xFF);
-		bufferInIdx = ((bufferInIdx+1) % b_size);
-	}
-	 /*circular_buffer[bufferInIdx] = item ;
-	 bufferInIdx = ((bufferInIdx+1) % b_size);*/
-	 bufferInside++;
+	buffer[bufferInIdx] =  (item & 0xFF);
+	bufferInIdx = ((bufferInIdx+1) % b_size);
+	if(bufferInIdx == 0) // switch buffer
+		buffer = buffer==circular_buffer?circular_buffer2:circular_buffer;
+	buffer[bufferInIdx] =  ((item >> 8) & 0xFF);
+	bufferInIdx = ((bufferInIdx+1) % b_size);
+	if(bufferInIdx == 0) // switch buffer
+		buffer = buffer==circular_buffer?circular_buffer2:circular_buffer;
+	bufferInside++;
 }
 
 Int16 circular_buffer_get(){
