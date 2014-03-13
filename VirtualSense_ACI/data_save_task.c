@@ -94,7 +94,7 @@ void DataSaveTask(void)
 	}
 
 	hwConfig.counter  = 0xFFFF;
-	hwConfig.prescale = 0x00FF;
+	hwConfig.prescale = 0x7FFF;
 
 	/* Configure the watch dog timer */
 	status = WDTIM_config(hWdt, &hwConfig);
@@ -109,7 +109,7 @@ void DataSaveTask(void)
 	}
 
 	/* Start the watch dog timer */
-	/*status = WDTIM_start(hWdt);
+	status = WDTIM_start(hWdt);
 	if(CSL_SOK != status)
 	{
 		debug_printf("WDTIM: Start for the watchdog Failed\n");
@@ -118,7 +118,7 @@ void DataSaveTask(void)
 	else
 	{
 		debug_printf("WDTIM: Start for the watchdog Passed\n");
-	} */
+	}
 
 	for (delay = 0; delay < 10; delay++);
 
