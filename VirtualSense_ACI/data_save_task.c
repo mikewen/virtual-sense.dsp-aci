@@ -16,6 +16,7 @@
 #include "debug_uart.h" // to redirect debug_printf over UART
 #include <csl_rtc.h>
 #include <csl_intc.h>
+#include "csl_wdt.h"
 #include "app_asrc.h"
 #include "VirtualSense_ACIcfg.h"
 #include "psp_i2s.h"
@@ -40,8 +41,9 @@ FIL wav_file;
 Uint32 step = 0;
 Uint32 my_step = 0;
 Uint16 file_is_open = 0;
+CSL_WdtObj    wdtObj;
 
-void putDataIntoOpenFile(const void *buff, unsigned int number_of_bytes);
+FRESULT putDataIntoOpenFile(const void *buff, unsigned int number_of_bytes);
 extern unsigned char circular_buffer[PROCESS_BUFFER_SIZE];
 extern unsigned char circular_buffer2[PROCESS_BUFFER_SIZE];
 unsigned char * used_buffer = circular_buffer;
@@ -65,18 +67,76 @@ void DataSaveTask(void)
 	CSL_RtcTime 	 GetTime;
 	CSL_RtcDate 	 GetDate;
 	FRESULT rc;
+	FRESULT write_result;
 
 	char file_name[128];
-	Uint32 burts_size_bytes = DMA_BUFFER_SZ * 2;
 	Uint32 b_size = PROCESS_BUFFER_SIZE;
-	Uint32 iterations = 0;
-	Uint32 index2 = 0;
 
-    //main loop
+	CSL_Status		 status;
+	CSL_WdtHandle    hWdt = NULL;
+	WDTIM_Config	 hwConfig,getConfig;
+	Uint32           counter;
+	Uint32			 time;
+	Uint16 			 delay;
+
+
+
+	/* Open the WDTIM module */
+	hWdt = (CSL_WdtObj *)WDTIM_open(WDT_INST_0, &wdtObj, &status);
+	if(NULL == hWdt)
+	{
+		debug_printf("WDTIM: Open for the watchdog Failed\n");
+
+	}
+	else
+	{
+		debug_printf("WDTIM: Open for the watchdog Passed\n");
+	}
+
+	hwConfig.counter  = 0xFFFF;
+	hwConfig.prescale = 0x00FF;
+
+	/* Configure the watch dog timer */
+	status = WDTIM_config(hWdt, &hwConfig);
+	if(CSL_SOK != status)
+	{
+		debug_printf("WDTIM: Config for the watchdog Failed\n");
+
+	}
+	else
+	{
+		debug_printf("WDTIM: Config for the watchdog Passed\n");
+	}
+
+	/* Start the watch dog timer */
+	/*status = WDTIM_start(hWdt);
+	if(CSL_SOK != status)
+	{
+		debug_printf("WDTIM: Start for the watchdog Failed\n");
+
+	}
+	else
+	{
+		debug_printf("WDTIM: Start for the watchdog Passed\n");
+	} */
+
+	for (delay = 0; delay < 10; delay++);
+
+	/* Get the timer count */
+	status = WDTIM_getCnt(hWdt, &time);
+	if(CSL_SOK != status)
+	{
+		debug_printf("WDTIM: Get Count for the watchdog Failed\n");
+
+	}
+	else
+	{
+		debug_printf("WDTIM: Get Count for the watchdog is %ld:\n", time);
+	}
+
+	//main loop
     while (1)
     {
-    	//wait on semaphore released from a timer function
-    	//wdt_Refresh();
     	if(seconds > 0) {//if second==0 don't save nothings
 
 			RTC_getDate(&GetDate);
@@ -86,8 +146,10 @@ void DataSaveTask(void)
 
 			//rc = open_wave_file(&wav_file, file_name, FREQUENCY, SECONDS);
 			rc = open_wave_file(&wav_file, file_name, frequency, seconds);
-			if(rc)
+			if(rc){
 				debug_printf("Error opening a new wav file %d\n",rc);
+				break;
+			}
 			else{
 				file_is_open = 1;
 				in_record = 1;
@@ -96,21 +158,16 @@ void DataSaveTask(void)
 			while(file_is_open){ // should be controlled by the file size????
 				while(bufferInside <= 255);//spin-lock to wait buffer samples
 
-				putDataIntoOpenFile((void *)(used_buffer+bufferOutIdx), 512);
+				write_result = putDataIntoOpenFile((void *)(used_buffer+bufferOutIdx), 512);
 				bufferOutIdx = ((bufferOutIdx + 512)% b_size);
-				if(bufferOutIdx == 0) // switch buffer
+				if(bufferOutIdx == 0) { // switch buffer
 					used_buffer = used_buffer==circular_buffer?circular_buffer2:circular_buffer;
+					if(!write_result)
+						WDTIM_service(hWdt);
+				}
 				bufferInside-=256; // sample number
 
 			}
-#if 0
-			for(iterations = 0; iterations <= 100000/*((seconds * step_per_second)+1)*/; iterations++){
-							putDataIntoOpenFile((void *)circular_buffer, 512);
-							for(index2 =0; index2<100000;index2++){
-								asm(" nop "); // is a wait loop
-							}
-			}
-#endif
 			// wave header is 44 bytes length
 			//clear_lcd();
 			//SEM_reset(&SEM_BufferFull,0);
@@ -124,7 +181,6 @@ void DataSaveTask(void)
 	        //clear_lcd();
 	        debug_printf("File saved %s\n",file_name);
     	}
-        //wdt_Refresh();
         // Put DSP into RTC only mode
         if(mode != MODE_ALWAYS_ON) {
         	RTC_shutdownToRTCOnlyMonde();
@@ -134,9 +190,10 @@ void DataSaveTask(void)
      }
 }
 
-void putDataIntoOpenFile(const void *buff, unsigned int number_of_bytes){
+FRESULT putDataIntoOpenFile(const void *buff, unsigned int number_of_bytes){
+	FRESULT res;
 	if(file_is_open){
-		write_data_to_wave(&wav_file, buff, number_of_bytes);
+		res = write_data_to_wave(&wav_file, buff, number_of_bytes);
 		my_step++;
         //wdt_Refresh();
 	}
@@ -147,5 +204,5 @@ void putDataIntoOpenFile(const void *buff, unsigned int number_of_bytes){
 		my_step = 0;
 		SEM_post(&SEM_CloseFile);
 	}
-
+	return res;
 }

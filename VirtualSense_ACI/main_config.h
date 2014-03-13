@@ -74,9 +74,9 @@
 #define DMA_BUFFER_SZ      					   				       (256L)
 #define DMA_TARNSFER_SZ            						(2*DMA_BUFFER_SZ)
 
-#define RTC_FILE_CONFIG											"time.rtc"
+#define RTC_FILE_CONFIG											"updatetime.bin"
 #define FILE_SHEDULER											"scheduler.bin"
-#define FILE_COUNTER											"pc.bin"
+#define FILE_COUNTER											"programcounter.bin"
 
 #define FW_VER "0.1"
 
@@ -85,7 +85,7 @@
 #define MODE_CALENDAR 3
 
 
-#define DEBUG_UART 0
+#define DEBUG_UART 1
 
 #endif
 

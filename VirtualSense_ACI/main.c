@@ -46,6 +46,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <csl_mmcsd.h>
+#include <csl_rtc.h>
 #include "csl_sysctrl.h"
 
 #include "debug_uart.h" // to redirect debug_printf over UART
@@ -56,6 +57,7 @@
 #include "csl_gpio.h"
 #include "csl_usb.h"
 #include "csl_audioClass.h"
+
 
 #include "soc.h"
 //#include "psp_i2s.h"
@@ -196,7 +198,7 @@ void main(void)
     C5515_reset();
 
     /* Initialize DSP PLL */
-    status = pll_configure_freq(100);
+    status = pll_configure_freq(120);
     if (status != CSL_SOK)
     {
         exit(EXIT_FAILURE);
@@ -210,17 +212,17 @@ void main(void)
     /* Enable the USB LDO */
     //*(volatile ioport unsigned int *)(0x7004) |= 0x0001;
 #if DEBUG_UART
-    init_debug_over_uart(100);
+    init_debug_over_uart(120);
 #endif
     debug_printf("Firmware version:");
     debug_printf(FW_VER);
     debug_printf("\n");
     //Initialize and start Watch dog
     //wdt_Init();
+    //wdt_Start();
 
-    //wdt_test();
        //debug_printf("fine wdg....\n");
-       //while(1);
+    //while(1);
 
     // set the GPIO pin 10 - 11 to output, set SYS_GPIO_DIR0 (0x1C06) bit 10 and 11 to 1
     //LELE *(volatile ioport unsigned int *)(0x1C06) |= 0x600;
@@ -241,13 +243,17 @@ void CSL_acTest(void){
 init_all_peripheral(void)
 {
     I2sInitPrms i2sInitPrms;
-    CSL_UsbConfig usbConfig;
     PSP_Result result;
     Int16 status;
     FRESULT rc;
+    FRESULT rc_fat;
 	UINT bw;
 	Uint16 field = 0;
 	FIL file_config;
+	FIL rtc_time_file;
+	CSL_RtcTime 	 GetTime;
+	CSL_RtcDate 	 GetDate;
+
 	debug_printf("Start Configuration....\n");
 
     //mount sdcard: must be High capacity(>4GB), standard capacity have a problem
@@ -256,16 +262,86 @@ init_all_peripheral(void)
     	debug_printf("Error mounting volume\n");
     else
     	debug_printf("Mounting volume\n");
+    //Initialize RTC
+    initRTC();
 
+
+    // OPEN A NOT PRESENT FILE TO RESOLVE FIRTS FILE NOT FOUND BUG
+    debug_printf("RTC_initRtcFromFile\n");
+    rc_fat = f_open(&rtc_time_file, "null.void", FA_READ);
+    debug_printf(" try to open-null.void\n");
+    if(rc_fat){
+      	debug_printf("nukk.void doesn't exist\n");
+    }
+
+    // LELE Calling this function does not runs. Need to explicitely
+    // do it here !!!!
     //RTC initilization from file
-	if( RTC_initRtcFromFile() )
+	/*if( RTC_initRtcFromFile() )
 		debug_printf("RTC: time.rtc doesn't exists\n");
 	else{
 		debug_printf("RTC: initialized from time.rtc file\n");
 		//to enable delete: change _FS_MINIMIZE to 0 in ffconf.h
 		//f_unlink (RTC_FILE_CONFIG);
 		//debug_printf("time.rtc file deleted\n");
+	}*/
+
+
+	rc_fat = f_open(&rtc_time_file, RTC_FILE_CONFIG, FA_READ);
+	debug_printf(" try to open---%s \n", RTC_FILE_CONFIG);
+	if(!rc_fat){
+		// update rtc time
+		// first 2 bites are day
+		rc_fat = f_read(&rtc_time_file,  &field, 2, &bw);
+		debug_printf(" Day is %d \n", field);
+		GetDate.day = field;
+
+		rc_fat = f_read(&rtc_time_file,  &field, 2, &bw);
+		debug_printf(" Month is %d \n", field);
+		GetDate.month = field;
+
+		rc_fat = f_read(&rtc_time_file,  &field, 2, &bw);
+		debug_printf(" Year is %d \n", field);
+		GetDate.year = field;
+
+		rc_fat = f_read(&rtc_time_file,  &field, 2, &bw);
+		debug_printf(" Hour is %d \n", field);
+		GetTime.hours = field;
+
+		rc_fat = f_read(&rtc_time_file,  &field, 2, &bw);
+		debug_printf(" Min is %d \n", field);
+		GetTime.mins = field;
+
+		debug_printf(" Setting RTC date time to %d-%d-%d_%d:%d\n",GetDate.day,GetDate.month,GetDate.year, GetTime.hours, GetTime.mins);
+		/* Set the RTC time */
+		status = RTC_setTime(&GetTime);
+		if(status != CSL_SOK)
+		{
+			debug_printf(" RTC_setTime Failed\n");
+			return;
+		}
+		else
+		{
+			debug_printf(" RTC_setTime Successful\n");
+		}
+
+		/* Set the RTC date */
+		status = RTC_setDate(&GetDate);
+		if(status != CSL_SOK)
+		{
+			debug_printf(" RTC_setDate Failed\n");
+			return;
+		}
+		else
+		{
+			debug_printf(" RTC_setDate Successful\n");
+		}
+		debug_printf("\n");
+	}else {
+		debug_printf("RTC: %s doesn't exists\n", RTC_FILE_CONFIG);
 	}
+
+	// END INIT RTC
 
 	//read file counter from file
 	rc = f_open(&file_config, FILE_COUNTER, FA_READ);
@@ -340,7 +416,7 @@ init_all_peripheral(void)
 		{
 			exit(EXIT_FAILURE);
 		}
-		init_debug_over_uart(120);
+		//init_debug_over_uart(120);
 	}
 
 	// Initialize audio module
@@ -359,8 +435,6 @@ init_all_peripheral(void)
     //oled_init();
     debug_printf("oled init\n");
 #endif
-    //Initialize RTC
-    initRTC();
 
     //Initialize I2S
     i2sTxBuffSz = 2*DMA_BUFFER_SZ;

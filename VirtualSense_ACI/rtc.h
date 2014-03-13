@@ -30,7 +30,8 @@ unsigned short RTCNeedUpdate();
 void initRTC();
 void RTC_scheduleAlarmAfterMinutes(unsigned short minutes);
 void RTC_shutdownToRTCOnlyMonde();
-//Int16 RTC_initRtcFromFile();
+Int16 RTC_initRtcFromFile();
+void RTC_initializaEventEveryMinute();
 
 #endif
 

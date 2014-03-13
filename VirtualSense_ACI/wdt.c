@@ -2,7 +2,7 @@
 #include "debug_uart.h" // to redirect debug_printf over UART
 //#include "csl_general.h"
 //#include <stdio.h>
-
+#if 0
 /* Macros to return the test result */
 #define CSL_TEST_FAILED    (1u)
 #define CSL_TEST_PASSED    (0)
@@ -347,3 +347,4 @@ void wdt_Refresh(void)
 	}
 	//debug_printf("WDTIM: service\n");
 }
+#endif

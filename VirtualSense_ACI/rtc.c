@@ -282,6 +282,7 @@ Int16 RTC_initRtcFromFile() {
 
 	debug_printf("RTC_initRtcFromFile\n");
 	rc_fat = f_open(&rtc_time_file, RTC_FILE_CONFIG, FA_READ);
+	debug_printf(" try to open %s \n", RTC_FILE_CONFIG);
 	if(!rc_fat){
   	// update rtc time
     	// first 2 bites are day
