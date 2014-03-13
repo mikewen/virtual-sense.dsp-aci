@@ -53,6 +53,7 @@ extern Uint32 buffer2OutIdx;
 extern Int32 bufferInside; //number of item in buffer
 extern Uint16 in_record; //logical pointer
 
+
 // PRD function. Runs every 10 minutes to start sampling a new file
 void CreateNewFile(void){
 	debug_printf(  "Timer executes\n");
@@ -138,48 +139,53 @@ void DataSaveTask(void)
     while (1)
     {
     	if(seconds > 0) {//if second==0 don't save nothings
+    		do{
+    			nFiles--;
+				RTC_getDate(&GetDate);
+				RTC_getTime(&GetTime);
+				sprintf(file_name, "%d_%d_%d__%d-%d-%d.wav",GetDate.day,GetDate.month,GetDate.year, GetTime.hours, GetTime.mins, GetTime.secs);
+				debug_printf("Creating a new file %s\n",file_name);
 
-			RTC_getDate(&GetDate);
-			RTC_getTime(&GetTime);
-			sprintf(file_name, "%d_%d_%d__%d-%d-%d.wav",GetDate.day,GetDate.month,GetDate.year, GetTime.hours, GetTime.mins, GetTime.secs);
-			debug_printf("Creating a new file %s\n",file_name);
-
-			//rc = open_wave_file(&wav_file, file_name, FREQUENCY, SECONDS);
-			rc = open_wave_file(&wav_file, file_name, frequency, seconds);
-			if(rc){
-				debug_printf("Error opening a new wav file %d\n",rc);
-				break;
-			}
-			else{
-				file_is_open = 1;
-				in_record = 1;
-			}
-			putDataIntoOpenFile((void *)circular_buffer, 468); // to fill first sector in order to increase performance
-			while(file_is_open){ // should be controlled by the file size????
-				while(bufferInside <= 255);//spin-lock to wait buffer samples
-
-				write_result = putDataIntoOpenFile((void *)(used_buffer+bufferOutIdx), 512);
-				bufferOutIdx = ((bufferOutIdx + 512)% b_size);
-				if(bufferOutIdx == 0) { // switch buffer
-					used_buffer = used_buffer==circular_buffer?circular_buffer2:circular_buffer;
-					if(!write_result)
-						WDTIM_service(hWdt);
+				//rc = open_wave_file(&wav_file, file_name, FREQUENCY, SECONDS);
+				rc = open_wave_file(&wav_file, file_name, frequency, seconds);
+				if(rc){
+					debug_printf("Error opening a new wav file %d\n",rc);
+					break;
 				}
-				bufferInside-=256; // sample number
+				else{
+					file_is_open = 1;
+					in_record = 1;
+				}
+				putDataIntoOpenFile((void *)circular_buffer, 468); // to fill first sector in order to increase performance
+				while(file_is_open){ // should be controlled by the file size????
+					while(bufferInside <= 255);//spin-lock to wait buffer samples
 
-			}
-			// wave header is 44 bytes length
-			//clear_lcd();
-			//SEM_reset(&SEM_BufferFull,0);
-			SEM_pend(&SEM_CloseFile, SYS_FOREVER);
-			close_wave_file(&wav_file);
-			file_is_open = 0;
-			in_record = 0;
-			//directory_listing();
-			file_counter++;
-			step = 0;
-	        //clear_lcd();
-	        debug_printf("File saved %s\n",file_name);
+					write_result = putDataIntoOpenFile((void *)(used_buffer+bufferOutIdx), 512);
+					bufferOutIdx = ((bufferOutIdx + 512)% b_size);
+					if(bufferOutIdx == 0) { // switch buffer
+						used_buffer = used_buffer==circular_buffer?circular_buffer2:circular_buffer;
+						if(!write_result)
+							WDTIM_service(hWdt);
+					}
+					bufferInside-=256; // sample number
+
+				}
+				// wave header is 44 bytes length
+				//clear_lcd();
+				//SEM_reset(&SEM_BufferFull,0);
+				SEM_pend(&SEM_CloseFile, SYS_FOREVER);
+				close_wave_file(&wav_file);
+				file_is_open = 0;
+				in_record = 0;
+				//directory_listing();
+				file_counter++;
+				step = 0;
+				//clear_lcd();
+				debug_printf("File saved %s\n",file_name);
+    		}while(nFiles > 0); // this is for multiple file creation in MODE_AFTER_FIXED_TIME
+    	}
+    	if(mode == MODE_AFTER_FIXED_TIME){
+    		RTC_scheduleAlarmAfterMinutes(minutesToSleep);
     	}
         // Put DSP into RTC only mode
         if(mode != MODE_ALWAYS_ON) {

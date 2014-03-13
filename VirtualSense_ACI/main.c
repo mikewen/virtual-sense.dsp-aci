@@ -102,6 +102,8 @@ Uint8 gain = 40;
 Uint8 impedence = 3;
 Uint16 seconds = 5;
 Uint16 file_counter = 0;
+Uint16 nFiles = 0;
+Uint16 minutesToSleep = 0;
 
 // Demo switch flag: 0 - power display, 1 - spectrum analyzer
 Uint16 DemoSwitchFlag = 1;
@@ -366,7 +368,9 @@ init_all_peripheral(void)
 		rc = f_read(&file_config,  &field, 1, &bw);
 		debug_printf(" Mode is %d \n", field);
 		mode = field;
-		if( (mode == MODE_ALWAYS_ON) || (mode == MODE_EVERY_MINUT) ) {
+		if( (mode == MODE_ALWAYS_ON) ||
+			(mode == MODE_EVERY_MINUT) ||
+			(mode == MODE_AFTER_FIXED_TIME) ) {
 			//frequency
 			rc = f_read(&file_config,  &field, 1, &bw);
 			if(field == 1)
@@ -395,6 +399,14 @@ init_all_peripheral(void)
 			rc = f_read(&file_config,  &field, 2, &bw);
 			debug_printf(" Seconds is %d \n", field);
 			seconds = field;
+			// number of files to create
+			rc = f_read(&file_config,  &field, 2, &bw);
+			debug_printf(" N Files is %d \n", field);
+			nFiles = field;
+			// minutes to sleep
+			rc = f_read(&file_config,  &field, 2, &bw);
+			debug_printf(" Minutes to sleep is %d \n", field);
+			minutesToSleep = field;
 		}
 		else
 			debug_printf(" Mode not valid\n");

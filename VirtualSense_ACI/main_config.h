@@ -80,9 +80,10 @@
 
 #define FW_VER "0.1"
 
-#define MODE_ALWAYS_ON	1
-#define MODE_EVERY_MINUT 2
-#define MODE_CALENDAR 3
+#define MODE_ALWAYS_ON			1
+#define MODE_EVERY_MINUT 		2
+#define MODE_CALENDAR 			3
+#define MODE_AFTER_FIXED_TIME 	4
 
 
 #define DEBUG_UART 1
@@ -120,6 +121,9 @@ extern Uint8 impedence;
  * 2 byte for lenght
  */
 extern Uint16 seconds;
+
+extern Uint16 minutesToSleep;
+extern Uint16 nFiles;
 
 extern Uint16 file_counter;
 /*****************************************************************************/

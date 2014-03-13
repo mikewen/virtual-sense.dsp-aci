@@ -622,7 +622,7 @@ DWORD get_fattime ()
                         return    ((DWORD)(2000 + GetDate.year - 1980) << 25)   /* Year = 2012 */
                                                 | ((DWORD)GetDate.month << 21)                          /* Month = 1 */
                                                 | ((DWORD)GetDate.day << 16)                            /* Day_m = 1*/
-                                                | ((DWORD)(GetTime.hours + 1) << 11)                            /* Hour = 0 */
+                                                | ((DWORD)(GetTime.hours) << 11)                        /* Hour = 0 */
                                                 | ((DWORD)GetTime.mins << 5)                            /* Min = 0 */
                                                 | ((DWORD)GetTime.secs >> 1);                           /* Sec = 0 */
         }else {

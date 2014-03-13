@@ -243,22 +243,33 @@ void RTC_scheduleAlarmAfterMinutes(unsigned short minutes){
 	CSL_RtcAlarm     nextAlarmTime;
 	CSL_Status		 status;
 
-
+	//RTC_eventDisable(CSL_RTC_MINSEVENT_INTERRUPT); // always active I don't know why !!!!!!
 	RTC_getDate(&actualDate);
 	RTC_getTime(&actualTime);
 
 	nextAlarmTime.year  = actualDate.year;
 	nextAlarmTime.month = actualDate.month;
 	nextAlarmTime.day   = actualDate.day;
+	nextAlarmTime.secs  = actualTime.secs;
+	nextAlarmTime.mSecs = 00;
 
 	nextAlarmTime.hours = actualTime.hours;
 	nextAlarmTime.mins  = actualTime.mins+minutes;
-	if(actualTime.mins > 59){
-		actualTime.mins = 0;
-		actualTime.hours = actualTime.hours +1;
+	if(nextAlarmTime.mins > 59){
+		nextAlarmTime.mins = 0;
+		nextAlarmTime.hours = nextAlarmTime.hours +1;
+		if(nextAlarmTime.hours > 23){
+			nextAlarmTime.hours = 0;
+			nextAlarmTime.day = nextAlarmTime.day + 1;
+		}
 	}
-	nextAlarmTime.secs  = actualTime.secs;
-	nextAlarmTime.mSecs = 00;
+
+	debug_printf("Setting wake-up alarm for secs %d\n",nextAlarmTime.secs);
+	debug_printf("Setting wake-up alarm for mins %d\n",nextAlarmTime.mins);
+	debug_printf("Setting wake-up alarm for hours %d\n",nextAlarmTime.hours);
+	debug_printf("Setting wake-up alarm for days %d\n",nextAlarmTime.day);
+
+
 
 	status = RTC_setAlarm(&nextAlarmTime);
 
@@ -358,8 +369,8 @@ unsigned char RTC_shutdownToRTCOnlyMonde(){
     // RTC configure
     asm("    *port(#0x1920) = #0x803F "); //clear interrupt flags
     asm("    *port(#0x1900) = #0x0001 "); //RTCINTEN enabled
-    //asm("    *port(#0x1924) = #0x8020 "); //EXTINTEN enabled
-    asm("    *port(#0x1924) = #0x8024 "); //EXTINTEN enabled ALARM INT enabled MINUTES INT enabled
+    asm("    *port(#0x1924) = #0x8020 "); //EXTINTEN enabled ALARM INT
+    //asm("    *port(#0x1924) = #0x8024 "); //EXTINTEN enabled ALARM INT enabled MINUTES INT enabled
     asm("    *port(#0x1930) = #0x0000 "); //WU_DIR input
     count = 0;
     do // waiting until RTC interrupt is enabled in the RTC domain could take 2 RTC clocks for write to propagate
