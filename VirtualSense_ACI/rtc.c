@@ -256,10 +256,10 @@ void RTC_scheduleAlarmAfterMinutes(unsigned short minutes){
 	nextAlarmTime.hours = actualTime.hours;
 	nextAlarmTime.mins  = actualTime.mins+minutes;
 	if(nextAlarmTime.mins > 59){
-		nextAlarmTime.mins = 0;
+		nextAlarmTime.mins = nextAlarmTime.mins - 60;
 		nextAlarmTime.hours = nextAlarmTime.hours +1;
 		if(nextAlarmTime.hours > 23){
-			nextAlarmTime.hours = 0;
+			nextAlarmTime.hours = nextAlarmTime.hours - 24;
 			nextAlarmTime.day = nextAlarmTime.day + 1;
 		}
 	}
