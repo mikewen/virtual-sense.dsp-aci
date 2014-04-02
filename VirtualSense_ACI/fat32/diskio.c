@@ -130,7 +130,13 @@ DSTATUS disk_status (
 /*-----------------------------------------------------------------------*/
 /* Read Sector(s)                                                        */
 /*-----------------------------------------------------------------------*/
+void lowLevelRead( Uint32             cardAddr,
+        Uint16             noOfBytes,
+        Uint16             *pReadBuffer){
 
+		MMC_read(mmcsdHandle, cardAddr, noOfBytes, pReadBuffer);
+
+}
 DRESULT disk_read (
         BYTE pdrv,              /* Physical drive nmuber (0..) */
         BYTE *buff,             /* Data buffer to store read data */
@@ -176,6 +182,14 @@ DRESULT disk_read (
 /*-----------------------------------------------------------------------*/
 
 #if _USE_WRITE
+
+void lowLevelWrite(Uint32 c,  Uint16 nBytes,  Uint16 * bu){
+
+	dbgGpio2Write(1);
+	MMC_write(mmcsdHandle, c, nBytes, bu);
+	dbgGpio2Write(0);
+
+}
 DRESULT disk_write (
         BYTE pdrv,                      /* Physical drive nmuber (0..) */
         const BYTE *buff,       /* Data to be written */
@@ -411,12 +425,16 @@ CSL_Status configSdCard (CSL_MMCSDOpMode    opModes)
 			/* Check if the card is high capacity card */
 			if(mmcsdHandle->cardObj->sdHcDetected == TRUE)
 			{
-				printf("SD card is High Capacity Card\n");
-				printf("Memory Access Uses Block Addressing\n\n");
+				debug_printf("SD card is High Capacity Card\n");
+				debug_printf("Memory Access Uses Block Addressing\n\n");
+				debug_printf("Card block length %u\n",mmcsdHandle->cardObj->blockLength);
+				debug_printf("Card capacity %u\n",mmcsdHandle->cardObj->cardCapacity);
+				debug_printf("Card transfer rate %u\n",mmcsdHandle->cardObj->maxXfrRate);
 
 				/* For the SDHC card Block addressing will be used.
 				   Sector address will be same as sector number */
 				cardAddr = sectCount;
+				//debug_printf("%x %x\n", buff[j*512+i*2+1], buff[j*512+i*2]);
 			}
 			else
 			{

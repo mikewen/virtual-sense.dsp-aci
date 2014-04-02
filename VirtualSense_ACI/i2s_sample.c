@@ -710,19 +710,22 @@ void I2S_DmaRxLChCallBack(
             recInLeftBuf = *ptrRxLeft;
             ptrRxLeft += 2;
 
-            if(in_record && (bufferInside < PROCESS_BUFFER_SIZE/2)){
+            if(in_record && (bufferInside < PROCESS_BUFFER_SIZE)){
 
-            	circular_buffer[bufferInIdx] =  (recInLeftBuf & 0xFF);
+            	circular_buffer[bufferInIdx] =  recInLeftBuf;
+            	/*circular_buffer[bufferInIdx] =  (recInLeftBuf & 0xFF);
             	bufferInIdx = ((bufferInIdx+1) % PROCESS_BUFFER_SIZE);
             	circular_buffer[bufferInIdx] =  ((recInLeftBuf >> 8) & 0xFF);
-            	bufferInIdx = ((bufferInIdx+1) % PROCESS_BUFFER_SIZE);
+            	bufferInIdx = ((bufferInIdx+1) % PROCESS_BUFFER_SIZE);*/
             	bufferInside++;
             }
         }
+        if((bufferInside >= PROCESS_BUFFER_SIZE))
+        	dbgGpio1Write(1);
        	//SEM_post(&SEM_BufferEmpty); // release a permit
        	// a new sector is just inserted on the buffer
         //HIGHT_10();
-        dbgGpio1Write(1);
+
         //putDataIntoOpenFile((void *)circular_buffer, PROCESS_BUFFER_SIZE);
         //LOW_10();
         //bufferInIdx = 0;
