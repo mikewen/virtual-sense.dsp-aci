@@ -74,8 +74,8 @@ DSTATUS disk_initialize (BYTE pdrv)
         // Put your code here
 
         CSL_Status    status = CSL_SOK;
-        status = configSdCard(CSL_MMCSD_OPMODE_DMA);
-        //status = configSdCard(CSL_MMCSD_OPMODE_POLLED);
+        //status = configSdCard(CSL_MMCSD_OPMODE_DMA);
+        status = configSdCard(CSL_MMCSD_OPMODE_POLLED);
 
 
         if(status != CSL_SOK)
@@ -186,6 +186,7 @@ DRESULT disk_read (
 void lowLevelWrite(Uint32 c,  Uint16 nBytes,  Uint16 * bu){
 
 	dbgGpio2Write(1);
+	//MMC_setWriteBlkEraseCnt(mmcsdHandle, (nBytes/512));
 	MMC_write(mmcsdHandle, c, nBytes, bu);
 	dbgGpio2Write(0);
 
@@ -216,9 +217,9 @@ DRESULT disk_write (
                 }
                 /*for(h=0;h<100000;h++){ */
                 	dbgGpio2Write(1);
-                	status = MMC_setWriteBlkEraseCnt(mmcsdHandle, 256);
+                	//status = MMC_setWriteBlkEraseCnt(mmcsdHandle, 256);
 
-                	status |= MMC_write(mmcsdHandle, cardAddr, noOfBytes, writer_buffer);
+                	status = MMC_write(mmcsdHandle, cardAddr, noOfBytes, writer_buffer);
                 	dbgGpio2Write(0);
                 	if(status !=  CSL_SOK)
                 		res = RES_ERROR;
@@ -303,7 +304,7 @@ CSL_Status configSdCard (CSL_MMCSDOpMode    opModes)
 
 		cardType  = CSL_CARD_NONE;
 		sectCount = 0;
-		opMode    = CSL_MMCSD_OPMODE_DMA;
+		opMode    = CSL_MMCSD_OPMODE_POLLED;
 
 		/* Initialize MMCSD module */
 

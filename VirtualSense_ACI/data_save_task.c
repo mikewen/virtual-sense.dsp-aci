@@ -32,7 +32,7 @@
 #include "make_wav.h"
 
 #define ICR 0x0001
-#define LOW_LEVEL_SECTOR 0x100000
+#define LOW_LEVEL_SECTOR 0x200000
 
 //FRESULT rc;
 
@@ -109,8 +109,8 @@ void DataSaveTask(void)
 				while(bufferInside <= 255);//spin-lock to wait buffer samples
 
 
-				nBytes = (bufferInside*2)>5120?5120:(bufferInside*2);
-				//debug_printf("now start writing....%ld\n",nBytes);
+				nBytes = (bufferInside*2);//>51200?51200:(bufferInside*2);
+				//debug_printf("now start writing....%ld \n",nBytes);
 				//write_result = putDataIntoOpenFile((void *)(used_buffer+bufferOutIdx), 512);
 				lowLevelWrite(cardAddr,  nBytes,  (Uint16 *)(circular_buffer+bufferOutIdx));
 				cardAddr+=(nBytes);
@@ -120,7 +120,7 @@ void DataSaveTask(void)
 				bufferOutIdx = ((bufferOutIdx + (nBytes>>1))% b_size);
 				bufferInside-=(nBytes>>1); // sample number
 				if(totalBytes >= (((seconds * step_per_second)+1)*512)){
-					debug_printf("now reading from low-level and write on fat\n");
+					debug_printf("now reading from low-level and write on fat .. card address was %lx\n", cardAddr);
 					// need to close the file
 					cardAddr = LOW_LEVEL_SECTOR;
 					while(file_is_open){
