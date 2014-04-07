@@ -2609,7 +2609,8 @@ FRESULT f_write (
 			if (cc) {						/* Write maximum contiguous sectors directly */
 				if (csect + cc > fp->fs->csize)	/* Clip at cluster boundary */
 					cc = fp->fs->csize - csect;
-				if (disk_write(fp->fs->drv, wbuff, sect, (BYTE)cc) != RES_OK)
+				//if (disk_write(fp->fs->drv, wbuff, sect, (BYTE)cc) != RES_OK)
+				if (disk_contiguous_write(fp->fs->drv, (unsigned short *)wbuff, sect, (BYTE)cc) != RES_OK)
 					ABORT(fp->fs, FR_DISK_ERR);
 #if _FS_TINY
 				if (fp->fs->winsect - sect < cc) {	/* Refill sector cache if it gets invalidated by the direct write */

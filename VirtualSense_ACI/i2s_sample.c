@@ -64,7 +64,7 @@ extern Uint32 bufferInIdx;// = 0; //logical pointers
 extern Uint16 in_record;
 extern Int32 bufferInside;
 extern void putDataIntoOpenFile(const void *buff, unsigned int number_of_bytes);
-extern unsigned char circular_buffer[PROCESS_BUFFER_SIZE];
+extern Int16 circular_buffer[PROCESS_BUFFER_SIZE];
 
 DMA_ChanHandle   hDmaTxLeft;
 DMA_ChanHandle   hDmaTxRight;
@@ -710,28 +710,25 @@ void I2S_DmaRxLChCallBack(
             recInLeftBuf = *ptrRxLeft;
             ptrRxLeft += 2;
 
-            if(in_record && (bufferInside < PROCESS_BUFFER_SIZE/2)){
+            if(in_record && (bufferInside < PROCESS_BUFFER_SIZE/*/2*/)){
 
+            	circular_buffer[bufferInIdx] = recInLeftBuf; //LELE test for byte
+            	bufferInIdx = ((bufferInIdx+1) % PROCESS_BUFFER_SIZE);
+            	/*
             	circular_buffer[bufferInIdx] =  (recInLeftBuf & 0xFF);
             	bufferInIdx = ((bufferInIdx+1) % PROCESS_BUFFER_SIZE);
             	circular_buffer[bufferInIdx] =  ((recInLeftBuf >> 8) & 0xFF);
-            	bufferInIdx = ((bufferInIdx+1) % PROCESS_BUFFER_SIZE);
+            	bufferInIdx = ((bufferInIdx+1) % PROCESS_BUFFER_SIZE); */
             	bufferInside++;
             }
         }
-       	//SEM_post(&SEM_BufferEmpty); // release a permit
-       	// a new sector is just inserted on the buffer
-        //HIGHT_10();
-        dbgGpio1Write(1);
+       	if(bufferInside >= PROCESS_BUFFER_SIZE/*/2*/)
+        	dbgGpio1Write(1); // BUFFER FULL
         //putDataIntoOpenFile((void *)circular_buffer, PROCESS_BUFFER_SIZE);
-        //LOW_10();
-        //bufferInIdx = 0;
     }
     else
     {
-
-        printf("Left RX DMA Failed");
-
+    	printf("Left RX DMA Failed");
     }
 
 #endif // ENABLE_RECORD

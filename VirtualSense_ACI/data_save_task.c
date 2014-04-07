@@ -68,6 +68,7 @@ void DataSaveTask(void)
 	Uint32 b_size = PROCESS_BUFFER_SIZE;
 	Uint32 iterations = 0;
 	Uint32 index2 = 0;
+	Uint32 writingBytes = 0;
 
     //main loop
     while (1)
@@ -93,9 +94,10 @@ void DataSaveTask(void)
 			while(file_is_open){ // should be controlled by the file size????
 				while(bufferInside <= 255);//spin-lock to wait buffer samples
 
-				putDataIntoOpenFile((void *)(circular_buffer+bufferOutIdx), 512);
-				bufferOutIdx = ((bufferOutIdx + 512) % b_size);
-				bufferInside-=256; // sample number
+				writingBytes = bufferInside*2;
+				putDataIntoOpenFile((void *)(circular_buffer+bufferOutIdx), writingBytes);
+				bufferOutIdx = ((bufferOutIdx + writingBytes) % b_size);
+				bufferInside-=(writingBytes >> 1); // sample number
 
 			}
 #if 0
@@ -132,11 +134,11 @@ void DataSaveTask(void)
 void putDataIntoOpenFile(const void *buff, unsigned int number_of_bytes){
 	if(file_is_open){
 		write_data_to_wave(&wav_file, buff, number_of_bytes);
-		my_step++;
+		my_step+=(number_of_bytes/512);
         //wdt_Refresh();
 	}
 	//if(my_step == ((SECONDS * STEP_PER_SECOND)+1)){
-	if(my_step == ((seconds * step_per_second)+1)){
+	if(my_step >= ((seconds * step_per_second)+1)){
 		file_is_open = 0;
 		in_record = 0;
 		my_step = 0;

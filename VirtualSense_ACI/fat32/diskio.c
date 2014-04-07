@@ -149,7 +149,9 @@ DRESULT disk_read (
         //read the entire block (512) byte
         //printf("Reading addres %d and sector %d\n",cardAddr, count);
         for(j=0; j < count; j++){
+        		dbgGpio2Write(1);
                 status = MMC_read(mmcsdHandle, cardAddr, noOfBytes, readed_buffer);
+                dbgGpio2Write(0);
                 if(status !=  CSL_SOK){
                         res = RES_ERROR;
                         break;
@@ -176,6 +178,24 @@ DRESULT disk_read (
 /*-----------------------------------------------------------------------*/
 
 #if _USE_WRITE
+
+DRESULT disk_contiguous_write(
+		BYTE pdrv,                      /* Physical drive nmuber (0..) */
+		const unsigned short *buff,       		/* Data to be written */
+		DWORD sector,           		/* Sector address (LBA) */
+		BYTE count                      /* Number of sectors to write (1..128) */
+){
+
+		DRESULT res = RES_OK;
+		CSL_Status              status;
+
+		dbgGpio2Write(1);
+		status = MMC_write(mmcsdHandle, (Uint32)sector, count*512, (unsigned short *)buff);
+		dbgGpio2Write(0);
+		if(status !=  CSL_SOK)
+			res = RES_ERROR;
+		return res;
+}
 DRESULT disk_write (
         BYTE pdrv,                      /* Physical drive nmuber (0..) */
         const BYTE *buff,       /* Data to be written */
@@ -193,18 +213,18 @@ DRESULT disk_write (
         Uint32					index2 = 0;
 
 
-        //debug_printf("Writing %d bytes at address %d\n", noOfBytes, cardAddr);
+        //debug_printf("Writing %d sector at address %llx\n", count, cardAddr);
         for(j=0; j < count; j++){
         		//debug_printf("writing sector %d starting from add %d\n",count, cardAddr);
                 for(i=0; i < 256; i++){
                         writer_buffer[i] = ((buff[j*512+i*2+1] << 8)|(buff[j*512+i*2]));
-                        //debug_printf("%x %x\n", buff[j*512+i*2+1], buff[j*512+i*2]);
+                        //debug_printf("---- %x %x\n", (buff[j*512+i*2+1] & 0xFF), (buff[j*512+i*2] & 0xFF));
                 }
+                //debug_printf(" original 0x%x new 0x%x\n", (*(Uint16*)buff), writer_buffer[0]);
                 /*for(h=0;h<100000;h++){ */
                 	dbgGpio2Write(1);
-                	status = MMC_setWriteBlkEraseCnt(mmcsdHandle, 256);
 
-                	status |= MMC_write(mmcsdHandle, cardAddr, noOfBytes, writer_buffer);
+                	status = MMC_write(mmcsdHandle, cardAddr, noOfBytes, writer_buffer);
                 	dbgGpio2Write(0);
                 	if(status !=  CSL_SOK)
                 		res = RES_ERROR;
@@ -289,7 +309,7 @@ CSL_Status configSdCard (CSL_MMCSDOpMode    opModes)
 
 		cardType  = CSL_CARD_NONE;
 		sectCount = 0;
-		opMode    = CSL_MMCSD_OPMODE_DMA;
+		opMode    = CSL_MMCSD_OPMODE_POLLED;
 
 		/* Initialize MMCSD module */
 

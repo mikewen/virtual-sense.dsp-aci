@@ -187,7 +187,7 @@ void main(void)
 	/* GPIO10 for AIC3204 reset */
 	gpioIoDir = (((Uint32)CSL_GPIO_DIR_OUTPUT)<<CSL_GPIO_PIN2) |
 		  (((Uint32)CSL_GPIO_DIR_OUTPUT)<<CSL_GPIO_PIN4) |
-		   (((Uint32)CSL_GPIO_DIR_OUTPUT)<<CSL_GPIO_PIN14)| //WAS 15
+		   (((Uint32)CSL_GPIO_DIR_OUTPUT)<<CSL_GPIO_PIN15)| //WAS 15
 		   (((Uint32)CSL_GPIO_DIR_OUTPUT)<<CSL_GPIO_PIN16);
 
 	gpioInit(gpioIoDir, 0x00000000, 0x00000000);
@@ -210,7 +210,7 @@ void main(void)
     /* Enable the USB LDO */
     //*(volatile ioport unsigned int *)(0x7004) |= 0x0001;
 #if DEBUG_UART
-    init_debug_over_uart(100);
+    init_debug_over_uart(120);
 #endif
     debug_printf("Firmware version:");
     debug_printf(FW_VER);

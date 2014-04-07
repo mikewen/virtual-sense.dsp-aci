@@ -30,7 +30,7 @@
 CSL_GpioObj gGpioObj;
 CSL_GpioObj *hGpio;
 
-#define DBG_GPIO1   ( CSL_GPIO_PIN14 ) //WAS 15
+#define DBG_GPIO1   ( CSL_GPIO_PIN15 ) //WAS 15
 #define DBG_GPIO2   ( CSL_GPIO_PIN16 )
 
 // Debug GPIO's

@@ -22,6 +22,8 @@
 
 #ifndef MAIN_CONFIG_H
 #define MAIN_CONFIG_H
+
+#include <csl_types.h>
 /*****************************************************************************
 
 			 192 kHz: P=1, R=1, J=7, D=1680 (0x690)  => .1680 => J.D = 7.1680
@@ -93,7 +95,7 @@ static inline void HIGHT_10(){   (*(volatile ioport unsigned int *)(0x1C0B) |= 0
 // set the GPIO 11 to 1, set SYS_GPIO_DATAOUT0 (0x1C0B) bit 11 to 1
 static inline void HIGHT_11(){    (*(volatile ioport unsigned int *)(0x1C0B) |= 0x0400);}
 
-#define DEBUG_UART 0
+#define DEBUG_UART 1
 
 #endif
 
