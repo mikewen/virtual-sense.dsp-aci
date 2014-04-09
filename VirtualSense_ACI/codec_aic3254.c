@@ -99,7 +99,7 @@ PSP_Result set_sampling_frequency_gain_impedence(unsigned long SamplingFrequency
 		    PLLPR = 0x91; // 1001 0001b. PLL on. P = 1, R = 1.
 		    AOSR  = 32;
 		    BCLK_DIVIDER	= 0x81;
-		    PRB = 0x09; // 13
+		    PRB = 0x07; // 13
 		break;
 
 		case 96000:
