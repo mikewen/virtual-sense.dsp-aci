@@ -712,7 +712,7 @@ void I2S_DmaRxLChCallBack(
             recInLeftBuf = *ptrRxLeft;
             // amplificazione per compensare la perdita del ù
             // filtro B su 192khz
-            recInLeftBuf *=10;
+            recInLeftBuf *=40;
             ptrRxLeft += 2;
 
             if(in_record && (bufferInside < PROCESS_BUFFER_SIZE)){
