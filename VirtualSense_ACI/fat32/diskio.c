@@ -201,9 +201,9 @@ DRESULT disk_write (
                         //debug_printf("%x %x\n", buff[j*512+i*2+1], buff[j*512+i*2]);
                 }
                 /*for(h=0;h<100000;h++){ */
-                	dbgGpio2Write(1);
+                	//dbgGpio2Write(1);
                 	status = MMC_write(mmcsdHandle, cardAddr, noOfBytes, writer_buffer);
-                	dbgGpio2Write(0);
+                	//dbgGpio2Write(0);
                 	if(status !=  CSL_SOK)
                 		res = RES_ERROR;
                 	/*cardAddr++;

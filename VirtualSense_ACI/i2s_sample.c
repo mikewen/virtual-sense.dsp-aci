@@ -691,7 +691,7 @@ void I2S_DmaRxLChCallBack(
         Uint16 i;
 
 
-        dbgGpio1Write(0);
+        //dbgGpio1Write(0);
 #ifdef ENABLE_RECORD
     if ((dataCallback != NULL) && (dmaStatus == PSP_DMA_TRANSFER_COMPLETE))
     {
@@ -710,6 +710,9 @@ void I2S_DmaRxLChCallBack(
             // NOTE: since we need datapack to be disabled on I2S tx, we need it disabled on I2S rx therefore
             // we get 2 words per DMA transfer so the offset into DMA buffers has to be twice as big
             recInLeftBuf = *ptrRxLeft;
+            // amplificazione per compensare la perdita del ù
+            // filtro B su 192khz
+            recInLeftBuf *=10;
             ptrRxLeft += 2;
 
             if(in_record && (bufferInside < PROCESS_BUFFER_SIZE)){
@@ -736,7 +739,7 @@ void I2S_DmaRxLChCallBack(
             	bufferInIdx = ((bufferInIdx+1) % PROCESS_BUFFER_SIZE);
             	bufferInside++;*/
             }else {
-            	dbgGpio1Write(1);
+            	//dbgGpio1Write(1);
             }
         }
        	//SEM_post(&SEM_BufferEmpty); // release a permit

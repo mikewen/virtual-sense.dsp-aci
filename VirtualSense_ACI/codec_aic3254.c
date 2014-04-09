@@ -99,7 +99,7 @@ PSP_Result set_sampling_frequency_gain_impedence(unsigned long SamplingFrequency
 		    PLLPR = 0x91; // 1001 0001b. PLL on. P = 1, R = 1.
 		    AOSR  = 32;
 		    BCLK_DIVIDER	= 0x81;
-		    PRB = 0x0d; // 13
+		    PRB = 0x09; // 13
 		break;
 
 		case 96000:
@@ -315,8 +315,12 @@ PSP_Result set_sampling_frequency_gain_impedence(unsigned long SamplingFrequency
 	         return result;
 	     }
 
+	     // differential configuration
+	     // need to pass impedance
+	     // CM configuration need to pass impedance << 2
+	     // or impedance  >> 4
 	     //Route Common Mode to LEFT_M with impedance
-	     result = AIC3254_Write(54,(impedance << 2),hi2c);
+	     result = AIC3254_Write(54,impedance,hi2c);
 	     if (result != PSP_SOK)
 	     {
 	         return result;
@@ -330,7 +334,7 @@ PSP_Result set_sampling_frequency_gain_impedence(unsigned long SamplingFrequency
 	     }
 
 	     //Route Common Mode to RIGHT_M with impedance
-	     result = AIC3254_Write(57,(impedance << 2),hi2c);
+	     result = AIC3254_Write(57,impedance,hi2c);
 	     if (result != PSP_SOK)
 	     {
 	         return result;

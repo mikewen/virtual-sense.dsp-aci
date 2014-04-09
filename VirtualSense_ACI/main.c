@@ -191,7 +191,7 @@ void main(void)
 	/* GPIO10 for AIC3204 reset */
 	gpioIoDir = (((Uint32)CSL_GPIO_DIR_OUTPUT)<<CSL_GPIO_PIN2) |
 		  (((Uint32)CSL_GPIO_DIR_OUTPUT)<<CSL_GPIO_PIN4) |
-		   (((Uint32)CSL_GPIO_DIR_OUTPUT)<<CSL_GPIO_PIN14)| //WAS 15
+		   (((Uint32)CSL_GPIO_DIR_OUTPUT)<<CSL_GPIO_PIN15)| //WAS 15
 		   (((Uint32)CSL_GPIO_DIR_OUTPUT)<<CSL_GPIO_PIN16);
 
 	gpioInit(gpioIoDir, 0x00000000, 0x00000000);
@@ -267,7 +267,8 @@ init_all_peripheral(void)
     //Initialize RTC
     initRTC();
 
-
+    // turn off led
+    CSL_CPU_REGS->ST1_55 &=~CSL_CPU_ST1_55_XF_MASK;
     // OPEN A NOT PRESENT FILE TO RESOLVE FIRTS FILE NOT FOUND BUG
     debug_printf("RTC_initRtcFromFile\n");
     rc_fat = f_open(&rtc_time_file, "null.void", FA_READ);
@@ -430,6 +431,9 @@ init_all_peripheral(void)
 		}
 		//init_debug_over_uart(120);
 	}
+
+	// turn on led
+	CSL_CPU_REGS->ST1_55 |= CSL_CPU_ST1_55_XF_MASK;
 
 	// Initialize audio module
 	debug_printf(" Field: %d Freq is %ld step per second: %ld\n", field, frequency, step_per_second);
