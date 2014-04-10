@@ -132,7 +132,7 @@ typedef struct {
 	UINT	lockid;			/* File lock ID (index of file semaphore table Files[]) */
 #endif
 #if !_FS_TINY
-	BYTE	buf[_MAX_SS];	/* File data read/write buffer */
+	BYTE	file_buf[_MAX_SS];	/* File data read/write buffer */
 #endif
 } FIL;
 

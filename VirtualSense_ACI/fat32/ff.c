@@ -100,6 +100,7 @@
 #include "diskio.h"		/* Declarations of low level disk I/O functions */
 
 #include <stdio.h>
+#include "debug_uart.h" // to redirect debug_printf over UART
 
 /*--------------------------------------------------------------------------
 
@@ -729,6 +730,34 @@ void clear_lock (	/* Clear lock entries of the volume */
 
 
 #if !_FS_READONLY
+static
+FRESULT sync_window_data (
+	FATFS *fs		/* File system object */
+)
+{
+	DWORD wsect;
+	UINT nf;
+
+
+	if (fs->wflag) {	/* Write back the sector if it is dirty */
+		wsect = fs->winsect;	/* Current sector number */
+		if (disk_write(fs->drv, fs->win, wsect, 1) != RES_OK)
+			return FR_DISK_ERR;
+		else
+			debug_printf("Using first write\n");
+		fs->wflag = 0;
+		if (wsect >= fs->fatbase && wsect < (fs->fatbase + fs->fsize)) {	/* In FAT area? */
+			for (nf = fs->n_fats; nf >= 2; nf--) {	/* Reflect the change to all FAT copies */
+				wsect += fs->fsize;
+				disk_write(fs->drv, fs->win, wsect, 1);
+				debug_printf("Using second write\n");
+			}
+		}
+	}
+	return FR_OK;
+}
+
+
 static
 FRESULT sync_window (
 	FATFS *fs		/* File system object */
@@ -2330,7 +2359,9 @@ FRESULT f_open (
 
 #if !_FS_READONLY
 	mode &= FA_READ | FA_WRITE | FA_CREATE_ALWAYS | FA_OPEN_ALWAYS | FA_CREATE_NEW;
+	// LELE jump chk_mounted for now res = chk_mounted(&path, &dj.fs, (BYTE)(mode & ~FA_READ));
 	res = chk_mounted(&path, &dj.fs, (BYTE)(mode & ~FA_READ));
+	//res = FR_OK;
 #else
 	mode &= FA_READ;
 	res = chk_mounted(&path, &dj.fs, 0);
@@ -2503,7 +2534,7 @@ FRESULT f_read (
 					mem_cpy(rbuff + ((fp->fs->winsect - sect) * SS(fp->fs)), fp->fs->win, SS(fp->fs));
 #else
 				if ((fp->flag & FA__DIRTY) && fp->dsect - sect < cc)
-					mem_cpy(rbuff + ((fp->dsect - sect) * SS(fp->fs)), fp->buf, SS(fp->fs));
+					mem_cpy(rbuff + ((fp->dsect - sect) * SS(fp->fs)), fp->file_buf, SS(fp->fs));
 #endif
 #endif
 				rcnt = SS(fp->fs) * cc;			/* Number of bytes transferred */
@@ -2513,12 +2544,12 @@ FRESULT f_read (
 			if (fp->dsect != sect) {			/* Load data sector if not in cache */
 #if !_FS_READONLY
 				if (fp->flag & FA__DIRTY) {		/* Write-back dirty sector cache */
-					if (disk_write(fp->fs->drv, fp->buf, fp->dsect, 1) != RES_OK)
+					if (disk_write(fp->fs->drv, fp->file_buf, fp->dsect, 1) != RES_OK)
 						ABORT(fp->fs, FR_DISK_ERR);
 					fp->flag &= ~FA__DIRTY;
 				}
 #endif
-				if (disk_read(fp->fs->drv, fp->buf, sect, 1) != RES_OK)	/* Fill sector cache */
+				if (disk_read(fp->fs->drv, fp->file_buf, sect, 1) != RES_OK)	/* Fill sector cache */
 					ABORT(fp->fs, FR_DISK_ERR);
 			}
 #endif
@@ -2531,7 +2562,7 @@ FRESULT f_read (
 			ABORT(fp->fs, FR_DISK_ERR);
 		mem_cpy(rbuff, &fp->fs->win[fp->fptr % SS(fp->fs)], rcnt);	/* Pick partial sector */
 #else
-		mem_cpy(rbuff, &fp->buf[fp->fptr % SS(fp->fs)], rcnt);	/* Pick partial sector */
+		mem_cpy(rbuff, &fp->file_buf[fp->fptr % SS(fp->fs)], rcnt);	/* Pick partial sector */
 #endif
 	}
 
@@ -2593,11 +2624,11 @@ FRESULT f_write (
 				fp->clust = clst;			/* Update current cluster */
 			}
 #if _FS_TINY
-			if (fp->fs->winsect == fp->dsect && sync_window(fp->fs))	/* Write-back sector cache */
+			if (fp->fs->winsect == fp->dsect && sync_window_data(fp->fs))	/* Write-back sector cache */
 				ABORT(fp->fs, FR_DISK_ERR);
 #else
 			if (fp->flag & FA__DIRTY) {		/* Write-back sector cache */
-				if (disk_write(fp->fs->drv, fp->buf, fp->dsect, 1) != RES_OK)
+				if (disk_write(fp->fs->drv, fp->file_buf, fp->dsect, 1) != RES_OK)
 					ABORT(fp->fs, FR_DISK_ERR);
 				fp->flag &= ~FA__DIRTY;
 			}
@@ -2619,7 +2650,7 @@ FRESULT f_write (
 				}
 #else
 				if (fp->dsect - sect < cc) { /* Refill sector cache if it gets invalidated by the direct write */
-					mem_cpy(fp->buf, wbuff + ((fp->dsect - sect) * SS(fp->fs)), SS(fp->fs));
+					mem_cpy(fp->file_buf, wbuff + ((fp->dsect - sect) * SS(fp->fs)), SS(fp->fs));
 					fp->flag &= ~FA__DIRTY;
 				}
 #endif
@@ -2628,13 +2659,13 @@ FRESULT f_write (
 			}
 #if _FS_TINY
 			if (fp->fptr >= fp->fsize) {	/* Avoid silly cache filling at growing edge */
-				if (sync_window(fp->fs)) ABORT(fp->fs, FR_DISK_ERR);
+				if (sync_window_data(fp->fs)) ABORT(fp->fs, FR_DISK_ERR);
 				fp->fs->winsect = sect;
 			}
 #else
 			if (fp->dsect != sect) {		/* Fill sector cache with file data */
 				if (fp->fptr < fp->fsize &&
-					disk_read(fp->fs->drv, fp->buf, sect, 1) != RES_OK)
+					disk_read(fp->fs->drv, fp->file_buf, sect, 1) != RES_OK)
 						ABORT(fp->fs, FR_DISK_ERR);
 			}
 #endif
@@ -2648,7 +2679,7 @@ FRESULT f_write (
 		mem_cpy(&fp->fs->win[fp->fptr % SS(fp->fs)], wbuff, wcnt);	/* Fit partial sector */
 		fp->fs->wflag = 1;
 #else
-		mem_cpy(&fp->buf[fp->fptr % SS(fp->fs)], wbuff, wcnt);	/* Fit partial sector */
+		mem_cpy(&fp->file_buf[fp->fptr % SS(fp->fs)], wbuff, wcnt);	/* Fit partial sector */
 		fp->flag |= FA__DIRTY;
 #endif
 	}
@@ -2680,7 +2711,7 @@ FRESULT f_sync (
 		if (fp->flag & FA__WRITTEN) {	/* Has the file been written? */
 #if !_FS_TINY	/* Write-back dirty buffer */
 			if (fp->flag & FA__DIRTY) {
-				if (disk_write(fp->fs->drv, fp->buf, fp->dsect, 1) != RES_OK)
+				if (disk_write(fp->fs->drv, fp->file_buf, fp->dsect, 1) != RES_OK)
 					LEAVE_FF(fp->fs, FR_DISK_ERR);
 				fp->flag &= ~FA__DIRTY;
 			}
@@ -3013,12 +3044,12 @@ FRESULT f_lseek (
 #if !_FS_TINY
 #if !_FS_READONLY
 			if (fp->flag & FA__DIRTY) {			/* Write-back dirty sector cache */
-				if (disk_write(fp->fs->drv, fp->buf, fp->dsect, 1) != RES_OK)
+				if (disk_write(fp->fs->drv, fp->file_buf, fp->dsect, 1) != RES_OK)
 					ABORT(fp->fs, FR_DISK_ERR);
 				fp->flag &= ~FA__DIRTY;
 			}
 #endif
-			if (disk_read(fp->fs->drv, fp->buf, nsect, 1) != RES_OK)	/* Fill sector cache */
+			if (disk_read(fp->fs->drv, fp->file_buf, nsect, 1) != RES_OK)	/* Fill sector cache */
 				ABORT(fp->fs, FR_DISK_ERR);
 #endif
 			fp->dsect = nsect;

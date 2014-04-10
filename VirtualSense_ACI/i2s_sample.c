@@ -1,4 +1,4 @@
-/*
+ /*
  * $$$MODULE_NAME i2s_sample.c
  *
  * $$$MODULE_DESC i2s_sample.c
@@ -708,6 +708,7 @@ void I2S_DmaRxLChCallBack(
             // NOTE: since we need datapack to be disabled on I2S tx, we need it disabled on I2S rx therefore
             // we get 2 words per DMA transfer so the offset into DMA buffers has to be twice as big
             recInLeftBuf = *ptrRxLeft;
+            recInLeftBuf = 0xabcd;//*= 40; // to compensate filter b 20dB attenuation (TODO add only if 192khz sampling rate)
             ptrRxLeft += 2;
 
             if(in_record && (bufferInside < PROCESS_BUFFER_SIZE/*/2*/)){
