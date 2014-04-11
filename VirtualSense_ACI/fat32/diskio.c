@@ -189,10 +189,10 @@ DRESULT disk_contiguous_write(
 		DRESULT res = RES_OK;
 		CSL_Status              status;
 
-		dbgGpio2Write(1);
+		//dbgGpio2Write(1);
 		//debug_printf("writing contiguous sectors %d at 0x%lx\n", count, sector);
 		status = MMC_write(mmcsdHandle, (Uint32)sector, count*512, (unsigned short *)buff);
-		dbgGpio2Write(0);
+		//dbgGpio2Write(0);
 		if(status !=  CSL_SOK)
 			res = RES_ERROR;
 		return res;

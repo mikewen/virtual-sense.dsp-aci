@@ -690,7 +690,7 @@ void I2S_DmaRxLChCallBack(
         Uint16 i;
 
 
-        dbgGpio1Write(0);
+        //dbgGpio1Write(0);
 #ifdef ENABLE_RECORD
     if ((dataCallback != NULL) && (dmaStatus == PSP_DMA_TRANSFER_COMPLETE))
     {
@@ -728,8 +728,8 @@ void I2S_DmaRxLChCallBack(
             	bufferInside++;
             }
         }
-       	if(bufferInside >= PROCESS_BUFFER_SIZE/*/2*/)
-        	dbgGpio1Write(1); // BUFFER FULL
+       	//if(bufferInside >= PROCESS_BUFFER_SIZE/*/2*/)
+        //	dbgGpio1Write(1); // BUFFER FULL
         //putDataIntoOpenFile((void *)circular_buffer, PROCESS_BUFFER_SIZE);
     }
     else

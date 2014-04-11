@@ -248,6 +248,9 @@ init_all_peripheral(void)
 	UINT bw;
 	Uint16 field = 0;
 	FIL file_config;
+
+	// turn on led to turn on oscillator
+	CSL_CPU_REGS->ST1_55 &=~CSL_CPU_ST1_55_XF_MASK;
 	debug_printf("Start Configuration....\n");
 	// for debug LELE
 	init_buffer();
@@ -350,6 +353,8 @@ init_all_peripheral(void)
 	debug_printf(" Gain is %d \n", gain);
 	debug_printf(" Impedence is 0x%x \n", impedence);
 
+	// turn on led
+	CSL_CPU_REGS->ST1_55 |= CSL_CPU_ST1_55_XF_MASK;
 
 
 
