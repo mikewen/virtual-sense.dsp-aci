@@ -25,6 +25,7 @@
 
 void circular_buffer_put(Int16 item);
 Int16 circular_buffer_get();
+void init_buffer();
 
 #endif
 

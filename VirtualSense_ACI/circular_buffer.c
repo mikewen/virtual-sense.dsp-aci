@@ -12,7 +12,7 @@
 
 // circular buffer for data collection from AIC3204
 #pragma DATA_SECTION(circular_buffer, ".circular_buffer");
-#pragma DATA_ALIGN(circular_buffer, 4)
+#pragma DATA_ALIGN(circular_buffer, 2)
 Int16 circular_buffer[PROCESS_BUFFER_SIZE];
 // index for bufferIn
 Uint32 bufferInIdx = 0; //logical pointers
@@ -45,4 +45,10 @@ Int16 circular_buffer_get(){
 	bufferOutIdx = ((bufferOutIdx + 1) % b_size); */
 	bufferInside--;
 	return item;
+}
+
+void init_buffer(){
+	Uint32 i = 0;
+	for(i = 0; i < PROCESS_BUFFER_SIZE; i++)
+		circular_buffer[i] = i;
 }

@@ -190,7 +190,7 @@ DRESULT disk_contiguous_write(
 		CSL_Status              status;
 
 		dbgGpio2Write(1);
-		debug_printf("writing contiguous from add %llx\n", sector);
+		//debug_printf("writing contiguous sectors %d at 0x%lx\n", count, sector);
 		status = MMC_write(mmcsdHandle, (Uint32)sector, count*512, (unsigned short *)buff);
 		dbgGpio2Write(0);
 		if(status !=  CSL_SOK)
@@ -214,15 +214,15 @@ DRESULT disk_write (
         Uint32					index2 = 0;
 
 
-        //debug_printf("Writing %d sector at address %llx\n", count, cardAddr);
+        //debug_printf("Writing singolar sector at address 0x%lx\n", cardAddr);
         for(j=0; j < count; j++){
-        		debug_printf("writing sector %d starting from add %llx\n",count, cardAddr);
+        		//debug_printf("writing sector %d starting from add %llx\n",count, cardAddr);
                 for(i=0; i < 256; i++){
                         writer_buffer[i] = ((buff[j*512+i*2+1] << 8)|(buff[j*512+i*2]));
                         //debug_printf("---- %x %x\n", (buff[j*512+i*2+1] & 0xFF), (buff[j*512+i*2] & 0xFF));
                 }
                 i--;
-                debug_printf("---- %x %x\n", (buff[j*512+i*2+1] & 0xFF), (buff[j*512+i*2] & 0xFF));
+                //debug_printf("---- %x %x\n", (buff[j*512+i*2+1] & 0xFF), (buff[j*512+i*2] & 0xFF));
                 //debug_printf(" original 0x%x new 0x%x\n", (*(Uint16*)buff), writer_buffer[0]);
                 /*for(h=0;h<100000;h++){ */
                 	dbgGpio2Write(1);

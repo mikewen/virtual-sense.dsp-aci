@@ -309,6 +309,9 @@ PSP_Result set_sampling_frequency_gain_impedence(unsigned long SamplingFrequency
 	     //11: IN1L is routed to Left MICPGA with 40k resistance
 
 	     //Route Common Mode to LEFT_P with impedance
+
+	     // IN2_L  we use
+	     // IN2_R
 	     result = AIC3254_Write(52,impedance,hi2c);
 	     if (result != PSP_SOK)
 	     {
@@ -320,7 +323,7 @@ PSP_Result set_sampling_frequency_gain_impedence(unsigned long SamplingFrequency
 	     // CM configuration need to pass impedance << 2
 	     // or impedance  >> 4
 	     //Route Common Mode to LEFT_M with impedance
-	     result = AIC3254_Write(54,impedance,hi2c);
+	     result = AIC3254_Write(54,(impedance << 2),hi2c);
 	     if (result != PSP_SOK)
 	     {
 	         return result;

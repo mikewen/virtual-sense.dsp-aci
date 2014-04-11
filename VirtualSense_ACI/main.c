@@ -249,6 +249,8 @@ init_all_peripheral(void)
 	Uint16 field = 0;
 	FIL file_config;
 	debug_printf("Start Configuration....\n");
+	// for debug LELE
+	init_buffer();
 
     //mount sdcard: must be High capacity(>4GB), standard capacity have a problem
     rc = f_mount(0, &fatfs);

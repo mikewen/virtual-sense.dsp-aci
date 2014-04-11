@@ -58,6 +58,7 @@ PSP_Handle       i2sHandleRx;
 Uint16    fsError1 = 0;    /**< FSYNC gobal parameter                 */
 Uint16    ouError1 = 0;    /**< under/over run global parameter    */
 Int16 sample;
+static Int16 artificialValue = 0;
 //Uint16 outwrap = 0;
 
 extern Uint32 bufferInIdx;// = 0; //logical pointers
@@ -707,11 +708,15 @@ void I2S_DmaRxLChCallBack(
         {
             // NOTE: since we need datapack to be disabled on I2S tx, we need it disabled on I2S rx therefore
             // we get 2 words per DMA transfer so the offset into DMA buffers has to be twice as big
-            recInLeftBuf = *ptrRxLeft;
-            recInLeftBuf = 0xabcd;//*= 40; // to compensate filter b 20dB attenuation (TODO add only if 192khz sampling rate)
-            ptrRxLeft += 2;
+
 
             if(in_record && (bufferInside < PROCESS_BUFFER_SIZE/*/2*/)){
+
+            	recInLeftBuf = *ptrRxLeft;
+				artificialValue++;//generate_sinewave_2(16000,15000);//40; // to compensate filter b 20dB attenuation (TODO add only if 192khz sampling rate)
+				//recInLeftBuf = artificialValue++;//generate_sinewave_2(8000,16000);//40; // to compensate filter b 20dB attenuation (TODO add only if 192khz sampling rate)
+				recInLeftBuf *= 40; // to compensate filter b 20dB attenuation (TODO add only if 192khz sampling rate)
+				ptrRxLeft += 2;
 
             	circular_buffer[bufferInIdx] = recInLeftBuf; //LELE test for byte
             	bufferInIdx = ((bufferInIdx+1) % PROCESS_BUFFER_SIZE);
@@ -731,6 +736,7 @@ void I2S_DmaRxLChCallBack(
     {
     	printf("Left RX DMA Failed");
     }
+    //artificialValue++;
 
 #endif // ENABLE_RECORD
 }
