@@ -9,7 +9,7 @@
 
 
 CSL_WdtHandle    hWdt;// = NULL;
-CSL_WdtObj    wdtObj;
+CSL_WdtObj    wdtObjj;
 
 Int16 wdt_Init(void)
 {
@@ -25,7 +25,7 @@ Int16 wdt_Init(void)
 
 	/* Open the WDTIM module */
 	//hWdt = (CSL_WdtObj *)WDTIM_open(WDT_INST_0, &wdtObj, &status);
-	hWdt = WDTIM_open(WDT_INST_0, &wdtObj, &status);
+	hWdt = WDTIM_open(WDT_INST_0, &wdtObjj, &status);
 	if(NULL == hWdt)
 	{
 		debug_printf("WDTIM: Open for the watchdog Failed\n");

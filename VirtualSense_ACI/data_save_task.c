@@ -16,6 +16,7 @@
 #include "debug_uart.h" // to redirect debug_printf over UART
 #include <csl_rtc.h>
 #include <csl_intc.h>
+#include "csl_wdt.h"
 #include "app_asrc.h"
 #include "VirtualSense_ACIcfg.h"
 #include "psp_i2s.h"
@@ -40,8 +41,9 @@ FIL wav_file;
 Uint32 step = 0;
 Uint32 my_step = 0;
 Uint16 file_is_open = 0;
+CSL_WdtObj    wdtObj;
 
-void putDataIntoOpenFile(const void *buff, unsigned int  number_of_bytes);
+FRESULT putDataIntoOpenFile(const void *buff, unsigned int  number_of_bytes);
 extern Int16 circular_buffer[PROCESS_BUFFER_SIZE];
 extern Uint32 bufferInIdx; //logical pointer
 extern Uint32 bufferOutIdx; //logical pointer
@@ -62,17 +64,56 @@ void DataSaveTask(void)
         CSL_RtcTime      GetTime;
         CSL_RtcDate      GetDate;
         FRESULT rc;
+        FRESULT write_result;
 
+        WDTIM_Config     hwConfig,getConfig;
+        CSL_Status               status;
+        CSL_WdtHandle    hWdt = NULL;
         char file_name[128];
-        Uint32 burts_size_bytes = DMA_BUFFER_SZ * 2;
         Uint32 b_size = PROCESS_BUFFER_SIZE;
-        Uint32 iterations = 0;
-        Uint32 index2 = 0;
         unsigned int writingSamples = 0;
         Uint32 remainingSamples = 0;
-        Uint32 readingIndex = 0;
         Int16 * bufferPointer = circular_buffer;
 
+
+        /* Open the WDTIM module */
+		hWdt = (CSL_WdtObj *)WDTIM_open(WDT_INST_0, &wdtObj, &status);
+		if(NULL == hWdt)
+		{
+				debug_printf("WDTIM: Open for the watchdog Failed\n");
+
+		}
+		else
+		{
+				debug_printf("WDTIM: Open for the watchdog Passed\n");
+		}
+
+		hwConfig.counter  = 0xFFFF;
+		hwConfig.prescale = 0x7FFF;
+
+		/* Configure the watch dog timer */
+		status = WDTIM_config(hWdt, &hwConfig);
+		if(CSL_SOK != status)
+		{
+				debug_printf("WDTIM: Config for the watchdog Failed\n");
+
+		}
+		else
+		{
+				debug_printf("WDTIM: Config for the watchdog Passed\n");
+		}
+
+		/* Start the watch dog timer */
+		status = WDTIM_start(hWdt);
+		if(CSL_SOK != status)
+		{
+				debug_printf("WDTIM: Start for the watchdog Failed\n");
+
+		}
+		else
+		{
+				debug_printf("WDTIM: Start for the watchdog Passed\n");
+		}
     //main loop
     while (1)
     {
@@ -113,9 +154,12 @@ void DataSaveTask(void)
 						//writingSamples = writingSamples < remainingSamples?writingSamples:remainingSamples;
 
 						//debug_printf("writing samples %d from index %ld\n",writingSamples, bufferOutIdx );
-						putDataIntoOpenFile(((void *)(bufferPointer+bufferOutIdx)), (writingSamples*2));
+						write_result = putDataIntoOpenFile(((void *)(bufferPointer+bufferOutIdx)), (writingSamples*2));
+						if(!write_result)
+							WDTIM_service(hWdt);
+
 						//debug_printf("b inside %ld\n",  bufferInside);
-						readingIndex = bufferOutIdx+writingSamples;
+						//readingIndex = bufferOutIdx+writingSamples;
 						/*if(readingIndex >= b_size){
 								debug_printf("---- index exceed array %ld  %ld\n",bufferOutIdx, readingIndex);
 						}*/
@@ -149,9 +193,10 @@ void DataSaveTask(void)
      }
 }
 
-void putDataIntoOpenFile(const void *buff, unsigned int number_of_bytes){
+FRESULT putDataIntoOpenFile(const void *buff, unsigned int number_of_bytes){
+	FRESULT res = 0;
 	if(file_is_open){
-		write_data_to_wave(&wav_file, buff, number_of_bytes);
+		res = write_data_to_wave(&wav_file, buff, number_of_bytes);
 		my_step+=(number_of_bytes/512);
         //wdt_Refresh();
 	}
@@ -162,5 +207,6 @@ void putDataIntoOpenFile(const void *buff, unsigned int number_of_bytes){
 		my_step = 0;
 		SEM_post(&SEM_CloseFile);
 	}
+	return  res;
 
 }
