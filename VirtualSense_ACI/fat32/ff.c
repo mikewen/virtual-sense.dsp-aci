@@ -743,14 +743,11 @@ FRESULT sync_window_data (
 		wsect = fs->winsect;	/* Current sector number */
 		if (disk_write(fs->drv, fs->win, wsect, 1) != RES_OK)
 			return FR_DISK_ERR;
-		else
-			debug_printf("Using first write\n");
 		fs->wflag = 0;
 		if (wsect >= fs->fatbase && wsect < (fs->fatbase + fs->fsize)) {	/* In FAT area? */
 			for (nf = fs->n_fats; nf >= 2; nf--) {	/* Reflect the change to all FAT copies */
 				wsect += fs->fsize;
 				disk_write(fs->drv, fs->win, wsect, 1);
-				debug_printf("Using second write\n");
 			}
 		}
 	}

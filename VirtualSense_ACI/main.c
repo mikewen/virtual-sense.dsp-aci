@@ -202,7 +202,7 @@ void main(void)
     C5515_reset();
 
     /* Initialize DSP PLL */
-    status = pll_sample_freq(100);
+    status = pll_sample_freq(40);
     if (status != CSL_SOK)
     {
         exit(EXIT_FAILURE);
@@ -216,7 +216,7 @@ void main(void)
     /* Enable the USB LDO */
     //*(volatile ioport unsigned int *)(0x7004) |= 0x0001;
 #if DEBUG_UART
-    init_debug_over_uart(100);
+    init_debug_over_uart(40);
 #endif
     debug_printf("Firmware version:");
     debug_printf(FW_VER);
@@ -282,7 +282,7 @@ void init_all_peripheral(void)
 		debug_printf("null.void doesn't exist\n");
 	}
 
-	// LELE Calling this function does not runs. Need to explicitely
+	// LELE Calling this function does not run. Need to explicitely
 	// do it here !!!!
 	//RTC initilization from file
 		/*if( RTC_initRtcFromFile() )
@@ -422,22 +422,27 @@ void init_all_peripheral(void)
 
 	// setting new clock
 	 /* Initialize DSP PLL */
-
+#if 0
+	debug_printf(" Changing freq\n");
 	if(frequency == 192000){
-		debug_printf(" Changing frequency\n");
-		status = pll_sample_freq(120);
-		if (status != CSL_SOK)
-		{
-			exit(EXIT_FAILURE);
-		}
-		init_debug_over_uart(120);
+
+		status = pll_sample_freq(40);
+
+		init_debug_over_uart(40);
+		debug_printf("\n");
+		debug_printf("  Done\n");
+	}else if (frequency == 48000){
+
+		status = pll_sample_freq(40);
+
+		init_debug_over_uart(40);
 		debug_printf("\n");
 		debug_printf("  Done\n");
 	}
-
+#endif
 	// Initialize audio module
-	debug_printf(" ******* CPU INITIALIZED *************\n");
-	debug_printf(" Now initializing codec with the following parameters:\n");
+	debug_printf(" **CPU INITIALIZED**\n");
+	debug_printf(" codec parameters:\n");
 	debug_printf(" Freq is %ld step per second: %ld\n", frequency, step_per_second);
 	debug_printf(" Gain is %d \n", gain);
 	debug_printf(" Impedence is 0x%x \n", impedence);
