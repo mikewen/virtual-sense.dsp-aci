@@ -79,9 +79,9 @@
 
 #define RTC_FILE_CONFIG           						 "updatetime.bin"
 #define FILE_SHEDULER                                    "scheduler.bin"
-#define FILE_COUNTER                                     "programcounter.bin"
+#define FILE_PROGRAM_COUNTER							 "programcounter.bin"
 
-#define FW_VER "0.1.contiguous"
+#define FW_VER "0.2.contiguous.advanced.scheduler"
 
 #define MODE_ALWAYS_ON	1
 #define MODE_EVERY_MINUT 2
@@ -116,7 +116,7 @@ extern Uint8 gain;
  * 0x20 20K
  * 0x30 30K
  */
-extern Uint8 impedence;
+extern Uint8 impedance;
 /* Wav lenght:
  * 0 no file
  * 2 byte for lenght

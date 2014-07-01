@@ -96,6 +96,11 @@ extern PSP_Result set_sampling_frequency_gain_impedence(unsigned long SamplingFr
 CSL_Status  CSL_i2cPowerTest(void);
 void init_all_peripheral(void);
 
+FRESULT initConfigFromSchedulerFile(Uint16 index); // read configuration from scheduler file at index line
+Uint16 readProgramCounter();					  // read from file the program counter
+FRESULT increaseProgramCounter(Uint16 pc);		  // increase program counter
+
+
 void calculate_FFT(unsigned char *input, int size);
 
 FATFS fatfs;			/* File system object */
@@ -103,9 +108,10 @@ Uint8 mode = MODE_ALWAYS_ON;
 Uint32 frequency = 3;
 Uint32 step_per_second = 187;//frequency/DMA_BUFFER_SZ;
 Uint8 gain = 40;
-Uint8 impedence = 3;
+Uint8 impedance = 3;
 Uint16 seconds = 5;
 Uint16 file_counter = 0;
+Uint16 ID = 0;
 
 // Demo switch flag: 0 - power display, 1 - spectrum analyzer
 Uint16 DemoSwitchFlag = 1;
@@ -242,17 +248,16 @@ void CSL_acTest(void){
 void init_all_peripheral(void)
 {
     I2sInitPrms i2sInitPrms;
+    Uint16 pc;
     //CSL_UsbConfig usbConfig;
     PSP_Result result;
     Int16 status;
     FRESULT rc;
     FRESULT rc_fat;
 	UINT bw;
-	Uint16 field = 0;
-	FIL file_config;
-	FIL rtc_time_file;
-	CSL_RtcTime      GetTime;
-	CSL_RtcDate      GetDate;
+
+	FIL null_file;
+	//FIL rtc_time_file;
 
 	// turn off led to turn on oscillator
 	CSL_CPU_REGS->ST1_55 &=~CSL_CPU_ST1_55_XF_MASK;
@@ -276,11 +281,17 @@ void init_all_peripheral(void)
     else
     	debug_printf("Mounting volume\n");
 
-    rc_fat = f_open(&rtc_time_file, "null.void", FA_READ);
-	debug_printf(" try to open-null.void\n");
+    rc_fat = f_open(&null_file, "null.void", FA_READ);
+	debug_printf(" try to open null.void\n");
 	if(rc_fat){
 		debug_printf("null.void doesn't exist\n");
 	}
+
+	 rc_fat = f_open(&null_file, "null2.void", FA_READ);
+		debug_printf(" try to open null2.void\n");
+		if(rc_fat){
+			debug_printf("null2.void doesn't exist\n");
+		}
 
 	// LELE Calling this function does not run. Need to explicitely
 	// do it here !!!!
@@ -295,131 +306,18 @@ void init_all_peripheral(void)
 		}*/
 
 
-	rc_fat = f_open(&rtc_time_file, RTC_FILE_CONFIG, FA_READ);
-	debug_printf(" try to open---%s \n", RTC_FILE_CONFIG);
-	if(!rc_fat){
-		// update rtc time
-		// first 2 bites are day
-		rc_fat = f_read(&rtc_time_file,  &field, 2, &bw);
-		debug_printf(" Day is %d \n", field);
-		GetDate.day = field;
 
-		rc_fat = f_read(&rtc_time_file,  &field, 2, &bw);
-		debug_printf(" Month is %d \n", field);
-		GetDate.month = field;
+	pc =  readProgramCounter();
+	debug_printf("program counter is %d\n",pc);
+	initConfigFromSchedulerFile(pc);
 
-		rc_fat = f_read(&rtc_time_file,  &field, 2, &bw);
-		debug_printf(" Year is %d \n", field);
-		GetDate.year = field;
+	rc = increaseProgramCounter(pc);
+	debug_printf("program counter increased return %d\n",rc);
 
-		rc_fat = f_read(&rtc_time_file,  &field, 2, &bw);
-		debug_printf(" Hour is %d \n", field);
-		GetTime.hours = field;
-
-		rc_fat = f_read(&rtc_time_file,  &field, 2, &bw);
-		debug_printf(" Min is %d \n", field);
-		GetTime.mins = field;
-
-		debug_printf(" Setting RTC date time to %d-%d-%d_%d:%d\n",GetDate.day,GetDate.month,GetDate.year, GetTime.hours, GetTime.mins);
-		/* Set the RTC time */
-		status = RTC_setTime(&GetTime);
-		if(status != CSL_SOK)
-		{
-				debug_printf(" RTC_setTime Failed\n");
-				return;
-		}
-		else
-		{
-				debug_printf(" RTC_setTime Successful\n");
-		}
-
-		/* Set the RTC date */
-		status = RTC_setDate(&GetDate);
-		if(status != CSL_SOK)
-		{
-				debug_printf(" RTC_setDate Failed\n");
-				return;
-		}
-		else
-		{
-				debug_printf(" RTC_setDate Successful\n");
-		}
-		debug_printf("\n");
-	}else {
-			debug_printf("RTC: %s doesn't exists\n", RTC_FILE_CONFIG);
-	}
-
-            // END INIT RTC
-
-	//read file counter from file
-	rc = f_open(&file_config, FILE_COUNTER, FA_READ);
-	if(!rc) {
-	// update rtc time
-		// first 2 bites are day
-		rc = f_read(&file_config,  &file_counter, 2, &bw);
-		//file_counter = 16909060;
-		if(rc == FR_OK)
-			debug_printf("Program Counter is %ld \n", file_counter);
-		else
-			debug_printf("Program Counter Error\n");
-	}
-	else
-		debug_printf("Read program counter file error\n"); //error: file don't exist
-	//read config from file
-	debug_printf("Read scheduler file\n");
-	rc = f_open(&file_config, FILE_SHEDULER, FA_READ);
-	if(!rc) {
-	// update rtc time
-		// first 2 bites are day
-		rc = f_read(&file_config,  &field, 1, &bw);
-		debug_printf(" Mode is %d \n", field);
-		mode = field;
-		if( (mode == MODE_ALWAYS_ON) || (mode == MODE_EVERY_MINUT) ) {
-			//frequency
-			rc = f_read(&file_config,  &field, 1, &bw);
-			if(field == 1)
-				frequency = 16000; // S_RATE_16KHZ
-			else if(field == 2)
-				frequency = 24000; // S_RATE_24KHZ
-			else if(field == 3)
-				frequency = 48000; // S_RATE_48KHZ
-			else if(field == 4)
-				frequency = 96000; // S_RATE_96KHZ
-			else if(field == 5)
-				frequency = 192000; // S_RATE_192KHz
-			step_per_second = frequency/DMA_BUFFER_SZ;
-			//gain
-			rc = f_read(&file_config,  &field, 1, &bw);
-			gain = field;
-			//impedence
-			rc = f_read(&file_config,  &field, 1, &bw);
-			if(field == 1)
-				impedence = 0x10; // IMPEDANCE_10K
-			else if(field == 2)
-				impedence = 0x20; // IMPEDANCE_20K
-			else if(field == 3)
-				impedence = 0x30; // IMPEDANCE_40K
-			// seconds
-			rc = f_read(&file_config,  &field, 2, &bw);
-			debug_printf(" Seconds is %d \n", field);
-			seconds = field;
-		}
-		else
-			debug_printf(" Mode not valid\n");
-	}
-	else{
-		debug_printf(" Read config file error: default initialization value\n"); //error: file don't exist
-		mode = MODE_ALWAYS_ON;
-		frequency = 48000; // S_RATE_48KHZ
-		impedence = 0x20; // IMPEDANCE_20K
-		gain = 10;
-		seconds = 60;
-	}
-
-	if(mode == MODE_EVERY_MINUT) { //set 1min interrupt
+/*	if(mode == MODE_EVERY_MINUT) { //set 1min interrupt
 		RTC_initializaEventEveryMinute();
 	}
-
+*/
 	// setting new clock
 	 /* Initialize DSP PLL */
 #if 0
@@ -445,7 +343,7 @@ void init_all_peripheral(void)
 	debug_printf(" codec parameters:\n");
 	debug_printf(" Freq is %ld step per second: %ld\n", frequency, step_per_second);
 	debug_printf(" Gain is %d \n", gain);
-	debug_printf(" Impedence is 0x%x \n", impedence);
+	debug_printf(" Impedence is 0x%x \n", impedance);
 	debug_printf(" Seconds is %d \n", seconds);
 
 	// turn on led
@@ -501,7 +399,7 @@ void init_all_peripheral(void)
     //debug_printf("ClokGating\n");
     DDC_I2S_transEnable((DDC_I2SHandle)i2sHandleTx, TRUE); /* enable I2S transmit and receive */
 
-    result = set_sampling_frequency_gain_impedence(frequency, gain, impedence);
+    result = set_sampling_frequency_gain_impedence(frequency, gain, impedance);
     if (result != 0)
     {
         debug_printf(" ERROR: Unable to configure audio codec\n");
@@ -513,6 +411,259 @@ void init_all_peripheral(void)
     debug_printf("Initialization completed\n");
 #endif
 }
+
+
+
+FRESULT updateTimeFromFile(){
+	FRESULT fatRes;
+	FIL rtc_time_file;
+	Int16 status;
+	CSL_RtcTime      GetTime;
+	CSL_RtcDate      GetDate;
+	Uint16 field = 0;
+	UINT bw;
+
+	fatRes = f_open(&rtc_time_file, RTC_FILE_CONFIG, FA_READ);
+	debug_printf(" try to open---%s \n", RTC_FILE_CONFIG);
+	if(!fatRes){
+		// update rtc time
+		// first 2 bites are day
+		fatRes = f_read(&rtc_time_file,  &field, 2, &bw);
+		debug_printf(" Day is %d \n", field);
+		GetDate.day = field;
+
+		fatRes = f_read(&rtc_time_file,  &field, 2, &bw);
+		debug_printf(" Month is %d \n", field);
+		GetDate.month = field;
+
+		fatRes = f_read(&rtc_time_file,  &field, 2, &bw);
+		debug_printf(" Year is %d \n", field);
+		GetDate.year = field;
+
+		fatRes = f_read(&rtc_time_file,  &field, 2, &bw);
+		debug_printf(" Hour is %d \n", field);
+		GetTime.hours = field;
+
+		fatRes = f_read(&rtc_time_file,  &field, 2, &bw);
+		debug_printf(" Min is %d \n", field);
+		GetTime.mins = field;
+
+		debug_printf(" Setting RTC date time to %d-%d-%d_%d:%d\n",GetDate.day,GetDate.month,GetDate.year, GetTime.hours, GetTime.mins);
+		/* Set the RTC time */
+		status = RTC_setTime(&GetTime);
+		if(status != CSL_SOK)
+		{
+				debug_printf(" RTC_setTime Failed\n");
+				return;
+		}
+		else
+		{
+				debug_printf(" RTC_setTime Successful\n");
+		}
+
+		/* Set the RTC date */
+		status = RTC_setDate(&GetDate);
+		if(status != CSL_SOK)
+		{
+				debug_printf(" RTC_setDate Failed\n");
+				return;
+		}
+		else
+		{
+				debug_printf(" RTC_setDate Successful\n");
+		}
+		debug_printf("\n");
+	}else {
+			debug_printf("RTC: %s doesn't exists\n", RTC_FILE_CONFIG);
+	}
+	    // END INIT RTC
+}
+
+// read configuration from scheduler file at index line
+/**
+ *
+ *   PC   ID
+ *  [2B] [2B]
+ *
+ *  MODE == 1
+ *  	   {		start time       }  {        stop time         }
+ *  MODE  DD   MM   YY   hh   mm   ss   DD   MM   YY   hh   mm   ss  FIL_S FREQ  GAIN  IMP
+ *  [1B] [2B] [2B] [2B] [2B] [2B] [2B] [2B] [2B] [2B] [2B] [2B] [2B] [2B]  [1B]  [1B]  [1B] // 34BYTES
+ *
+ *
+ * MODE == 2
+ *         {		start time       }  {     DON'T CARE       }
+ *  MODE  DD   MM   YY   hh   mm   ss   XX   XX   XX   XX   XX  len  FIL_S FREQ  GAIN  IMP
+ *  [1B] [2B] [2B] [2B] [2B] [2B] [2B] [2B] [2B] [2B] [2B] [2B] [2B] [2B]  [1B]  [1B]  [1B] // 34BYTES
+ *
+ */
+
+FRESULT initConfigFromSchedulerFile(Uint16 index){
+	FRESULT fatRes;
+	FIL file_config;
+	Int16 status;
+	CSL_RtcTime      startTime;
+	CSL_RtcTime      stopTime;
+	CSL_RtcDate      startDate;
+	CSL_RtcDate      stopDate;
+	Uint16 field = 0;
+	UINT bw;
+	char line[34];
+
+	//read config from file
+	debug_printf("Read scheduler file\n");
+	fatRes = f_open(&file_config, FILE_SHEDULER, FA_READ);
+	if(!fatRes) {
+		// skip PC
+		fatRes = f_read(&file_config,  &field, 2, &bw);
+		// read ID
+		fatRes = f_read(&file_config,  &ID, 2, &bw);
+		debug_printf(" ID is %d \n", ID);
+
+		// NOW SKIP INDEX-1 lines
+		index-=1;
+		if(index > 0){
+			debug_printf(" Skipping %d lines\n", index);
+			fatRes = f_read(&file_config,  line, index*34, &bw);
+		}
+
+		// read MODE
+		fatRes = f_read(&file_config,  &mode, 1, &bw);
+		debug_printf(" Mode is %d \n", mode);
+		if(mode == MODE_ALWAYS_ON) {
+			// START DATETIME
+			// DAY
+			fatRes = f_read(&file_config,  &field, 2, &bw);
+			startDate.day = field;
+			debug_printf(" Start day is %d \n", startDate.day);
+			// MONTH
+			fatRes = f_read(&file_config,  &field, 2, &bw);
+			startDate.month = field;
+			debug_printf(" Start month is %d \n", startDate.month);
+			// YEAR
+			fatRes = f_read(&file_config,  &field, 2, &bw);
+			startDate.year = field;
+			debug_printf(" Start year is %d \n", startDate.year);
+			// HOURS
+			fatRes = f_read(&file_config,  &field, 2, &bw);
+			startTime.hours = field;
+			debug_printf(" Start hours is %d \n", startTime.hours);
+			// MINUTES
+			fatRes = f_read(&file_config,  &field, 2, &bw);
+			startTime.mins = field;
+			debug_printf(" Start mins is %d \n", startTime.mins);
+			// SECONDS
+			fatRes = f_read(&file_config,  &field, 2, &bw);
+			startTime.secs = field;
+			debug_printf(" Start secs is %d \n", startTime.secs);
+
+			// STOP DATETIME
+			// DAY
+			fatRes = f_read(&file_config,  &field, 2, &bw);
+			stopDate.day = field;
+			debug_printf(" Stop day is %d \n", stopDate.day);
+			// MONTH
+			fatRes = f_read(&file_config,  &field, 2, &bw);
+			stopDate.month = field;
+			debug_printf(" Stop month is %d \n", stopDate.month);
+			// YEAR
+			fatRes = f_read(&file_config,  &field, 2, &bw);
+			stopDate.year = field;
+			debug_printf(" Stop year is %d \n", stopDate.year);
+			// HOURS
+			fatRes = f_read(&file_config,  &field, 2, &bw);
+			stopTime.hours = field;
+			debug_printf(" Stop hours is %d \n", stopTime.hours);
+			// MINUTES
+			fatRes = f_read(&file_config,  &field, 2, &bw);
+			stopTime.mins = field;
+			debug_printf(" Stop mins is %d \n", stopTime.mins);
+
+			// SECONDS
+			fatRes = f_read(&file_config,  &field, 2, &bw);
+			stopTime.secs = field;
+			debug_printf(" Stop secs is %d \n", stopTime.secs);
+			// file size seconds
+			fatRes = f_read(&file_config,  &field, 2, &bw);
+			seconds = field;
+			debug_printf(" File size seconds is %d \n", seconds);
+
+			//frequency
+			fatRes = f_read(&file_config,  &field, 1, &bw);
+			if(field == 1)
+				frequency = 16000; // S_RATE_16KHZ
+			else if(field == 2)
+				frequency = 24000; // S_RATE_24KHZ
+			else if(field == 3)
+				frequency = 48000; // S_RATE_48KHZ
+			else if(field == 4)
+				frequency = 96000; // S_RATE_96KHZ
+			else if(field == 5)
+				frequency = 192000; // S_RATE_192KHz
+			debug_printf(" Frequency is is %d \n", frequency);
+			step_per_second = frequency/DMA_BUFFER_SZ;
+			//gain
+			fatRes = f_read(&file_config,  &field, 1, &bw);
+			gain = field;
+			//impedance
+			fatRes = f_read(&file_config,  &field, 1, &bw);
+			if(field == 1)
+				impedance = 0x10; // IMPEDANCE_10K
+			else if(field == 2)
+				impedance = 0x20; // IMPEDANCE_20K
+			else if(field == 3)
+				impedance = 0x30; // IMPEDANCE_40K
+			debug_printf(" Impedance is %d \n", impedance);
+		}
+		else
+			debug_printf(" Mode not valid\n");
+	}
+	else{
+		debug_printf(" Read config file error: default initialization value\n"); //error: file don't exist
+		mode = MODE_ALWAYS_ON;
+		frequency = 48000; // S_RATE_48KHZ
+		impedance = 0x20; // IMPEDANCE_20K
+		gain = 10;
+		seconds = 60;
+	}
+	return fatRes;
+}
+
+// read from file the program counter
+Uint16 readProgramCounter(){
+	Uint16 line = 0;
+	Uint bw = 0;
+	FRESULT fatRes;
+	FIL fileProgramCounter;
+	debug_printf(" Opening program counter file %s\n", FILE_PROGRAM_COUNTER);
+	fatRes = f_open(&fileProgramCounter, FILE_PROGRAM_COUNTER, FA_READ);
+	if(!fatRes) {
+		fatRes = f_read(&fileProgramCounter,  &line, 2, &bw);
+		debug_printf(" Program counter is %d return code\n", line, fatRes);
+		fatRes = f_close (&fileProgramCounter);
+	}else{
+		debug_printf(" Program counter file not found \n");
+	}
+	return line;
+}
+
+// increase program counter
+FRESULT increaseProgramCounter(Uint16 pc){
+	Uint16 newPc = pc+1;
+	Uint bw = 0;
+	FRESULT fatRes;
+	FIL fileProgramCounter;
+
+	fatRes = f_open(&fileProgramCounter, FILE_PROGRAM_COUNTER, FA_WRITE | FA_CREATE_ALWAYS);
+	if(!fatRes) {
+		fatRes = f_write (&fileProgramCounter, &newPc, 2, &bw);	/* Write data to a file */
+		debug_printf(" Program counter writed %d return code\n", newPc, fatRes);
+		fatRes = f_close (&fileProgramCounter);
+	}
+	return fatRes;
+}
+
+
 
 /* Resets C5515 */
 void C5515_reset(void)
