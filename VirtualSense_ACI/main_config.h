@@ -83,9 +83,10 @@
 
 #define FW_VER "0.2.contiguous.advanced.scheduler"
 
-#define MODE_ALWAYS_ON	1
-#define MODE_EVERY_MINUT 2
-#define MODE_CALENDAR 3
+#define MODE_ALWAYS_ON		1
+#define MODE_CALENDAR 		2
+#define MODE_EVERY_MINUT 	3
+
 
 #define DEBUG_UART 1
 
@@ -124,6 +125,8 @@ extern Uint8 impedance;
 extern Uint16 seconds;
 
 extern Uint16 file_counter;
+
+extern Uint16 program_counter;
 /*****************************************************************************/
 /* End of main_config.h                                                        */
 /*****************************************************************************/

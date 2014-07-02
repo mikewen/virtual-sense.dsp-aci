@@ -42,13 +42,23 @@ Uint32 step = 0;
 Uint32 my_step = 0;
 Uint16 file_is_open = 0;
 CSL_WdtObj    wdtObj;
+CSL_RtcAlarm  wakeupTime;
+
 
 FRESULT putDataIntoOpenFile(const void *buff, unsigned int  number_of_bytes);
+
+extern FRESULT readNextWakeUpDateTimeFromScheduler(Uint16 i, CSL_RtcAlarm *nextAlarmTime);
+
 extern Int16 circular_buffer[PROCESS_BUFFER_SIZE];
 extern Uint32 bufferInIdx; //logical pointer
 extern Uint32 bufferOutIdx; //logical pointer
 extern Int32 bufferInside; //number of item in buffer
 extern Uint16 in_record; //logical pointer
+extern Uint16 numberOfFiles;
+extern Uint16 ID;
+extern Uint8 stopWriting;
+extern Uint16 programCounter;
+
 
 // PRD function. Runs every 10 minutes to start sampling a new file
 void CreateNewFile(void){
@@ -119,11 +129,11 @@ void DataSaveTask(void)
     {
         //wait on semaphore released from a timer function
         //wdt_Refresh();
-        if(seconds > 0) {//if second==0 don't save nothings
+        while((seconds > 0) && (numberOfFiles > 0) && !stopWriting) {//if second==0 don't save nothings
 
 				RTC_getDate(&GetDate);
 				RTC_getTime(&GetTime);
-				sprintf(file_name, "%d_%d_%d__%d-%d-%d.wav",GetDate.day,GetDate.month,GetDate.year, GetTime.hours, GetTime.mins, GetTime.secs);
+				sprintf(file_name, "%d__%d_%d_%d__%d-%d-%d.wav",ID, GetDate.day,GetDate.month,GetDate.year, GetTime.hours, GetTime.mins, GetTime.secs);
 				debug_printf("Creating a new file %s\n",file_name);
 
 				//rc = open_wave_file(&wav_file, file_name, FREQUENCY, SECONDS);
@@ -178,19 +188,27 @@ void DataSaveTask(void)
 				file_is_open = 0;
 				in_record = 0;
 				//directory_listing();
-				file_counter++;
+				numberOfFiles--;
 				step = 0;
                 //clear_lcd();
                 debug_printf("File saved %s\n",file_name);
         }
         //wdt_Refresh();
         // Put DSP into RTC only mode
-        if(mode != MODE_ALWAYS_ON) {
-                RTC_shutdownToRTCOnlyMonde();
-        } else {
-                //SEM_post(&SEM_TimerSave);
-        }
-     }
+        // read next wake-up datetime
+        rc = readNextWakeUpDateTimeFromScheduler(program_counter, &wakeupTime);
+        status = RTC_setAlarm(&wakeupTime);
+        if(status != CSL_SOK)
+		{
+			debug_printf("RTC: setAlarm Failed\n");
+		} else {
+			debug_printf("RTC: setAlarm Successful\n");
+			debug_printf("RTC: Alarm time: %d/%d/%d %d:%d:%d \n",
+					wakeupTime.day, wakeupTime.month, wakeupTime.year,
+					wakeupTime.hours, wakeupTime.mins, wakeupTime.secs);
+		}
+        RTC_shutdownToRTCOnlyMonde();
+    }
 }
 
 FRESULT putDataIntoOpenFile(const void *buff, unsigned int number_of_bytes){

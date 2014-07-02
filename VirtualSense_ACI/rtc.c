@@ -28,6 +28,8 @@ CSL_RtcConfig    rtcGetConfig;
 CSL_RtcAlarm     AlarmTime;
 CSL_RtcIsrAddr   isrAddr;
 CSL_RtcIsrDispatchTable      rtcDispatchTable;
+
+Uint8 stopWriting = 0;
 volatile Uint32 rtcTimeCount = RTC_TIME_PRINT_CYCLE;
 Uint16    secIntrCnt = 0;
 
@@ -357,8 +359,8 @@ unsigned char RTC_shutdownToRTCOnlyMonde(){
     // RTC configure
     asm("    *port(#0x1920) = #0x803F "); //clear interrupt flags
     asm("    *port(#0x1900) = #0x0001 "); //RTCINTEN enabled
-    //asm("    *port(#0x1924) = #0x8020 "); //EXTINTEN enabled
-    asm("    *port(#0x1924) = #0x8024 "); //EXTINTEN enabled ALARM INT enabled MINUTES INT enabled
+    asm("    *port(#0x1924) = #0x8020 "); //EXTINTEN enabled ALARM INT
+    //asm("    *port(#0x1924) = #0x8024 "); //EXTINTEN enabled ALARM INT enabled MINUTES INT enabled
     asm("    *port(#0x1930) = #0x0000 "); //WU_DIR input
     count = 0;
     do // waiting until RTC interrupt is enabled in the RTC domain could take 2 RTC clocks for write to propagate
@@ -499,7 +501,9 @@ void rtc_extEvt(void)
 void rtc_alarmEvt(void)
 {
     CSL_FINST(CSL_RTC_REGS->RTCINTFL, RTC_RTCINTFL_ALARMFL, SET);
-    debug_printf("\nRTC Alarm Interrupt\n\n");
+    debug_printf("\nRTC Alarm Interrupt --- stop writing\n\n");
+    // stop writing always on files
+    stopWriting = 1;
     //SEM_post(&SEM_TimerSave);
 }
 

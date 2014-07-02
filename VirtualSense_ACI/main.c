@@ -99,19 +99,30 @@ void init_all_peripheral(void);
 FRESULT initConfigFromSchedulerFile(Uint16 index); // read configuration from scheduler file at index line
 Uint16 readProgramCounter();					  // read from file the program counter
 FRESULT increaseProgramCounter(Uint16 pc);		  // increase program counter
-
+FRESULT readNextWakeUpDateTimeFromScheduler(Uint16 i, CSL_RtcAlarm *nextAlarmTime);
 
 void calculate_FFT(unsigned char *input, int size);
 
 FATFS fatfs;			/* File system object */
+FIL file_config;
+FIL fileProgramCounter;
+FIL rtc_time_file;
+
+
+CSL_RtcTime      RTCGetTime;
+CSL_RtcDate      RTCGetDate;
+CSL_RtcAlarm	 stopWritingTime;
+
 Uint8 mode = MODE_ALWAYS_ON;
 Uint32 frequency = 3;
 Uint32 step_per_second = 187;//frequency/DMA_BUFFER_SZ;
 Uint8 gain = 40;
 Uint8 impedance = 3;
 Uint16 seconds = 5;
-Uint16 file_counter = 0;
+Uint16 recTimeMinutes;
+Uint16 numberOfFiles = 0;
 Uint16 ID = 0;
+Uint16 program_counter = 0;
 
 // Demo switch flag: 0 - power display, 1 - spectrum analyzer
 Uint16 DemoSwitchFlag = 1;
@@ -254,9 +265,12 @@ void init_all_peripheral(void)
     Int16 status;
     FRESULT rc;
     FRESULT rc_fat;
-	UINT bw;
+	//UINT bw;
 
 	FIL null_file;
+
+
+
 	//FIL rtc_time_file;
 
 	// turn off led to turn on oscillator
@@ -305,19 +319,16 @@ void init_all_peripheral(void)
 				//debug_printf("time.rtc file deleted\n");
 		}*/
 
-
+	rc = updateTimeFromFile();
 
 	pc =  readProgramCounter();
+	program_counter = pc;
 	debug_printf("program counter is %d\n",pc);
-	initConfigFromSchedulerFile(pc);
+	rc = initConfigFromSchedulerFile(pc);
 
 	rc = increaseProgramCounter(pc);
 	debug_printf("program counter increased return %d\n",rc);
 
-/*	if(mode == MODE_EVERY_MINUT) { //set 1min interrupt
-		RTC_initializaEventEveryMinute();
-	}
-*/
 	// setting new clock
 	 /* Initialize DSP PLL */
 #if 0
@@ -416,10 +427,9 @@ void init_all_peripheral(void)
 
 FRESULT updateTimeFromFile(){
 	FRESULT fatRes;
-	FIL rtc_time_file;
+
 	Int16 status;
-	CSL_RtcTime      GetTime;
-	CSL_RtcDate      GetDate;
+
 	Uint16 field = 0;
 	UINT bw;
 
@@ -430,27 +440,27 @@ FRESULT updateTimeFromFile(){
 		// first 2 bites are day
 		fatRes = f_read(&rtc_time_file,  &field, 2, &bw);
 		debug_printf(" Day is %d \n", field);
-		GetDate.day = field;
+		RTCGetDate.day = field;
 
 		fatRes = f_read(&rtc_time_file,  &field, 2, &bw);
 		debug_printf(" Month is %d \n", field);
-		GetDate.month = field;
+		RTCGetDate.month = field;
 
 		fatRes = f_read(&rtc_time_file,  &field, 2, &bw);
 		debug_printf(" Year is %d \n", field);
-		GetDate.year = field;
+		RTCGetDate.year = field;
 
 		fatRes = f_read(&rtc_time_file,  &field, 2, &bw);
 		debug_printf(" Hour is %d \n", field);
-		GetTime.hours = field;
+		RTCGetTime.hours = field;
 
 		fatRes = f_read(&rtc_time_file,  &field, 2, &bw);
 		debug_printf(" Min is %d \n", field);
-		GetTime.mins = field;
+		RTCGetTime.mins = field;
 
-		debug_printf(" Setting RTC date time to %d-%d-%d_%d:%d\n",GetDate.day,GetDate.month,GetDate.year, GetTime.hours, GetTime.mins);
+		debug_printf(" Setting RTC date time to %d-%d-%d_%d:%d\n",RTCGetDate.day,RTCGetDate.month,RTCGetDate.year, RTCGetTime.hours, RTCGetTime.mins);
 		/* Set the RTC time */
-		status = RTC_setTime(&GetTime);
+		status = RTC_setTime(&RTCGetTime);
 		if(status != CSL_SOK)
 		{
 				debug_printf(" RTC_setTime Failed\n");
@@ -462,7 +472,7 @@ FRESULT updateTimeFromFile(){
 		}
 
 		/* Set the RTC date */
-		status = RTC_setDate(&GetDate);
+		status = RTC_setDate(&RTCGetDate);
 		if(status != CSL_SOK)
 		{
 				debug_printf(" RTC_setDate Failed\n");
@@ -500,7 +510,7 @@ FRESULT updateTimeFromFile(){
 
 FRESULT initConfigFromSchedulerFile(Uint16 index){
 	FRESULT fatRes;
-	FIL file_config;
+
 	Int16 status;
 	CSL_RtcTime      startTime;
 	CSL_RtcTime      stopTime;
@@ -516,15 +526,18 @@ FRESULT initConfigFromSchedulerFile(Uint16 index){
 	if(!fatRes) {
 		// skip PC
 		fatRes = f_read(&file_config,  &field, 2, &bw);
+		debug_printf(" PC is %d \n", field);
 		// read ID
 		fatRes = f_read(&file_config,  &ID, 2, &bw);
 		debug_printf(" ID is %d \n", ID);
 
 		// NOW SKIP INDEX-1 lines
-		index-=1;
-		if(index > 0){
-			debug_printf(" Skipping %d lines\n", index);
-			fatRes = f_read(&file_config,  line, index*34, &bw);
+		//index-=1;
+		debug_printf(" Skipping %d lines\n", index);
+		while(index>0){
+			//debug_printf(" Skipping %d lines\n", index);
+			fatRes = f_read(&file_config,  line, 30, &bw);
+			index--;
 		}
 
 		// read MODE
@@ -578,11 +591,116 @@ FRESULT initConfigFromSchedulerFile(Uint16 index){
 			fatRes = f_read(&file_config,  &field, 2, &bw);
 			stopTime.mins = field;
 			debug_printf(" Stop mins is %d \n", stopTime.mins);
-
 			// SECONDS
 			fatRes = f_read(&file_config,  &field, 2, &bw);
 			stopTime.secs = field;
 			debug_printf(" Stop secs is %d \n", stopTime.secs);
+
+			// schedule interrupt to stop writing at the end
+			stopWritingTime.day 	=stopDate.day;
+			stopWritingTime.month 	= stopDate.month;
+			stopWritingTime.year	= stopDate.year;
+			stopWritingTime.hours	= stopTime.hours;
+			stopWritingTime.mins	= stopTime.mins;
+			stopWritingTime.secs	= stopTime.secs;
+
+			status = RTC_setAlarm(&stopWritingTime);
+
+			if(status != CSL_SOK)
+			{
+				debug_printf("RTC: setAlarm Failed\n");
+			} else {
+				debug_printf("RTC: setAlarm Successful\n");
+				debug_printf("RTC: Alarm time: %d/%d/%d %d:%d:%d \n",
+						stopWritingTime.day, stopWritingTime.month, stopWritingTime.year,
+						stopWritingTime.hours, stopWritingTime.mins, stopWritingTime.secs);
+			}
+
+			// file size seconds
+			fatRes = f_read(&file_config,  &field, 2, &bw);
+			seconds = field;
+			recTimeMinutes = 15000; // max number of minutes.... the writing routine is termianted by an interrupt....
+			debug_printf(" File size seconds is %d \n", seconds);
+
+			//frequency
+			fatRes = f_read(&file_config,  &field, 1, &bw);
+			if(field == 1)
+				frequency = 16000; // S_RATE_16KHZ
+			else if(field == 2)
+				frequency = 24000; // S_RATE_24KHZ
+			else if(field == 3)
+				frequency = 48000; // S_RATE_48KHZ
+			else if(field == 4)
+				frequency = 96000; // S_RATE_96KHZ
+			else if(field == 5)
+				frequency = 192000; // S_RATE_192KHz
+			debug_printf(" Frequency is is %d \n", frequency);
+			step_per_second = frequency/DMA_BUFFER_SZ;
+			//gain
+			fatRes = f_read(&file_config,  &field, 1, &bw);
+			gain = field;
+			//impedance
+			fatRes = f_read(&file_config,  &field, 1, &bw);
+			if(field == 1)
+				impedance = 0x10; // IMPEDANCE_10K
+			else if(field == 2)
+				impedance = 0x20; // IMPEDANCE_20K
+			else if(field == 3)
+				impedance = 0x30; // IMPEDANCE_40K
+			debug_printf(" Impedance is %X \n", impedance);
+		}else if (mode == MODE_CALENDAR){
+			// START DATETIME
+			// DAY
+			fatRes = f_read(&file_config,  &field, 2, &bw);
+			startDate.day = field;
+			debug_printf(" Start day is %d \n", startDate.day);
+			// MONTH
+			fatRes = f_read(&file_config,  &field, 2, &bw);
+			startDate.month = field;
+			debug_printf(" Start month is %d \n", startDate.month);
+			// YEAR
+			fatRes = f_read(&file_config,  &field, 2, &bw);
+			startDate.year = field;
+			debug_printf(" Start year is %d \n", startDate.year);
+			// HOURS
+			fatRes = f_read(&file_config,  &field, 2, &bw);
+			startTime.hours = field;
+			debug_printf(" Start hours is %d \n", startTime.hours);
+			// MINUTES
+			fatRes = f_read(&file_config,  &field, 2, &bw);
+			startTime.mins = field;
+			debug_printf(" Start mins is %d \n", startTime.mins);
+			// SECONDS
+			fatRes = f_read(&file_config,  &field, 2, &bw);
+			startTime.secs = field;
+			debug_printf(" Start secs is %d \n", startTime.secs);
+
+			// STOP DATETIME SKIP
+			// SKIP DAY
+			fatRes = f_read(&file_config,  &field, 2, &bw);
+
+			debug_printf(" Skip day is %d \n", field);
+			// SKIP MONTH
+			fatRes = f_read(&file_config,  &field, 2, &bw);
+
+			debug_printf(" Skip month is %d \n", field);
+			// SKIP YEAR
+			fatRes = f_read(&file_config,  &field, 2, &bw);
+
+			debug_printf(" Skip year is %d \n", field);
+			// SKIP HOURS
+			fatRes = f_read(&file_config,  &field, 2, &bw);
+
+			debug_printf(" Skip hours is %d \n", field);
+			// SKIP MINUTES
+			fatRes = f_read(&file_config,  &field, 2, &bw);
+
+			debug_printf(" Skip mins is %d \n", field);
+
+			// REC TIME IN MINUTES
+			fatRes = f_read(&file_config,  &field, 2, &bw);
+			recTimeMinutes = field;
+			debug_printf(" RecTimeMinutes is %d \n", recTimeMinutes);
 			// file size seconds
 			fatRes = f_read(&file_config,  &field, 2, &bw);
 			seconds = field;
@@ -613,7 +731,7 @@ FRESULT initConfigFromSchedulerFile(Uint16 index){
 				impedance = 0x20; // IMPEDANCE_20K
 			else if(field == 3)
 				impedance = 0x30; // IMPEDANCE_40K
-			debug_printf(" Impedance is %d \n", impedance);
+			debug_printf(" Impedance is %X \n", impedance);
 		}
 		else
 			debug_printf(" Mode not valid\n");
@@ -626,6 +744,9 @@ FRESULT initConfigFromSchedulerFile(Uint16 index){
 		gain = 10;
 		seconds = 60;
 	}
+	numberOfFiles = (Uint16)((((long unsigned int )recTimeMinutes) * 60)/seconds);
+	debug_printf(" number of file to write...%d\n",numberOfFiles); //error: file don't exist
+	fatRes = f_close (&file_config);
 	return fatRes;
 }
 
@@ -652,7 +773,7 @@ FRESULT increaseProgramCounter(Uint16 pc){
 	Uint16 newPc = pc+1;
 	Uint bw = 0;
 	FRESULT fatRes;
-	FIL fileProgramCounter;
+
 
 	fatRes = f_open(&fileProgramCounter, FILE_PROGRAM_COUNTER, FA_WRITE | FA_CREATE_ALWAYS);
 	if(!fatRes) {
@@ -662,6 +783,77 @@ FRESULT increaseProgramCounter(Uint16 pc){
 	}
 	return fatRes;
 }
+
+FRESULT readNextWakeUpDateTimeFromScheduler(Uint16 i, CSL_RtcAlarm *nextAlarmTime){
+	FRESULT fatRes;
+
+	Int16 status;
+	Uint16 field = 0;
+	UINT bw;
+	Uint16 index = i+1;
+	char line[34];
+
+
+	//read config from file
+	debug_printf("Read scheduler file\n");
+	fatRes = f_open(&file_config, FILE_SHEDULER, FA_READ);
+	if(!fatRes) {
+		// skip PC
+		fatRes = f_read(&file_config,  &field, 2, &bw);
+		debug_printf(" PC is %d \n", field);
+		// read ID
+		fatRes = f_read(&file_config,  &ID, 2, &bw);
+		debug_printf(" ID is %d \n", ID);
+
+		// NOW SKIP INDEX-1 lines
+		//index-=1;
+		debug_printf(" Skipping %d lines\n", index);
+		while(index>0){
+			//debug_printf(" Skipping %d lines\n", index);
+			fatRes = f_read(&file_config,  line, 30, &bw);
+			index--;
+		}
+
+		// read MODE
+		fatRes = f_read(&file_config,  &mode, 1, &bw);
+		debug_printf(" Mode is %d \n", mode);
+		if(mode == MODE_ALWAYS_ON || MODE_CALENDAR) {
+			// START DATETIME
+			// DAY
+			fatRes = f_read(&file_config,  &field, 2, &bw);
+			nextAlarmTime->day = field;
+			debug_printf(" wake-up day is %d \n", nextAlarmTime->day);
+			// MONTH
+			fatRes = f_read(&file_config,  &field, 2, &bw);
+			nextAlarmTime->month = field;
+			debug_printf(" wake-up month is %d \n", nextAlarmTime->month);
+			// YEAR
+			fatRes = f_read(&file_config,  &field, 2, &bw);
+			nextAlarmTime->year = field;
+			debug_printf(" wake-up year is %d \n", nextAlarmTime->year);
+			// HOURS
+			fatRes = f_read(&file_config,  &field, 2, &bw);
+			nextAlarmTime->hours = field;
+			debug_printf(" wake-up hours is %d \n", nextAlarmTime->hours);
+			// MINUTES
+			fatRes = f_read(&file_config,  &field, 2, &bw);
+			nextAlarmTime->mins = field;
+			debug_printf(" wake-up mins is %d \n", nextAlarmTime->mins);
+			// SECONDS
+			fatRes = f_read(&file_config,  &field, 2, &bw);
+			nextAlarmTime->secs = field;
+			debug_printf(" wake-up secs is %d \n", nextAlarmTime->secs);
+		}
+		else
+			debug_printf(" Mode not valid while looking for next wake-up datetime\n");
+	}
+	else{
+		debug_printf(" Read config file error: default initialization value\n"); //error: file don't exist
+	}
+	fatRes = f_close (&file_config);
+	return fatRes;
+}
+
 
 
 
