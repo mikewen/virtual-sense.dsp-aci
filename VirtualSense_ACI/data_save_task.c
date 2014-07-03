@@ -193,10 +193,11 @@ void DataSaveTask(void)
                 //clear_lcd();
                 debug_printf("File saved %s\n",file_name);
         }
-        //wdt_Refresh();
-        // Put DSP into RTC only mode
         // read next wake-up datetime
         rc = readNextWakeUpDateTimeFromScheduler(program_counter, &wakeupTime);
+        rc = increaseProgramCounter(program_counter);
+        debug_printf("program counter increased return %d\n",rc);
+
         status = RTC_setAlarm(&wakeupTime);
         if(status != CSL_SOK)
 		{

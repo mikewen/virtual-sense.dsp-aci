@@ -32,6 +32,7 @@ void RTC_scheduleAlarmAfterMinutes(unsigned short minutes);
 void RTC_shutdownToRTCOnlyMonde();
 Int16 RTC_initRtcFromFile();
 void RTC_initializaEventEveryMinute();
+Uint8 isAfter(CSL_RtcAlarm first, CSL_RtcAlarm second);
 
 
 #endif

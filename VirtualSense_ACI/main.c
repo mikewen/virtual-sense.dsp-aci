@@ -96,6 +96,7 @@ extern PSP_Result set_sampling_frequency_gain_impedence(unsigned long SamplingFr
 CSL_Status  CSL_i2cPowerTest(void);
 void init_all_peripheral(void);
 
+FRESULT updateTimeFromFile();
 FRESULT initConfigFromSchedulerFile(Uint16 index); // read configuration from scheduler file at index line
 Uint16 readProgramCounter();					  // read from file the program counter
 FRESULT increaseProgramCounter(Uint16 pc);		  // increase program counter
@@ -319,15 +320,15 @@ void init_all_peripheral(void)
 				//debug_printf("time.rtc file deleted\n");
 		}*/
 
+	debug_printf("updateTimeFromFile\n");
+
 	rc = updateTimeFromFile();
 
 	pc =  readProgramCounter();
+	debug_printf("readProgramCounter\n");
 	program_counter = pc;
 	debug_printf("program counter is %d\n",pc);
 	rc = initConfigFromSchedulerFile(pc);
-
-	rc = increaseProgramCounter(pc);
-	debug_printf("program counter increased return %d\n",rc);
 
 	// setting new clock
 	 /* Initialize DSP PLL */
@@ -516,9 +517,28 @@ FRESULT initConfigFromSchedulerFile(Uint16 index){
 	CSL_RtcTime      stopTime;
 	CSL_RtcDate      startDate;
 	CSL_RtcDate      stopDate;
+
+	CSL_RtcTime      nowTime;
+	CSL_RtcDate      nowDate;
+	CSL_RtcAlarm	 datetime;
+	CSL_RtcAlarm	 nowDatetime;
+
 	Uint16 field = 0;
 	UINT bw;
+	Uint16 lineIndex = index;
+
 	char line[34];
+
+	// read current date and time
+	RTC_getDate(&nowDate);
+	RTC_getTime(&nowTime);
+	nowDatetime.day 	= nowDate.day;
+	nowDatetime.month 	= nowDate.month;
+	nowDatetime.year 	= nowDate.year;
+	nowDatetime.hours	= nowTime.hours;
+	nowDatetime.mins 	= nowTime.mins;
+	nowDatetime.secs 	= nowTime.secs;
+
 
 	//read config from file
 	debug_printf("Read scheduler file\n");
@@ -533,11 +553,12 @@ FRESULT initConfigFromSchedulerFile(Uint16 index){
 
 		// NOW SKIP INDEX-1 lines
 		//index-=1;
-		debug_printf(" Skipping %d lines\n", index);
-		while(index>0){
+		SKIP:
+		debug_printf(" Skipping %d lines\n", lineIndex);
+		while(lineIndex>0){
 			//debug_printf(" Skipping %d lines\n", index);
 			fatRes = f_read(&file_config,  line, 30, &bw);
-			index--;
+			lineIndex--;
 		}
 
 		// read MODE
@@ -546,6 +567,7 @@ FRESULT initConfigFromSchedulerFile(Uint16 index){
 		if(mode == MODE_ALWAYS_ON) {
 			// START DATETIME
 			// DAY
+			debug_printf(" MODE_ALWAYS_ON\n");
 			fatRes = f_read(&file_config,  &field, 2, &bw);
 			startDate.day = field;
 			debug_printf(" Start day is %d \n", startDate.day);
@@ -569,6 +591,28 @@ FRESULT initConfigFromSchedulerFile(Uint16 index){
 			fatRes = f_read(&file_config,  &field, 2, &bw);
 			startTime.secs = field;
 			debug_printf(" Start secs is %d \n", startTime.secs);
+
+			// IF START DATETIME IS AFTER NOW GO TO SLEEP UNTIL START DATETIME
+			datetime.day 	= startDate.day;
+			datetime.month 	= startDate.month;
+			datetime.year 	= startDate.year;
+			datetime.hours	= startTime.hours;
+			datetime.mins 	= startTime.mins;
+			datetime.secs 	= startTime.secs;
+
+			if(isAfter(datetime, nowDatetime)){
+				status = RTC_setAlarm(&datetime);
+				if(status != CSL_SOK)
+				{
+					debug_printf("RTC: setAlarm Failed\n");
+				} else {
+					debug_printf("RTC: setAlarm Successful\n");
+					debug_printf("RTC: Alarm time: %d/%d/%d %d:%d:%d \n",
+							datetime.day, datetime.month, datetime.year,
+							datetime.hours, datetime.mins, datetime.secs);
+				}
+				RTC_shutdownToRTCOnlyMonde();
+			}
 
 			// STOP DATETIME
 			// DAY
@@ -596,30 +640,10 @@ FRESULT initConfigFromSchedulerFile(Uint16 index){
 			stopTime.secs = field;
 			debug_printf(" Stop secs is %d \n", stopTime.secs);
 
-			// schedule interrupt to stop writing at the end
-			stopWritingTime.day 	=stopDate.day;
-			stopWritingTime.month 	= stopDate.month;
-			stopWritingTime.year	= stopDate.year;
-			stopWritingTime.hours	= stopTime.hours;
-			stopWritingTime.mins	= stopTime.mins;
-			stopWritingTime.secs	= stopTime.secs;
-
-			status = RTC_setAlarm(&stopWritingTime);
-
-			if(status != CSL_SOK)
-			{
-				debug_printf("RTC: setAlarm Failed\n");
-			} else {
-				debug_printf("RTC: setAlarm Successful\n");
-				debug_printf("RTC: Alarm time: %d/%d/%d %d:%d:%d \n",
-						stopWritingTime.day, stopWritingTime.month, stopWritingTime.year,
-						stopWritingTime.hours, stopWritingTime.mins, stopWritingTime.secs);
-			}
-
 			// file size seconds
 			fatRes = f_read(&file_config,  &field, 2, &bw);
 			seconds = field;
-			recTimeMinutes = 15000; // max number of minutes.... the writing routine is termianted by an interrupt....
+			recTimeMinutes = 15000; // max number of minutes.... the writing routine is terminated by an interrupt....
 			debug_printf(" File size seconds is %d \n", seconds);
 
 			//frequency
@@ -648,9 +672,39 @@ FRESULT initConfigFromSchedulerFile(Uint16 index){
 			else if(field == 3)
 				impedance = 0x30; // IMPEDANCE_40K
 			debug_printf(" Impedance is %X \n", impedance);
+
+			// IF STOP DATETIME IS NOT AFTER SKIP GOTO SKIP LINES PROCEDURE
+			// schedule interrupt to stop writing at the end
+			stopWritingTime.day 	= stopDate.day;
+			stopWritingTime.month 	= stopDate.month;
+			stopWritingTime.year	= stopDate.year;
+			stopWritingTime.hours	= stopTime.hours;
+			stopWritingTime.mins	= stopTime.mins;
+			stopWritingTime.secs	= stopTime.secs;
+
+			if(!isAfter(stopWritingTime, nowDatetime)){
+				lineIndex++;
+				debug_printf("need to skip a line .... scheduler or program counter are out of date???");
+				goto SKIP;
+			}
+
+			status = RTC_setAlarm(&stopWritingTime);
+
+			if(status != CSL_SOK)
+			{
+				debug_printf("RTC: setAlarm Failed\n");
+			} else {
+				debug_printf("RTC: setAlarm Successful\n");
+				debug_printf("RTC: Alarm time: %d/%d/%d %d:%d:%d \n",
+						stopWritingTime.day, stopWritingTime.month, stopWritingTime.year,
+						stopWritingTime.hours, stopWritingTime.mins, stopWritingTime.secs);
+			}
+
+
 		}else if (mode == MODE_CALENDAR){
 			// START DATETIME
 			// DAY
+			debug_printf(" MODE_CALENDAR\n");
 			fatRes = f_read(&file_config,  &field, 2, &bw);
 			startDate.day = field;
 			debug_printf(" Start day is %d \n", startDate.day);
@@ -675,7 +729,29 @@ FRESULT initConfigFromSchedulerFile(Uint16 index){
 			startTime.secs = field;
 			debug_printf(" Start secs is %d \n", startTime.secs);
 
-			// STOP DATETIME SKIP
+			// IF START DATETIME IS AFTER NOW GO TO SLEEP UNTIL START DATETIME
+			datetime.day 	= startDate.day;
+			datetime.month 	= startDate.month;
+			datetime.year 	= startDate.year;
+			datetime.hours	= startTime.hours;
+			datetime.mins 	= startTime.mins;
+			datetime.secs 	= startTime.secs;
+
+			if(isAfter(datetime, nowDatetime)){
+				status = RTC_setAlarm(&datetime);
+				if(status != CSL_SOK)
+				{
+					debug_printf("RTC: setAlarm Failed\n");
+				} else {
+					debug_printf("RTC: setAlarm Successful\n");
+					debug_printf("RTC: Alarm time: %d/%d/%d %d:%d:%d \n",
+							datetime.day, datetime.month, datetime.year,
+							datetime.hours, datetime.mins, datetime.secs);
+				}
+				RTC_shutdownToRTCOnlyMonde();
+			}
+
+			// SKIP STOP DATETIME
 			// SKIP DAY
 			fatRes = f_read(&file_config,  &field, 2, &bw);
 

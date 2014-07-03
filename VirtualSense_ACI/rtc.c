@@ -507,6 +507,32 @@ void rtc_alarmEvt(void)
     //SEM_post(&SEM_TimerSave);
 }
 
+Uint8 isAfter(CSL_RtcAlarm first, CSL_RtcAlarm second){
+	Uint8 ret = 0;
+	if(first.year > second.year)
+		ret = 1;
+	else if (first.year == second.year){
+		if(first.month > second.month)
+			ret = 1;
+		else if(first.month == second.month){
+			if(first.day > second.day)
+				ret = 1;
+			else if (first.day == second.day){
+				if(first.hours > second.hours)
+					ret = 1;
+				else if (first.hours == second.hours){
+					if(first.mins > second.mins)
+						ret = 1;
+					//else if (second.mins == first.mins){
+						// we do not control seconds because we need at least one minute of difference
+					//}
+				}
+			}
+		}
+	}
+	return ret;
+
+}
 
 
 
