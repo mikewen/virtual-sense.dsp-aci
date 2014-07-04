@@ -96,8 +96,10 @@ void printdebug(const char *format, ...){
 #if DEBUG_LEVEL > 0
     status = UART_fputs(hUart,debugBuffer,0);
 #if DEBUG_LEVEL == 2
-    if(log_start)
+    if(log_start){
     	fatRes = f_write (&log_file, &debugBuffer, done, &bw);	/* Write data to a file */
+    	f_sync(&log_file);
+    }
 #endif
 #endif
 }

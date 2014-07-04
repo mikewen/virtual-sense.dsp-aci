@@ -90,7 +90,7 @@
 #define MODE_EVERY_MINUT 	3
 
 
-#define DEBUG_LEVEL 1 			// 0 --- no debug; 1 --- debug over UART; --- 2 debug over log file
+#define DEBUG_LEVEL 2 			// 0 --- no debug; 1 --- debug over UART; --- 2 debug over log file
 #define debug_printf printdebug
 
 

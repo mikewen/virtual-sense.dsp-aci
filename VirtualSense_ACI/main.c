@@ -987,7 +987,7 @@ void ClockGating(void)
     //pcgcr_value |= CSL_FMKT(SYS_PCGCR1_MMCSD0CG, DISABLED); //LELE to use SD on MMC0
     pcgcr_value |= CSL_FMKT(SYS_PCGCR1_MMCSD1CG, DISABLED);
     // clock stop request for UART
-#if !DEBUG_UART
+#if DEBUG_LEVEL < 1
     clkstop_value = CSL_FMKT(SYS_CLKSTOP_URTCLKSTPREQ, REQ);
     // write to CLKSTOP
     CSL_FSET(CSL_SYSCTRL_REGS->CLKSTOP, 15, 0, clkstop_value);
