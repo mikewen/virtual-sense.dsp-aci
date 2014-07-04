@@ -100,7 +100,7 @@
 #include "diskio.h"		/* Declarations of low level disk I/O functions */
 
 #include <stdio.h>
-#include "debug_uart.h" // to redirect debug_printf over UART
+#include "main_config.h"
 
 /*--------------------------------------------------------------------------
 

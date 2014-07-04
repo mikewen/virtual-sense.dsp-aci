@@ -49,7 +49,6 @@
 #include "csl_sysctrl.h"
 #include <csl_rtc.h>
 
-#include "debug_uart.h" // to redirect debug_printf over UART
 #include "rtc.h"
 #include "csl_types.h"
 #include "csl_error.h"
@@ -233,13 +232,8 @@ void main(void)
 
     /* Enable the USB LDO */
     //*(volatile ioport unsigned int *)(0x7004) |= 0x0001;
-#if DEBUG_UART
-    init_debug_over_uart(40);
-#endif
-    debug_printf("Firmware version:");
-    debug_printf(FW_VER);
-    debug_printf("\n");
 
+    init_debug(40);
 
     // set the GPIO pin 10 - 11 to output, set SYS_GPIO_DIR0 (0x1C06) bit 10 and 11 to 1
     //LELE *(volatile ioport unsigned int *)(0x1C06) |= 0x600;
@@ -276,9 +270,12 @@ void init_all_peripheral(void)
 
 	// turn off led to turn on oscillator
 	CSL_CPU_REGS->ST1_55 &=~CSL_CPU_ST1_55_XF_MASK;
-	debug_printf("Start Configuration....\n");
+
+//	debug_printf("Start Configuration....\n");
 	// for debug LELE
 	//init_buffer();
+
+   	debug_printf("Starting device....");
 
 	//Initialize RTC
     initRTC();
@@ -291,22 +288,33 @@ void init_all_peripheral(void)
 
     //mount sdcard: must be High capacity(>4GB), standard capacity have a problem
     rc = f_mount(0, &fatfs);
-    if(rc)
+    if(rc){
+
     	debug_printf("Error mounting volume\n");
-    else
+
+    }
+    else{
+
     	debug_printf("Mounting volume\n");
 
+    }
+
     rc_fat = f_open(&null_file, "null.void", FA_READ);
+
 	debug_printf(" try to open null.void\n");
+
 	if(rc_fat){
 		debug_printf("null.void doesn't exist\n");
 	}
 
+
 	 rc_fat = f_open(&null_file, "null2.void", FA_READ);
+
 		debug_printf(" try to open null2.void\n");
 		if(rc_fat){
 			debug_printf("null2.void doesn't exist\n");
 		}
+
 
 	// LELE Calling this function does not run. Need to explicitely
 	// do it here !!!!
@@ -320,6 +328,10 @@ void init_all_peripheral(void)
 				//debug_printf("time.rtc file deleted\n");
 		}*/
 
+	start_log();
+	debug_printf("Firmware version:");
+	debug_printf(FW_VER);
+	debug_printf("\n");
 	debug_printf("updateTimeFromFile\n");
 
 	rc = updateTimeFromFile();
@@ -338,14 +350,14 @@ void init_all_peripheral(void)
 
 		status = pll_sample_freq(40);
 
-		init_debug_over_uart(40);
+		init_debug(40);
 		debug_printf("\n");
 		debug_printf("  Done\n");
 	}else if (frequency == 48000){
 
 		status = pll_sample_freq(40);
 
-		init_debug_over_uart(40);
+		init_debug(40);
 		debug_printf("\n");
 		debug_printf("  Done\n");
 	}

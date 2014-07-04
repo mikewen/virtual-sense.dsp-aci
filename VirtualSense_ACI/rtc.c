@@ -6,7 +6,6 @@
  */
 
 
-#include "debug_uart.h" // to redirect debug_printf over UART
 #include <csl_rtc.h>
 #include <csl_intc.h>
 #include <csl_general.h>
@@ -111,12 +110,12 @@ void initRTC()
     status = RTC_setCallback(&rtcDispatchTable, &isrAddr);
 	if(status != CSL_SOK)
 	{
-		debug_printf("RTC_setCallback Failed\n");
+		//debug_printf("RTC_setCallback Failed\n");
 		return;
 	}
 	else
 	{
-		debug_printf("RTC_setCallback Successful\n");
+		//debug_printf("RTC_setCallback Successful\n");
 	}
 
 	/* Configure and enable the RTC interrupts using INTC module */
@@ -146,36 +145,36 @@ void initRTC()
 		status = RTC_config(&rtcConfig);
 		if(status != CSL_SOK)
 		{
-			debug_printf("RTC_config Failed\n");
+			//debug_printf("RTC_config Failed\n");
 			return;
 		}
 		else
 		{
-			debug_printf("RTC_config Successful\n");
+			//debug_printf("RTC_config Successful\n");
 		}
 
 		/* Set the RTC time */
 		status = RTC_setTime(&InitTime);
 		if(status != CSL_SOK)
 		{
-			debug_printf("RTC_setTime Failed\n");
+			//debug_printf("RTC_setTime Failed\n");
 			return;
 		}
 		else
 		{
-			debug_printf("RTC_setTime Successful\n");
+			//debug_printf("RTC_setTime Successful\n");
 		}
 
 		/* Set the RTC date */
 		status = RTC_setDate(&InitDate);
 		if(status != CSL_SOK)
 		{
-			debug_printf("RTC_setDate Failed\n");
+			//debug_printf("RTC_setDate Failed\n");
 			return;
 		}
 		else
 		{
-			debug_printf("RTC_setDate Successful\n");
+			//debug_printf("RTC_setDate Successful\n");
 		}
 
 		/* Set the RTC Alarm time */
@@ -207,7 +206,7 @@ void initRTC()
 		debug_printf("RTC_eventEnable for ALARM EVENT Successful\n");
 	}*/
 
-	debug_printf("\nStarting the RTC\n\n");
+	//debug_printf("\nStarting the RTC\n\n");
 	/* Start the RTC */
 	RTC_start();
 }

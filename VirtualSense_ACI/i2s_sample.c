@@ -26,7 +26,6 @@
  */
 
 #include <string.h>
-#include "debug_uart.h" // to redirect printf over UART
 //#include "psp_i2s.h"
 #include "dda_i2s.h"
 #include "psp_dma.h"

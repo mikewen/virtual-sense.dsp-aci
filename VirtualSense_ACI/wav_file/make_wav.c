@@ -14,7 +14,7 @@
  *  http://creativecommons.org/licenses/by-nc/3.0/
  */
 #include "VirtualSense_ACIcfg.h"
-#include "debug_uart.h" // to redirect debug_printf over UART
+#include "main_config.h"
 #include <assert.h>
 
 #include "make_wav.h"

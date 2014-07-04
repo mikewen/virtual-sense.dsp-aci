@@ -24,6 +24,7 @@
 #define MAIN_CONFIG_H
 
 #include <csl_types.h>
+#include "debug.h"
 /*****************************************************************************
 
 			 192 kHz: P=1, R=1, J=7, D=1680 (0x690)  => .1680 => J.D = 7.1680
@@ -80,6 +81,7 @@
 #define RTC_FILE_CONFIG           						 "updatetime.bin"
 #define FILE_SHEDULER                                    "scheduler.bin"
 #define FILE_PROGRAM_COUNTER							 "programcounter.bin"
+#define FILE_LOG										 "log.log"
 
 #define FW_VER "0.2.contiguous.advanced.scheduler"
 
@@ -88,9 +90,9 @@
 #define MODE_EVERY_MINUT 	3
 
 
-#define DEBUG_UART 1
+#define DEBUG_LEVEL 1 			// 0 --- no debug; 1 --- debug over UART; --- 2 debug over log file
+#define debug_printf printdebug
 
-#endif
 
 /* Operation mode:
  * 0 error
@@ -130,3 +132,4 @@ extern Uint16 program_counter;
 /*****************************************************************************/
 /* End of main_config.h                                                        */
 /*****************************************************************************/
+#endif // MAIN_CONFIG_H

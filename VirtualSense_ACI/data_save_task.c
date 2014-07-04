@@ -13,7 +13,6 @@
 #include <std.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include "debug_uart.h" // to redirect debug_printf over UART
 #include <csl_rtc.h>
 #include <csl_intc.h>
 #include "csl_wdt.h"

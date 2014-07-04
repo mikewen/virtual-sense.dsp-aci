@@ -1,7 +1,7 @@
 /*****************************************************************************/
 /*                                                                           */
 /* FILENAME                                                                  */ 
-/*      debug_uart.h                                                            */
+/*      debug.h                                                            */
 /*                                                                           */
 /* DESCRIPTION                                                               */
 /*   Header file for uart debug                                              */
@@ -24,9 +24,10 @@
 
 #ifndef DEBUG_UART_MAIN_CONFIG_H
 #define DEBUG_UART_MAIN_CONFIG_H
-#define debug_printf printdebug
 
-void init_debug_over_uart(Uint16 clock);
+
+void init_debug(Uint16 clock);
+void start_log();
 void printdebug(const char *format, ...);
 
 #endif

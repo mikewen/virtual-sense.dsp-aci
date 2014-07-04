@@ -32,7 +32,7 @@
 #include "app_globals.h"
 #include "codec_aic3254.h"
 
-#include "debug_uart.h" // to redirect debug_printf over UART
+#include "main_config.h"
 
 #define I2C_OWN_ADDR            (0x2F)
 #define I2C_BUS_FREQ            (10000u)

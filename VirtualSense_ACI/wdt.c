@@ -1,5 +1,5 @@
 #include "csl_wdt.h"
-#include "debug_uart.h" // to redirect debug_printf over UART
+#include "main_config.h"
 //#include "csl_general.h"
 //#include <stdio.h>
 

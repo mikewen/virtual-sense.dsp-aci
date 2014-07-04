@@ -1,12 +1,12 @@
 /*
- * debug_uart.c
+ * debug.c
  *
  *  Created on: 23/gen/2014
  *      Author: Emanuele Lattanzi
  */
 
 #include <stdio.h>
-
+#include "psp_common.h"
 #include "csl_uart.h"
 #include "csl_uartAux.h"
 #include "csl_general.h"
@@ -17,15 +17,21 @@
 CSL_UartObj 		uartObj;
 CSL_Status 			status;
 CSL_UartHandle    	hUart;
-#pragma DATA_SECTION(uart_debugBuffer, ".uart_debugBuffer");
- static  char uart_debugBuffer[256];
+#pragma DATA_SECTION(debugBuffer, ".uart_debugBuffer");
+ static  char debugBuffer[256];
 CSL_UartSetup uartSetup;
+Uint8 log_start = 0;
+
+#if DEBUG_LEVEL == 2
+#include "ff.h"
+FIL log_file;
+#endif
 
 
 
-void init_debug_over_uart(Uint16 clock){
-#if DEBUG_UART
+void init_debug(Uint16 clock){
 
+#if DEBUG_LEVEL > 0
 	    uartSetup.afeEnable = CSL_UART_NO_AFE;
 	    uartSetup.baud = 57600;
 	    uartSetup.clkInput = 1000000*clock;
@@ -68,14 +74,31 @@ void init_debug_over_uart(Uint16 clock){
 #endif
 }
 
+void start_log(){
+#if DEBUG_LEVEL == 2
+	    FRESULT fatRes;
+	    log_start = 1;
+	    fatRes = f_open(&log_file, FILE_LOG, FA_WRITE | FA_CREATE_ALWAYS);
+#endif
+}
+
 
 void printdebug(const char *format, ...){
-#if DEBUG_UART
+
 	va_list arg;
 	int done;
+#if DEBUG_LEVEL == 2
+	Uint bw = 0;
+	FRESULT fatRes;
+#endif
 	va_start (arg, format);
-	done = vsprintf (uart_debugBuffer, format, arg);
-    status = UART_fputs(hUart,uart_debugBuffer,0);
+	done = vsprintf (debugBuffer, format, arg);
+#if DEBUG_LEVEL > 0
+    status = UART_fputs(hUart,debugBuffer,0);
+#if DEBUG_LEVEL == 2
+    if(log_start)
+    	fatRes = f_write (&log_file, &debugBuffer, done, &bw);	/* Write data to a file */
+#endif
 #endif
 }
 
