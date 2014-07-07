@@ -119,9 +119,9 @@ FRESULT write_data_to_wave(FIL *file, const void *buff, unsigned int number_of_b
 
 FRESULT close_wave_file(FIL *file){
 	FRESULT rc;
-	debug_printf(  "\nClose the file.\n");
+	//debug_printf(  "\nClose the file.\n");
 	rc = f_close(file);
-	if (rc) debug_printf("Error closing file %d\n",rc);
+	if (rc) debug_printf("   Error closing file %d\n",rc);
 	return rc;
 }
 

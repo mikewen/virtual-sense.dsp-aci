@@ -342,10 +342,10 @@ unsigned char RTC_shutdownToRTCOnlyMonde(){
 	unsigned int temp1920,temp1924;
 	unsigned int count = 0;
 	start:
-	debug_printf("Set condec into low power mode\n");
+	debug_printf("   Set condec into low power mode\n");
 	codec_sleep_mode();
 
-	debug_printf("Preparing RTCOnlyMode\n");
+	debug_printf("   Preparing RTCOnlyMode\n");
 
 	// shutdown led to shutdown extrernal oscillator
 	CSL_CPU_REGS->ST1_55 &= ~CSL_CPU_ST1_55_XF_MASK;
@@ -366,7 +366,7 @@ unsigned char RTC_shutdownToRTCOnlyMonde(){
     {
     	temp1924 = *(volatile ioport unsigned int *) (0x1924);
     	count++;
-    	debug_printf("count value1 %d\n",count);
+    	debug_printf("    count value1 %d\r\n",count);
     }while ((temp1924&0x0020)==0 && (count < 1000));
 
     temp1920 = *(volatile ioport unsigned  int *) (0x1920);
@@ -389,7 +389,7 @@ unsigned char RTC_shutdownToRTCOnlyMonde(){
             asm("    *port(#0x1920) = #0x803F "); //clear interrupt flags
         }
         count++;
-        debug_printf("count value2 %d\n",count);
+        debug_printf("    count value2 %d\r\n",count);
      }
      debug_printf("----should never happen ----\n");
      goto start;
@@ -500,7 +500,7 @@ void rtc_extEvt(void)
 void rtc_alarmEvt(void)
 {
     CSL_FINST(CSL_RTC_REGS->RTCINTFL, RTC_RTCINTFL_ALARMFL, SET);
-    debug_printf("\nRTC Alarm Interrupt --- stop writing\n\n");
+    debug_printf("   RTC Alarm Interrupt --- stop writing\n\n");
     // stop writing always on files
     stopWriting = 1;
     //SEM_post(&SEM_TimerSave);

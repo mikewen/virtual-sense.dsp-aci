@@ -61,7 +61,7 @@ extern Uint16 programCounter;
 
 // PRD function. Runs every 10 minutes to start sampling a new file
 void CreateNewFile(void){
-	debug_printf(  "Timer executes\n");
+	debug_printf(  "Timer executes\r\n");
 
 }
 
@@ -72,6 +72,7 @@ void DataSaveTask(void)
     //print_playaudio();
         CSL_RtcTime      GetTime;
         CSL_RtcDate      GetDate;
+        CSL_RtcAlarm	 nowTime;
         FRESULT rc;
         FRESULT write_result;
 
@@ -89,12 +90,12 @@ void DataSaveTask(void)
 		hWdt = (CSL_WdtObj *)WDTIM_open(WDT_INST_0, &wdtObj, &status);
 		if(NULL == hWdt)
 		{
-				debug_printf("WDTIM: Open for the watchdog Failed\n");
+				debug_printf("   WDTIM: Open for the watchdog Failed\r\n");
 
 		}
 		else
 		{
-				debug_printf("WDTIM: Open for the watchdog Passed\n");
+				//debug_printf("   WDTIM: Open for the watchdog Passed\r\n");
 		}
 
 		hwConfig.counter  = 0xFFFF;
@@ -104,26 +105,27 @@ void DataSaveTask(void)
 		status = WDTIM_config(hWdt, &hwConfig);
 		if(CSL_SOK != status)
 		{
-				debug_printf("WDTIM: Config for the watchdog Failed\n");
+				debug_printf("   WDTIM: Config for the watchdog Failed\r\n");
 
 		}
 		else
 		{
-				debug_printf("WDTIM: Config for the watchdog Passed\n");
+				//debug_printf("   WDTIM: Config for the watchdog Passed\r\n");
 		}
 
 		/* Start the watch dog timer */
 		status = WDTIM_start(hWdt);
 		if(CSL_SOK != status)
 		{
-				debug_printf("WDTIM: Start for the watchdog Failed\n");
+				debug_printf("   WDTIM: Start for the watchdog Failed\r\n");
 
 		}
 		else
 		{
-				debug_printf("WDTIM: Start for the watchdog Passed\n");
+				debug_printf("   WDTIM: Start for the watchdog Passed\r\n");
 		}
     //main loop
+		debug_printf("   Starting task\r\n");
     while (1)
     {
         //wait on semaphore released from a timer function
@@ -132,13 +134,19 @@ void DataSaveTask(void)
 
 				RTC_getDate(&GetDate);
 				RTC_getTime(&GetTime);
+				nowTime.day = GetDate.day;
+				nowTime.month = GetDate.month;
+				nowTime.year = GetDate.year;
+				nowTime.hours = GetTime.hours;
+				nowTime.mins = GetTime.mins;
+
 				sprintf(file_name, "%d__%d_%d_%d__%d-%d-%d.wav",ID, GetDate.day,GetDate.month,GetDate.year, GetTime.hours, GetTime.mins, GetTime.secs);
-				debug_printf("Creating a new file %s\n",file_name);
+				debug_printf("    Creating a new file %s\r\n",file_name);
 
 				//rc = open_wave_file(&wav_file, file_name, FREQUENCY, SECONDS);
 				rc = open_wave_file(&wav_file, file_name, frequency, seconds);
 				if(rc)
-						debug_printf("Error opening a new wav file %d\n",rc);
+						debug_printf("    Error opening a new wav file %d\r\n",rc);
 				else{
 					bufferOutIdx = 0;
 					bufferInIdx = 0;
@@ -157,25 +165,25 @@ void DataSaveTask(void)
 						writingSamples = writingSamples*256; */
 						remainingSamples = b_size - bufferOutIdx; // bufferOutIdx is the next readable sample
 						writingSamples = 4096; // to force two sector
-						//debug_printf("writing samples is %ld --- remaining samples is %ld\n", writingSamples, remainingSamples);
+						//debug_printf("writing samples is %ld --- remaining samples is %ld\r\n", writingSamples, remainingSamples);
 						if(remainingSamples < writingSamples)
 							writingSamples = remainingSamples;
 						//writingSamples = writingSamples < remainingSamples?writingSamples:remainingSamples;
 
-						//debug_printf("writing samples %d from index %ld\n",writingSamples, bufferOutIdx );
+						//debug_printf("writing samples %d from index %ld\r\n",writingSamples, bufferOutIdx );
 						write_result = putDataIntoOpenFile(((void *)(bufferPointer+bufferOutIdx)), (writingSamples*2));
 						if(!write_result)
 							WDTIM_service(hWdt);
 
-						//debug_printf("b inside %ld\n",  bufferInside);
+						//debug_printf("b inside %ld\r\n",  bufferInside);
 						//readingIndex = bufferOutIdx+writingSamples;
 						/*if(readingIndex >= b_size){
-								debug_printf("---- index exceed array %ld  %ld\n",bufferOutIdx, readingIndex);
+								debug_printf("---- index exceed array %ld  %ld\r\n",bufferOutIdx, readingIndex);
 						}*/
 						bufferOutIdx = ((bufferOutIdx + writingSamples) % b_size);
 						bufferInside-=writingSamples ; // sample number
 						/*if(bufferOutIdx == 0)
-							debug_printf("out of buffer new out index is %ld\n", bufferOutIdx); */
+							debug_printf("out of buffer new out index is %ld\r\n", bufferOutIdx); */
 
 				}
 
@@ -190,24 +198,32 @@ void DataSaveTask(void)
 				numberOfFiles--;
 				step = 0;
                 //clear_lcd();
-                debug_printf("File saved %s\n",file_name);
+                debug_printf("    File saved %s\r\n",file_name);
         }
         // read next wake-up datetime
-        rc = readNextWakeUpDateTimeFromScheduler(program_counter, &wakeupTime);
-        rc = increaseProgramCounter(program_counter);
-        debug_printf("program counter increased return %d\n",rc);
 
+        rc = increaseProgramCounter(program_counter);
+        //debug_printf("program counter increased return %d\r\n",rc);
+        debug_printf("   Task completed!!!!\r\n");
+        debug_printf("   Looking for next wake-up datetime in scheduler file.... %d\r\n",rc);
+        rc = readNextWakeUpDateTimeFromScheduler(program_counter, &wakeupTime);
+        while(!isAfter(wakeupTime,nowTime)){
+        	debug_printf("   Looking for next wake-up datetime in scheduler file.... \r\n");
+        	rc = increaseProgramCounter(program_counter);
+        	program_counter++;
+        	rc = readNextWakeUpDateTimeFromScheduler(program_counter, &wakeupTime);
+        }
+        debug_printf("   Going to sleep until: %d/%d/%d %d:%d:%d \r\n",
+					wakeupTime.day, wakeupTime.month, wakeupTime.year,
+					wakeupTime.hours, wakeupTime.mins, wakeupTime.secs);
         status = RTC_setAlarm(&wakeupTime);
         if(status != CSL_SOK)
 		{
-			debug_printf("RTC: setAlarm Failed\n");
+			debug_printf("    RTC: setAlarm Failed CPU remains active\r\n");
 		} else {
-			debug_printf("RTC: setAlarm Successful\n");
-			debug_printf("RTC: Alarm time: %d/%d/%d %d:%d:%d \n",
-					wakeupTime.day, wakeupTime.month, wakeupTime.year,
-					wakeupTime.hours, wakeupTime.mins, wakeupTime.secs);
+			RTC_shutdownToRTCOnlyMonde();
 		}
-        RTC_shutdownToRTCOnlyMonde();
+
     }
 }
 
