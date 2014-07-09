@@ -25,6 +25,8 @@
 
 #include <csl_types.h>
 #include "debug.h"
+#include "ff.h"
+#include "integer.h"
 /*****************************************************************************
 
 			 192 kHz: P=1, R=1, J=7, D=1680 (0x690)  => .1680 => J.D = 7.1680
@@ -83,7 +85,7 @@
 #define FILE_PROGRAM_COUNTER							 "programcounter.bin"
 #define FILE_LOG										 "log.log"
 
-#define FW_VER "0.2.contiguous.advanced.scheduler"
+#define FW_VER "1.0.contiguous.advanced.scheduler-09-07-2014"
 
 #define MODE_ALWAYS_ON		1
 #define MODE_CALENDAR 		2
@@ -92,6 +94,40 @@
 
 #define DEBUG_LEVEL 2 			// 0 --- no debug; 1 --- debug over UART; --- 2 debug over log file
 #define debug_printf printdebug
+
+
+static inline FRESULT increaseProgramCounter(Uint16 pc){
+	Uint16 newPc = pc+1;
+	UINT bw = 0;
+	FRESULT fatRes;
+	FIL fileProgramCounter;
+	fatRes = f_open(&fileProgramCounter, FILE_PROGRAM_COUNTER, FA_WRITE | FA_CREATE_ALWAYS);
+	if(!fatRes) {
+		fatRes = f_write (&fileProgramCounter, &newPc, 2, &bw);	/* Write data to a file */
+		debug_printf("   Program counter write %d return code %d\r\n", newPc, fatRes);
+		fatRes = f_close (&fileProgramCounter);
+	}else {
+		debug_printf("   Program counter error writing %d\r\n", fatRes);
+	}
+	return fatRes;
+}
+
+static inline Uint16 readProgramCounter(){
+	Uint16 line = 0;
+	UINT bw = 0;
+	FRESULT fatRes;
+	FIL fileProgramCounter;
+	//debug_printf(" Opening program counter file %s\r\n", FILE_PROGRAM_COUNTER);
+	fatRes = f_open(&fileProgramCounter, FILE_PROGRAM_COUNTER, FA_READ);
+	if(!fatRes) {
+		fatRes = f_read(&fileProgramCounter,  &line, 2, &bw);
+		debug_printf(" Program counter is %d return code %d\r\n", line, fatRes);
+		fatRes = f_close (&fileProgramCounter);
+	}else{
+		debug_printf(" Program counter file not found \r\n");
+	}
+	return line;
+}
 
 
 /* Operation mode:

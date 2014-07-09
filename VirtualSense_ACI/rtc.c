@@ -9,6 +9,7 @@
 #include <csl_rtc.h>
 #include <csl_intc.h>
 #include <csl_general.h>
+#include "rtc.h"
 #include "ff.h"
 #include "main_config.h"
 
@@ -24,9 +25,12 @@ CSL_RtcDate 	 InitDate;
 //CSL_RtcDate 	 GetDate;
 CSL_RtcConfig    rtcConfig;
 CSL_RtcConfig    rtcGetConfig;
-CSL_RtcAlarm     AlarmTime;
+
+
 CSL_RtcIsrAddr   isrAddr;
 CSL_RtcIsrDispatchTable      rtcDispatchTable;
+
+extern CSL_RtcAlarm  stopWritingTime;
 
 Uint8 stopWriting = 0;
 volatile Uint32 rtcTimeCount = RTC_TIME_PRINT_CYCLE;
@@ -89,14 +93,7 @@ void initRTC()
     InitTime.secs  = 00;
     InitTime.mSecs = 00;
 
-	/* Set the RTC alarm time  at one minutes after init state*/
-    AlarmTime.year  = 11;
-    AlarmTime.month = 11;
-    AlarmTime.day   = 27;
-    AlarmTime.hours = 14;
-    AlarmTime.mins  = 25;
-    AlarmTime.secs  = 0;
-    AlarmTime.mSecs = 00;
+
 
     /* Register the ISR function */
     isrAddr.MilEvtAddr    = rtc_msIntc;
@@ -195,16 +192,38 @@ void initRTC()
 	//RTC_initializaEventAfterMinute() removed 1min interrupt from here to main
 
 	/* Enable the RTC alarm interrupts */
-	/*status = RTC_eventEnable(CSL_RTC_ALARM_INTERRUPT);
+	status = RTC_eventEnable(CSL_RTC_ALARM_INTERRUPT);
 	if(status != CSL_SOK)
 	{
-		debug_printf("RTC_eventEnable for ALARM EVENT Failed\n");
+		debug_printf("   RTC_eventEnable for ALARM EVENT Failed\n");
 		return;
 	}
 	else
 	{
-		debug_printf("RTC_eventEnable for ALARM EVENT Successful\n");
-	}*/
+		debug_printf("   RTC_eventEnable for ALARM EVENT Successful\n");
+	}
+	status = RTC_setPeriodicInterval(CSL_RTC_MINS_PERIODIC_INTERRUPT);
+	if(status != CSL_SOK)
+	{
+		debug_printf("RTC_setPeriodicInterval Failed\n");
+		return;
+	}
+	else
+	{
+		debug_printf("RTC_setPeriodicInterval Successful\n");
+	}
+
+	/* Enable the RTC MINS interrupts */
+	status = RTC_eventEnable(CSL_RTC_MINSEVENT_INTERRUPT);
+	if(status != CSL_SOK)
+	{
+		debug_printf("RTC_eventEnable for MINS EVENT Failed\n");
+		return;
+	}
+	else
+	{
+		debug_printf("RTC_eventEnable for MINS EVENT Successful\n");
+	}
 
 	//debug_printf("\nStarting the RTC\n\n");
 	/* Start the RTC */
@@ -338,7 +357,7 @@ Int16 RTC_initRtcFromFile() {
 		return 1; //error: file don't exist
 }
 
-unsigned char RTC_shutdownToRTCOnlyMonde(){
+void RTC_shutdownToRTCOnlyMonde(){
 	unsigned int temp1920,temp1924;
 	unsigned int count = 0;
 	start:
@@ -358,8 +377,8 @@ unsigned char RTC_shutdownToRTCOnlyMonde(){
     // RTC configure
     asm("    *port(#0x1920) = #0x803F "); //clear interrupt flags
     asm("    *port(#0x1900) = #0x0001 "); //RTCINTEN enabled
-    asm("    *port(#0x1924) = #0x8020 "); //EXTINTEN enabled ALARM INT
-    //asm("    *port(#0x1924) = #0x8024 "); //EXTINTEN enabled ALARM INT enabled MINUTES INT enabled
+    //asm("    *port(#0x1924) = #0x8020 "); //EXTINTEN enabled ALARM INT
+    asm("    *port(#0x1924) = #0x8024 "); //EXTINTEN enabled ALARM INT enabled MINUTES INT enabled
     asm("    *port(#0x1930) = #0x0000 "); //WU_DIR input
     count = 0;
     do // waiting until RTC interrupt is enabled in the RTC domain could take 2 RTC clocks for write to propagate
@@ -393,7 +412,7 @@ unsigned char RTC_shutdownToRTCOnlyMonde(){
      }
      debug_printf("----should never happen ----\n");
      goto start;
-     return 1;//todo reset();
+     //return 1;//todo reset();
 }
 
 
@@ -476,9 +495,22 @@ void rtc_secIntc(void)
 void rtc_minIntc(void)
 {
 	CSL_RtcTime 	 GetTime;
+	CSL_RtcDate 	 GetDate;
+	CSL_RtcAlarm	 nowDatetime;
+
     CSL_FINST(CSL_RTC_REGS->RTCINTFL, RTC_RTCINTFL_MINFL, SET);
     RTC_getTime(&GetTime);
-    debug_printf("\nMIN INTERRUPT RTC actual time %d:%d:%d\n\n",GetTime.hours, GetTime.mins,GetTime.secs);
+    RTC_getDate(&GetDate);
+    nowDatetime.day 	= GetDate.day;
+	nowDatetime.month 	= GetDate.month;
+	nowDatetime.year 	= GetDate.year;
+	nowDatetime.hours	= GetTime.hours;
+	nowDatetime.mins 	= GetTime.mins;
+	nowDatetime.secs 	= GetTime.secs;
+	if(isAfter(nowDatetime, stopWritingTime)){
+		stopWriting = 1;
+		//debug_printf("\n   MIN INTERRUPT STOP WRITING RTC actual time %d:%d:%d\n\n",GetTime.hours, GetTime.mins,GetTime.secs);
+	}
     //SEM_post(&SEM_TimerSave);
 }
 
@@ -500,7 +532,7 @@ void rtc_extEvt(void)
 void rtc_alarmEvt(void)
 {
     CSL_FINST(CSL_RTC_REGS->RTCINTFL, RTC_RTCINTFL_ALARMFL, SET);
-    debug_printf("   RTC Alarm Interrupt --- stop writing\n\n");
+    //debug_printf("   RTC Alarm Interrupt --- stop writing\n\n");
     // stop writing always on files
     stopWriting = 1;
     //SEM_post(&SEM_TimerSave);

@@ -56,7 +56,7 @@ extern Uint16 in_record; //logical pointer
 extern Uint16 numberOfFiles;
 extern Uint16 ID;
 extern Uint8 stopWriting;
-extern Uint16 programCounter;
+
 
 
 // PRD function. Runs every 10 minutes to start sampling a new file
@@ -84,6 +84,7 @@ void DataSaveTask(void)
         unsigned int writingSamples = 0;
         Uint32 remainingSamples = 0;
         Int16 * bufferPointer = circular_buffer;
+        Uint16 programCounter;
 
 
         /* Open the WDTIM module */
@@ -122,9 +123,13 @@ void DataSaveTask(void)
 		}
 		else
 		{
-				debug_printf("   WDTIM: Start for the watchdog Passed\r\n");
+				//debug_printf("   WDTIM: Start for the watchdog Passed\r\n");
 		}
     //main loop
+
+		programCounter =  readProgramCounter();
+		//debug_printf("readProgramCounter\r\n");
+		debug_printf(" Program counter is %d\r\n",programCounter);
 		debug_printf("   Starting task\r\n");
     while (1)
     {
@@ -202,17 +207,18 @@ void DataSaveTask(void)
         }
         // read next wake-up datetime
 
-        rc = increaseProgramCounter(program_counter);
+        //rc = increaseProgramCounter(programCounter);
         //debug_printf("program counter increased return %d\r\n",rc);
         debug_printf("   Task completed!!!!\r\n");
         debug_printf("   Looking for next wake-up datetime in scheduler file.... %d\r\n",rc);
-        rc = readNextWakeUpDateTimeFromScheduler(program_counter, &wakeupTime);
+        rc = readNextWakeUpDateTimeFromScheduler(programCounter, &wakeupTime);
         while(!isAfter(wakeupTime,nowTime)){
         	debug_printf("   Looking for next wake-up datetime in scheduler file.... \r\n");
-        	rc = increaseProgramCounter(program_counter);
-        	program_counter++;
-        	rc = readNextWakeUpDateTimeFromScheduler(program_counter, &wakeupTime);
+        	rc = increaseProgramCounter(programCounter);
+        	programCounter++;
+        	rc = readNextWakeUpDateTimeFromScheduler(programCounter, &wakeupTime);
         }
+        increaseProgramCounter(programCounter);
         debug_printf("   Going to sleep until: %d/%d/%d %d:%d:%d \r\n",
 					wakeupTime.day, wakeupTime.month, wakeupTime.year,
 					wakeupTime.hours, wakeupTime.mins, wakeupTime.secs);

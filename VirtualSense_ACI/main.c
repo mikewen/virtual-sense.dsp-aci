@@ -105,7 +105,6 @@ void calculate_FFT(unsigned char *input, int size);
 
 FATFS fatfs;			/* File system object */
 FIL file_config;
-FIL fileProgramCounter;
 FIL rtc_time_file;
 
 
@@ -122,7 +121,7 @@ Uint16 seconds = 5;
 Uint16 recTimeMinutes;
 Uint16 numberOfFiles = 0;
 Uint16 ID = 0;
-Uint16 program_counter = 0;
+
 
 // Demo switch flag: 0 - power display, 1 - spectrum analyzer
 Uint16 DemoSwitchFlag = 1;
@@ -254,8 +253,6 @@ void CSL_acTest(void){
 void init_all_peripheral(void)
 {
     I2sInitPrms i2sInitPrms;
-    Uint16 pc;
-    //CSL_UsbConfig usbConfig;
     PSP_Result result;
     Int16 status;
     FRESULT rc;
@@ -263,6 +260,7 @@ void init_all_peripheral(void)
 	//UINT bw;
 
 	FIL null_file;
+	Uint16 current_pc = 0;
 
 
 
@@ -271,7 +269,7 @@ void init_all_peripheral(void)
 	// turn off led to turn on oscillator
 	CSL_CPU_REGS->ST1_55 &=~CSL_CPU_ST1_55_XF_MASK;
 
-//	debug_printf("Start Configuration....\r\n");
+    debug_printf("Start Configuration....\r\n");
 	// for debug LELE
 	//init_buffer();
 
@@ -345,11 +343,10 @@ void init_all_peripheral(void)
 	debug_printf("Start configuration\r\n");
 	rc = updateTimeFromFile();
 
-	pc =  readProgramCounter();
+	current_pc =  readProgramCounter();
 	//debug_printf("readProgramCounter\r\n");
-	program_counter = pc;
-	debug_printf(" Program counter is %d\r\n",pc);
-	rc = initConfigFromSchedulerFile(pc);
+	debug_printf(" Program counter is %d\r\n",current_pc);
+	rc = initConfigFromSchedulerFile(current_pc);
 
 		// Initialize audio module
 	debug_printf(" codec parameters:\r\n");
@@ -520,12 +517,13 @@ FRESULT initConfigFromSchedulerFile(Uint16 index){
 	CSL_RtcTime      nowTime;
 	CSL_RtcDate      nowDate;
 	CSL_RtcAlarm	 datetime;
-	CSL_RtcAlarm	 nextDatetime;
+	//CSL_RtcAlarm	 nextDatetime;
 	CSL_RtcAlarm	 nowDatetime;
 
 	Uint16 field = 0;
 	UINT bw;
 	Uint16 lineIndex = index;
+	Uint16 linesToSkip= index;
 
 	char line[34];
 
@@ -557,11 +555,12 @@ FRESULT initConfigFromSchedulerFile(Uint16 index){
 		// NOW SKIP INDEX-1 lines
 		//index-=1;
 		SKIP:
-		debug_printf(" Skipping %d lines\r\n", lineIndex);
-		while(lineIndex>0){
+		debug_printf(" Skipping %d lines\r\n", linesToSkip);
+		while(linesToSkip>0){
 			//debug_printf(" Skipping %d lines\r\n", index);
 			fatRes = f_read(&file_config,  line, 30, &bw);
-			lineIndex--;
+			linesToSkip--;
+			lineIndex++;
 		}
 
 		// read MODE
@@ -680,7 +679,7 @@ FRESULT initConfigFromSchedulerFile(Uint16 index){
 				impedance = 0x30; // IMPEDANCE_40K
 			//debug_printf(" Impedance is %X \r\n", impedance);
 
-			// IF STOP DATETIME IS NOT AFTER SKIP GOTO SKIP LINES PROCEDURE
+			// IF STOP DATETIME IS NOT IN THE FUTURE  GOTO SKIP LINES PROCEDURE
 			// schedule interrupt to stop writing at the end
 			stopWritingTime.day 	= stopDate.day;
 			stopWritingTime.month 	= stopDate.month;
@@ -696,9 +695,10 @@ FRESULT initConfigFromSchedulerFile(Uint16 index){
 			if(!isAfter(stopWritingTime, nowDatetime)){
 				debug_printf("  Stop date time is elapsed!!!\r\n");
 				debug_printf("  Need to skip a line .... scheduler or program counter are out of date???\r\n");
+				if(stopWritingTime.year == 1) // to sleep when at the end of scheduler file
+					RTC_shutdownToRTCOnlyMonde();
 				increaseProgramCounter(lineIndex);
-				lineIndex++;
-				program_counter = lineIndex;
+				linesToSkip = 1;
 				goto SKIP;
 			}
 
@@ -766,39 +766,31 @@ FRESULT initConfigFromSchedulerFile(Uint16 index){
 									datetime.hours, datetime.mins,datetime.secs);
 				}
 				RTC_shutdownToRTCOnlyMonde();
-			}else{ // look at the next schedule line to know if this is an old line or not...
-				readNextWakeUpDateTimeFromScheduler(program_counter, &nextDatetime);
-				if(!isAfter(nextDatetime,nowDatetime)){
-					debug_printf("  Next line start datetime is not in the future ... skipping a line .... \r\n");
-					debug_printf("  Need to skip a line .... scheduler or program counter are out of date???\r\n");
-					increaseProgramCounter(lineIndex);
-					lineIndex++;
-					program_counter = lineIndex;
-					goto SKIP;
-				}
 			}
-
-			// SKIP STOP DATETIME
-			// SKIP DAY
+			// STOP DATETIME
+			// DAY
 			fatRes = f_read(&file_config,  &field, 2, &bw);
-
-			//debug_printf(" Skip day is %d \r\n", field);
-			// SKIP MONTH
+			stopDate.day = field;
+			//debug_printf(" Stop day is %d \r\n", stopDate.day);
+			// MONTH
 			fatRes = f_read(&file_config,  &field, 2, &bw);
-
-			//debug_printf(" Skip month is %d \r\n", field);
-			// SKIP YEAR
+			stopDate.month = field;
+			//debug_printf(" Stop month is %d \r\n", stopDate.month);
+			// YEAR
 			fatRes = f_read(&file_config,  &field, 2, &bw);
-
-			//debug_printf(" Skip year is %d \r\n", field);
-			// SKIP HOURS
+			stopDate.year = field;
+			//debug_printf(" Stop year is %d \r\n", stopDate.year);
+			// HOURS
 			fatRes = f_read(&file_config,  &field, 2, &bw);
-
-			//debug_printf(" Skip hours is %d \r\n", field);
-			// SKIP MINUTES
+			stopTime.hours = field;
+			//debug_printf(" Stop hours is %d \r\n", stopTime.hours);
+			// MINUTES
 			fatRes = f_read(&file_config,  &field, 2, &bw);
+			stopTime.mins = field;
+			stopTime.secs = 0;
+			//debug_printf(" Stop mins is %d \r\n", stopTime.mins);
 
-			//debug_printf(" Skip mins is %d \r\n", field);
+
 
 			// REC TIME IN MINUTES
 			fatRes = f_read(&file_config,  &field, 2, &bw);
@@ -835,6 +827,30 @@ FRESULT initConfigFromSchedulerFile(Uint16 index){
 			else if(field == 3)
 				impedance = 0x30; // IMPEDANCE_40K
 			//debug_printf(" Impedance is %X \r\n", impedance);
+
+			// IF STOP DATETIME IS NOT IN THE FUTURE  GOTO SKIP LINES PROCEDURE
+						// schedule interrupt to stop writing at the end
+			stopWritingTime.day 	= stopDate.day;
+			stopWritingTime.month 	= stopDate.month;
+			stopWritingTime.year	= stopDate.year;
+			stopWritingTime.hours	= stopTime.hours;
+			stopWritingTime.mins	= stopTime.mins;
+			stopWritingTime.secs	= stopTime.secs;
+
+			debug_printf("  STOP date time: %d/%d/%d %d:%d:%d \r\n",
+					stopWritingTime.day, stopWritingTime.month, stopWritingTime.year,
+					stopWritingTime.hours, stopWritingTime.mins,stopWritingTime.secs);
+
+			if(!isAfter(stopWritingTime, nowDatetime)){
+				debug_printf("  Stop date time is elapsed!!!\r\n");
+				debug_printf("  Need to skip a line .... scheduler or program counter are out of date???\r\n");
+				if(stopWritingTime.year == 1) // to sleep when at the end of scheduler file
+					RTC_shutdownToRTCOnlyMonde();
+				increaseProgramCounter(lineIndex);
+				lineIndex++;
+				goto SKIP;
+			}
+
 		}
 		else
 			debug_printf(" Mode not valid\r\n");
@@ -854,7 +870,7 @@ FRESULT initConfigFromSchedulerFile(Uint16 index){
 }
 
 // read from file the program counter
-Uint16 readProgramCounter(){
+/*Uint16 readProgramCounter(){
 	Uint16 line = 0;
 	Uint bw = 0;
 	FRESULT fatRes;
@@ -863,16 +879,16 @@ Uint16 readProgramCounter(){
 	fatRes = f_open(&fileProgramCounter, FILE_PROGRAM_COUNTER, FA_READ);
 	if(!fatRes) {
 		fatRes = f_read(&fileProgramCounter,  &line, 2, &bw);
-		debug_printf(" Program counter is %d return code\r\n", line, fatRes);
+		debug_printf(" Program counter is %d return code %d\r\n", line, fatRes);
 		fatRes = f_close (&fileProgramCounter);
 	}else{
 		debug_printf(" Program counter file not found \r\n");
 	}
 	return line;
-}
+}*/
 
 // increase program counter
-FRESULT increaseProgramCounter(Uint16 pc){
+/*FRESULT increaseProgramCounter(Uint16 pc){
 	Uint16 newPc = pc+1;
 	Uint bw = 0;
 	FRESULT fatRes;
@@ -880,12 +896,14 @@ FRESULT increaseProgramCounter(Uint16 pc){
 
 	fatRes = f_open(&fileProgramCounter, FILE_PROGRAM_COUNTER, FA_WRITE | FA_CREATE_ALWAYS);
 	if(!fatRes) {
-		fatRes = f_write (&fileProgramCounter, &newPc, 2, &bw);	/* Write data to a file */
-		debug_printf("   Program counter write %d return code\r\n", newPc, fatRes);
+		fatRes = f_write (&fileProgramCounter, &newPc, 2, &bw);
+		debug_printf("   Program counter write %d return code %d\r\n", newPc, fatRes);
 		fatRes = f_close (&fileProgramCounter);
+	}else {
+		debug_printf("   Program counter error writing %d\r\n", fatRes);
 	}
 	return fatRes;
-}
+}*/
 
 FRESULT readNextWakeUpDateTimeFromScheduler(Uint16 i, CSL_RtcAlarm *nextAlarmTime){
 	FRESULT fatRes;
