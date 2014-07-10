@@ -336,6 +336,11 @@ PSP_Result set_sampling_frequency_gain_impedence(unsigned long SamplingFrequency
 	         return result;
 	     }
 
+	     // differential configuration
+		 // need to pass impedance
+		 // CM configuration need to pass impedance << 2
+		 // or impedance  >> 4
+		 //Route Common Mode to LEFT_M with impedance
 	     //Route Common Mode to RIGHT_M with impedance
 	     result = AIC3254_Write(57,impedance,hi2c);
 	     if (result != PSP_SOK)

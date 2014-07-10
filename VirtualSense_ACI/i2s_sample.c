@@ -714,7 +714,8 @@ void I2S_DmaRxLChCallBack(
             	recInLeftBuf = *ptrRxLeft;
 				artificialValue++;//generate_sinewave_2(16000,15000);//40; // to compensate filter b 20dB attenuation (TODO add only if 192khz sampling rate)
 				//recInLeftBuf = artificialValue++;//generate_sinewave_2(8000,16000);//40; // to compensate filter b 20dB attenuation (TODO add only if 192khz sampling rate)
-				recInLeftBuf *= 40; // to compensate filter b 20dB attenuation (TODO add only if 192khz sampling rate)
+				if(frequency == 192000)
+					recInLeftBuf *= 40; // to compensate filter b 20dB attenuation (TODO add only if 192khz sampling rate)
 				ptrRxLeft += 2;
 
             	circular_buffer[bufferInIdx] = recInLeftBuf; //LELE test for byte
