@@ -312,7 +312,7 @@ PSP_Result set_sampling_frequency_gain_impedence(unsigned long SamplingFrequency
 
 	     // IN2_L  we use
 	     // IN2_R
-	     result = AIC3254_Write(52,impedance,hi2c);
+	     result = AIC3254_Write(52,(impedance>>2),hi2c);
 	     if (result != PSP_SOK)
 	     {
 	         return result;
@@ -323,14 +323,14 @@ PSP_Result set_sampling_frequency_gain_impedence(unsigned long SamplingFrequency
 	     // CM configuration need to pass impedance << 2
 	     // or impedance  >> 4
 	     //Route Common Mode to LEFT_M with impedance
-	     result = AIC3254_Write(54,impedance,hi2c);
+	     result = AIC3254_Write(54,(impedance>>2)/*impedance*/,hi2c);
 	     if (result != PSP_SOK)
 	     {
 	         return result;
 	     }
 
 	     //Route IN2R to RIGHT_P with impedance
-	     result = AIC3254_Write(55,impedance,hi2c);
+	     result = AIC3254_Write(55,0x00,hi2c);
 	     if (result != PSP_SOK)
 	     {
 	         return result;
@@ -342,7 +342,7 @@ PSP_Result set_sampling_frequency_gain_impedence(unsigned long SamplingFrequency
 		 // or impedance  >> 4
 		 //Route Common Mode to LEFT_M with impedance
 	     //Route Common Mode to RIGHT_M with impedance
-	     result = AIC3254_Write(57,impedance,hi2c);
+	     result = AIC3254_Write(57,0x00,hi2c);
 	     if (result != PSP_SOK)
 	     {
 	         return result;
@@ -356,7 +356,7 @@ PSP_Result set_sampling_frequency_gain_impedence(unsigned long SamplingFrequency
 	     }
 
 	     //Unmute Right MICPGA
-	     result = AIC3254_Write(60,gain,hi2c); // Gain = 30 dB
+	     result = AIC3254_Write(60,0x00,hi2c); // Gain = 30 dB
 	     if (result != PSP_SOK)
 	     {
 	         return result;

@@ -132,7 +132,7 @@ static inline Uint16 readProgramCounter(){
 
 /* Operation mode:
  * 0 error
- * 1 interrupt evry minute
+ * 1 interrupt every minute
  * 2
  */
 extern Uint8 mode;
@@ -165,6 +165,8 @@ extern Uint16 seconds;
 extern Uint16 file_counter;
 
 extern Uint16 program_counter;
+
+extern Uint8 digital_gain;
 /*****************************************************************************/
 /* End of main_config.h                                                        */
 /*****************************************************************************/

@@ -12,6 +12,7 @@
 #include "rtc.h"
 #include "ff.h"
 #include "main_config.h"
+#include "gpio_control.h"
 
 //#include "VC5505_CSL_BIOS_cfg.h"
 #include "VirtualSense_ACIcfg.h"
@@ -361,10 +362,13 @@ void RTC_shutdownToRTCOnlyMonde(){
 	unsigned int temp1920,temp1924;
 	unsigned int count = 0;
 	start:
-	debug_printf("   Set condec into low power mode\n");
+	debug_printf("   Set condec into low power mode\r\n");
 	codec_sleep_mode();
 
-	debug_printf("   Preparing RTCOnlyMode\n");
+	dbgGpio1Write(1); // disable SD_1
+	dbgGpio2Write(0); // disable OSCILLATOR
+
+	debug_printf("   Preparing RTCOnlyMode\r\n");
 
 	// shutdown led to shutdown extrernal oscillator
 	CSL_CPU_REGS->ST1_55 &= ~CSL_CPU_ST1_55_XF_MASK;

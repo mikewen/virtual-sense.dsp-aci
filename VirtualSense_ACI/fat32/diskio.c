@@ -10,7 +10,7 @@
 #include "csl_sysctrl.h"
 
 
-#include "gpio_control.h"
+//#include "gpio_control.h"
 
 #define CSL_PLL_DIV_000    (0)
 #define CSL_PLL_DIV_001    (1u)
@@ -149,9 +149,9 @@ DRESULT disk_read (
         //read the entire block (512) byte
         //printf("Reading addres %d and sector %d\n",cardAddr, count);
         for(j=0; j < count; j++){
-        		dbgGpio2Write(1);
+
                 status = MMC_read(mmcsdHandle, cardAddr, noOfBytes, readed_buffer);
-                dbgGpio2Write(0);
+
                 if(status !=  CSL_SOK){
                         res = RES_ERROR;
                         break;
@@ -189,10 +189,9 @@ DRESULT disk_contiguous_write(
 		DRESULT res = RES_OK;
 		CSL_Status              status;
 
-		//dbgGpio2Write(1);
 		//debug_printf("writing contiguous sectors %d at 0x%lx\n", count, sector);
 		status = MMC_write(mmcsdHandle, (Uint32)sector, count*512, (unsigned short *)buff);
-		//dbgGpio2Write(0);
+
 		if(status !=  CSL_SOK)
 			res = RES_ERROR;
 		return res;
@@ -225,10 +224,10 @@ DRESULT disk_write (
                 //debug_printf("---- %x %x\n", (buff[j*512+i*2+1] & 0xFF), (buff[j*512+i*2] & 0xFF));
                 //debug_printf(" original 0x%x new 0x%x\n", (*(Uint16*)buff), writer_buffer[0]);
                 /*for(h=0;h<100000;h++){ */
-                	dbgGpio2Write(1);
+
 
                 	status = MMC_write(mmcsdHandle, cardAddr, noOfBytes, writer_buffer);
-                	dbgGpio2Write(0);
+
                 	if(status !=  CSL_SOK)
                 		res = RES_ERROR;
                 	/*cardAddr++;
@@ -315,11 +314,6 @@ CSL_Status configSdCard (CSL_MMCSDOpMode    opModes)
 		opMode    = CSL_MMCSD_OPMODE_POLLED;
 
 		/* Initialize MMCSD module */
-
-		dbgGpio1Write(0); //RED
-
-	    dbgGpio2Write(0); // WHITE
-
 
 	    if(CSL_SOK != mmcStatus)
 	    {

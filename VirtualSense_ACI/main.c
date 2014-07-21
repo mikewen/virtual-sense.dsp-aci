@@ -121,6 +121,7 @@ Uint16 seconds = 5;
 Uint16 recTimeMinutes;
 Uint16 numberOfFiles = 0;
 Uint16 ID = 0;
+Uint8 digital_gain = 1;
 
 
 // Demo switch flag: 0 - power display, 1 - spectrum analyzer
@@ -207,10 +208,8 @@ void main(void)
 
 	/* GPIO02 and GPIO04 for debug */
 	/* GPIO10 for AIC3204 reset */
-	gpioIoDir = (((Uint32)CSL_GPIO_DIR_OUTPUT)<<CSL_GPIO_PIN2) |
-		  (((Uint32)CSL_GPIO_DIR_OUTPUT)<<CSL_GPIO_PIN4) |
-		   (((Uint32)CSL_GPIO_DIR_OUTPUT)<<CSL_GPIO_PIN15)| //WAS 15
-		   (((Uint32)CSL_GPIO_DIR_OUTPUT)<<CSL_GPIO_PIN16);
+	gpioIoDir = ((((Uint32)CSL_GPIO_DIR_OUTPUT)<<CSL_GPIO_PIN16)| // 16 is SD1_ENABLE
+		        (((Uint32)CSL_GPIO_DIR_OUTPUT)<<CSL_GPIO_PIN17)); // 17 is OSCILLATOR ENABLE
 
 	gpioInit(gpioIoDir, 0x00000000, 0x00000000);
 
@@ -267,7 +266,8 @@ void init_all_peripheral(void)
 	//FIL rtc_time_file;
 
 	// turn off led to turn on oscillator
-	CSL_CPU_REGS->ST1_55 &=~CSL_CPU_ST1_55_XF_MASK;
+	// LELE: XF now is step-up enable need to be always active
+	// CSL_CPU_REGS->ST1_55 &=~CSL_CPU_ST1_55_XF_MASK;
 
     debug_printf("Start Configuration....\r\n");
 	// for debug LELE
@@ -277,6 +277,9 @@ void init_all_peripheral(void)
 
 	//Initialize RTC
     initRTC();
+
+    dbgGpio1Write(1); // ENABLE SD_1
+    dbgGpio2Write(1); // ENABLE OSCILLATOR
 
     //Initialize and start Watch dog
 	//wdt_Init();
@@ -309,10 +312,10 @@ void init_all_peripheral(void)
 	 rc_fat = f_open(&null_file, "null2.void", FA_READ);
 
 	debug_printf(" try to open null2.void\r\n");
-	/*if(rc_fat){
+	if(rc_fat){
 		debug_printf("null2.void doesn't exist\r\n");
 		debug_printf("null2.void doesn't exist\r\n");
-	}*/
+	}
 
 
 	// LELE Calling this function does not run. Need to explicitely
@@ -357,7 +360,7 @@ void init_all_peripheral(void)
 	debug_printf("  Minute to record is %d \r\n", recTimeMinutes);
 
 	// turn on led
-	CSL_CPU_REGS->ST1_55 |= CSL_CPU_ST1_55_XF_MASK;
+	//CSL_CPU_REGS->ST1_55 |= CSL_CPU_ST1_55_XF_MASK;
 
         //Initialize I2S
     i2sTxBuffSz = 2*DMA_BUFFER_SZ;
@@ -864,6 +867,8 @@ FRESULT initConfigFromSchedulerFile(Uint16 index){
 		seconds = 60;
 	}
 	numberOfFiles = (Uint16)((((long unsigned int )recTimeMinutes) * 60)/seconds);
+	if(frequency > 96000)
+		digital_gain = 40;
 	debug_printf(" Number of file to write...%d\r\n",numberOfFiles); //error: file don't exist
 	fatRes = f_close (&file_config);
 	return fatRes;
@@ -1080,7 +1085,7 @@ void ClockGating(void)
 #ifdef C5535_EZDSP
     // turn off the DS3-6
     // set the GPIO pin 14 - 15 to output, set SYS_GPIO_DIR0 (0x1C06) bit 14 and 15 to 1 
-    *(volatile ioport unsigned int *)(0x1C06) |= 0xC000;
+   /* *(volatile ioport unsigned int *)(0x1C06) |= 0xC000;
     // set the GPIO pin 16 - 17 to output, set SYS_GPIO_DIR1 (0x1C07) bit 0 and 1 to 1 
     *(volatile ioport unsigned int *)(0x1C07) |= 0x0003;
     
@@ -1090,7 +1095,7 @@ void ClockGating(void)
     // set the GPIO 16 - 17 to 0, set SYS_GPIO_DATAOUT1 (0x1C0B) bit 0 and 1 to 0
     //*(volatile ioport unsigned int *)(0x1C0B) &= 0xFFFC;
     *(volatile ioport unsigned int *)(0x1C0B) |= 0x0003;
-
+*/
     //LELE: to reboot FFTHWA
     *(ioport volatile unsigned *)0x0001 = 0x000E;
     asm(" idle"); // must add at least one blank before idle in " ".

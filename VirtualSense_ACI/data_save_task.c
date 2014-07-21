@@ -20,7 +20,7 @@
 #include "VirtualSense_ACIcfg.h"
 #include "psp_i2s.h"
 #include "lcd_osd.h"
-#include "gpio_control.h"
+//#include "gpio_control.h"
 
 #include "main_config.h"
 #include "circular_buffer.h"

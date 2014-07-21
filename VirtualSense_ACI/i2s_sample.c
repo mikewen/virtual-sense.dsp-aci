@@ -689,7 +689,7 @@ void I2S_DmaRxLChCallBack(
         Uint16 i;
 
 
-        //dbgGpio1Write(0);
+
 #ifdef ENABLE_RECORD
     if ((dataCallback != NULL) && (dmaStatus == PSP_DMA_TRANSFER_COMPLETE))
     {
@@ -715,7 +715,7 @@ void I2S_DmaRxLChCallBack(
 				artificialValue++;//generate_sinewave_2(16000,15000);//40; // to compensate filter b 20dB attenuation (TODO add only if 192khz sampling rate)
 				//recInLeftBuf = artificialValue++;//generate_sinewave_2(8000,16000);//40; // to compensate filter b 20dB attenuation (TODO add only if 192khz sampling rate)
 				if(frequency == 192000)
-					recInLeftBuf *= 40; // to compensate filter b 20dB attenuation (TODO add only if 192khz sampling rate)
+					recInLeftBuf *= digital_gain; // to compensate filter b 20dB attenuation (TODO add only if 192khz sampling rate)
 				ptrRxLeft += 2;
 
             	circular_buffer[bufferInIdx] = recInLeftBuf; //LELE test for byte
@@ -729,7 +729,6 @@ void I2S_DmaRxLChCallBack(
             }
         }
        	//if(bufferInside >= PROCESS_BUFFER_SIZE/*/2*/)
-        //	dbgGpio1Write(1); // BUFFER FULL
         //putDataIntoOpenFile((void *)circular_buffer, PROCESS_BUFFER_SIZE);
     }
     else
