@@ -71,6 +71,7 @@
 #include "user_interface.h"
 #include "app_asrc.h"
 #include "sample_rate.h"
+#include "i2c_display.h"
 
 #ifdef C5535_EZDSP_DEMO
 #include "lcd_osd.h"
@@ -278,6 +279,9 @@ void init_all_peripheral(void)
 	//Initialize RTC
     initRTC();
 
+
+
+
     dbgGpio1Write(1); // ENABLE SD_1
     dbgGpio2Write(1); // ENABLE OSCILLATOR
 
@@ -314,7 +318,7 @@ void init_all_peripheral(void)
 	debug_printf(" try to open null2.void\r\n");
 	if(rc_fat){
 		debug_printf("null2.void doesn't exist\r\n");
-		debug_printf("null2.void doesn't exist\r\n");
+
 	}
 
 
@@ -409,6 +413,12 @@ void init_all_peripheral(void)
     /* Clock gate usused peripherals */
 
     ClockGating();
+
+    //
+
+    // init lcd
+     LCD_Init(0);
+
     //debug_printf("ClokGating\r\n");
     DDC_I2S_transEnable((DDC_I2SHandle)i2sHandleTx, TRUE); /* enable I2S transmit and receive */
 
@@ -419,6 +429,11 @@ void init_all_peripheral(void)
         exit(EXIT_FAILURE);
     }
     Set_Mute_State(TRUE);
+
+
+    // init lcd
+    //LCD_Init(0);
+
     debug_printf("Initialization completed\r\n");
     debug_printf("\r\n");
 #endif
