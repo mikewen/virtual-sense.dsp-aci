@@ -125,6 +125,7 @@ Uint16 ID = 0;
 Uint8 digital_gain = 1;
 
 
+
 // Demo switch flag: 0 - power display, 1 - spectrum analyzer
 Uint16 DemoSwitchFlag = 1;
 
@@ -274,7 +275,13 @@ void init_all_peripheral(void)
 	// for debug LELE
 	//init_buffer();
 
-   	debug_printf("Starting device....");
+   	debug_printf("Starting device....\r\n");
+
+   	debug_printf("Init RTC....\r\n");
+
+   	debug_printf("Init RTC now....\r\n");
+
+
 
 	//Initialize RTC
     initRTC();
@@ -333,6 +340,9 @@ void init_all_peripheral(void)
 				//f_unlink (RTC_FILE_CONFIG);
 				//debug_printf("time.rtc file deleted\r\n");
 		}*/
+
+	LCD_Write("VirtualSenseDSP");
+	_delay_ms(1000);
 
 	start_log();
 	debug_printf("\r\n");
@@ -417,7 +427,10 @@ void init_all_peripheral(void)
     //
 
     // init lcd
-     LCD_Init(0);
+    //LCD_Init(0);
+    //int a = 2;
+    //LCD_Write("Sense %d\n 4", a);
+
 
     //debug_printf("ClokGating\r\n");
     DDC_I2S_transEnable((DDC_I2SHandle)i2sHandleTx, TRUE); /* enable I2S transmit and receive */
@@ -559,6 +572,12 @@ FRESULT initConfigFromSchedulerFile(Uint16 index){
 			nowDatetime.day, nowDatetime.month, nowDatetime.year,
 			nowDatetime.hours, nowDatetime.mins, nowDatetime.secs);
 	debug_printf("\r\n");
+
+	LCD_Write("NOW %d%d%d %d%d%d",
+			nowDatetime.day, nowDatetime.month, nowDatetime.year,
+			nowDatetime.hours, nowDatetime.mins, nowDatetime.secs);
+	_delay_ms(3000);
+
 	//read config from file
 	//debug_printf("Read scheduler file\r\n");
 	fatRes = f_open(&file_config, FILE_SHEDULER, FA_READ);
@@ -635,6 +654,7 @@ FRESULT initConfigFromSchedulerFile(Uint16 index){
 							datetime.day, datetime.month, datetime.year,
 							datetime.hours, datetime.mins,datetime.secs);
 				}
+				set_sampling_frequency_gain_impedence(frequency, gain, impedance);
 				RTC_shutdownToRTCOnlyMonde();
 			}
 
@@ -713,8 +733,10 @@ FRESULT initConfigFromSchedulerFile(Uint16 index){
 			if(!isAfter(stopWritingTime, nowDatetime)){
 				debug_printf("  Stop date time is elapsed!!!\r\n");
 				debug_printf("  Need to skip a line .... scheduler or program counter are out of date???\r\n");
-				if(stopWritingTime.year == 1) // to sleep when at the end of scheduler file
+				if(stopWritingTime.year == 1){ // to sleep when at the end of scheduler file
+					set_sampling_frequency_gain_impedence(frequency, gain, impedance);
 					RTC_shutdownToRTCOnlyMonde();
+				}
 				increaseProgramCounter(lineIndex);
 				linesToSkip = 1;
 				goto SKIP;
@@ -783,6 +805,7 @@ FRESULT initConfigFromSchedulerFile(Uint16 index){
 									datetime.day, datetime.month, datetime.year,
 									datetime.hours, datetime.mins,datetime.secs);
 				}
+				set_sampling_frequency_gain_impedence(frequency, gain, impedance);
 				RTC_shutdownToRTCOnlyMonde();
 			}
 			// STOP DATETIME
@@ -862,8 +885,10 @@ FRESULT initConfigFromSchedulerFile(Uint16 index){
 			if(!isAfter(stopWritingTime, nowDatetime)){
 				debug_printf("  Stop date time is elapsed!!!\r\n");
 				debug_printf("  Need to skip a line .... scheduler or program counter are out of date???\r\n");
-				if(stopWritingTime.year == 1) // to sleep when at the end of scheduler file
+				if(stopWritingTime.year == 1) {// to sleep when at the end of scheduler file
+					set_sampling_frequency_gain_impedence(frequency, gain, impedance);
 					RTC_shutdownToRTCOnlyMonde();
+				}
 				increaseProgramCounter(lineIndex);
 				lineIndex++;
 				goto SKIP;

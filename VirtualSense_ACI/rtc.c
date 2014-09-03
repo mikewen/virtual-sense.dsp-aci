@@ -34,6 +34,7 @@ CSL_RtcIsrDispatchTable      rtcDispatchTable;
 extern CSL_RtcAlarm  stopWritingTime;
 
 Uint8 stopWriting = 0;
+Uint8 shutDownAsserted = 0;
 volatile Uint32 rtcTimeCount = RTC_TIME_PRINT_CYCLE;
 Uint16    secIntrCnt = 0;
 
@@ -359,70 +360,76 @@ Int16 RTC_initRtcFromFile() {
 }
 
 void RTC_shutdownToRTCOnlyMonde(){
-	unsigned int temp1920,temp1924;
-	unsigned int count = 0;
-	start:
-	debug_printf("   Set condec into low power mode\r\n");
-	codec_sleep_mode();
+	 unsigned int temp1920,temp1924;
+	        unsigned int count = 0;
+	        start:
+	        debug_printf("   Set condec into low power mode\r\n");
+	        codec_sleep_mode();
 
-	dbgGpio1Write(1); // disable SD_1
-	dbgGpio2Write(0); // disable OSCILLATOR
+	        dbgGpio1Write(1); // disable SD_1
+	        dbgGpio2Write(0); // disable OSCILLATOR
 
-	debug_printf("   Preparing RTCOnlyMode\r\n");
+	        debug_printf("   Preparing RTCOnlyMode\r\n");
 
-	// shutdown led to shutdown extrernal oscillator
-	CSL_CPU_REGS->ST1_55 &= ~CSL_CPU_ST1_55_XF_MASK;
+	        // shutdown led to shutdown extrernal oscillator
+	        CSL_CPU_REGS->ST1_55 &= ~CSL_CPU_ST1_55_XF_MASK;
 
-    asm("        @#IFR0_L = #0xffff || mmap() "); // clear int flags
-    asm("    @#IER0_L = #0x0000 || mmap() "); // set RTC int
-    asm("    @#IFR1_L = #0xffff || mmap() "); // clear int flags
-    asm("    @#IER1_L = #0x0004 || mmap() "); // set RTC int
-    asm(" bit(ST1,#11) = #0 "); // GLOBAL INTERRUPT ENABLE
-    // RTC configure
-    asm("    *port(#0x1920) = #0x803F "); //clear interrupt flags
-    asm("    *port(#0x1900) = #0x0001 "); //RTCINTEN enabled
-    //asm("    *port(#0x1924) = #0x8020 "); //EXTINTEN enabled ALARM INT
-    asm("    *port(#0x1924) = #0x8024 "); //EXTINTEN enabled ALARM INT enabled MINUTES INT enabled
-    asm("    *port(#0x1930) = #0x0000 "); //WU_DIR input
-    count = 0;
-    do // waiting until RTC interrupt is enabled in the RTC domain could take 2 RTC clocks for write to propagate
-    {
-    	temp1924 = *(volatile ioport unsigned int *) (0x1924);
-    	count++;
-    	debug_printf("    count value1 %d\r\n",count);
-    }while ((temp1924&0x0020)==0 && (count < 1000));
+	    asm("        @#IFR0_L = #0xffff || mmap() "); // clear int flags
+	    asm("    @#IER0_L = #0x0000 || mmap() "); // set RTC int
+	    asm("    @#IFR1_L = #0xffff || mmap() "); // clear int flags
+	    asm("    @#IER1_L = #0x0004 || mmap() "); // set RTC int
+	    asm(" bit(ST1,#11) = #0 "); // GLOBAL INTERRUPT ENABLE
+	    // RTC configure
+	    asm("    *port(#0x1920) = #0x803F "); //clear interrupt flags
+	    asm("    *port(#0x1900) = #0x0001 "); //RTCINTEN enabled
+	    //asm("    *port(#0x1924) = #0x8020 "); //EXTINTEN enabled ALARM INT
+	    asm("    *port(#0x1924) = #0x8024 "); //EXTINTEN enabled ALARM INT enabled MINUTES INT enabled
+	    asm("    *port(#0x1930) = #0x0000 "); //WU_DIR input
+	    count = 0;
+	    do // waiting until RTC interrupt is enabled in the RTC domain could take 2 RTC clocks for write to propagate
+	    {
+	        temp1924 = *(volatile ioport unsigned int *) (0x1924);
+	        count++;
+	        debug_printf("    count value1 %d\r\n",count);
+	    }while ((temp1924&0x0020)==0 && (count < 1000));
 
-    temp1920 = *(volatile ioport unsigned  int *) (0x1920);
-    if ((temp1920&0x0020)!=0)
-    {
-    	asm("    *port(#0x1920) = #0x803F "); //clear interrupt flags
-    }
-    asm("    *port(#0x1930) = #0x0006 "); //WU_DIR input & LDO & BG shutdown
-    asm("    *port(#0x1920) = #0x803F "); //clear interrupt flags
+	    temp1920 = *(volatile ioport unsigned  int *) (0x1920);
+	    if ((temp1920&0x0020)!=0)
+	    {
+	        asm("    *port(#0x1920) = #0x803F "); //clear interrupt flags
+	    }
+	    asm("    *port(#0x1930) = #0x0006 "); //WU_DIR input & LDO & BG shutdown
+	    asm("    *port(#0x1920) = #0x803F "); //clear interrupt flags
 
-    // power down to RTC only mode
-    count = 0;
-    while (count < 1000)
-    {
-    	temp1920 = *(volatile ioport unsigned int *) (0x1920);
-        if ((temp1920&0x0020)!=0)
-        {
-        	asm("    *port(#0x1920) = #0x803F "); //clear interrupt flags
-        	asm("    *port(#0x1930) = #0x0006 "); //WU_DIR input & LDO & BG shutdown
-            asm("    *port(#0x1920) = #0x803F "); //clear interrupt flags
-        }
-        count++;
-        debug_printf("    count value2 %d\r\n",count);
-     }
-     debug_printf("----should never happen ----\n");
-     goto start;
-     //return 1;//todo reset();
+	    // power down to RTC only mode
+	    count = 0;
+	    while (count < 1000)
+	    {
+	        temp1920 = *(volatile ioport unsigned int *) (0x1920);
+	        if ((temp1920&0x0020)!=0)
+	        {
+	                asm("    *port(#0x1920) = #0x803F "); //clear interrupt flags
+	                asm("    *port(#0x1930) = #0x0006 "); //WU_DIR input & LDO & BG shutdown
+	            asm("    *port(#0x1920) = #0x803F "); //clear interrupt flags
+	        }
+	        count++;
+	        debug_printf("    count value2 %d\r\n",count);
+	     }
+	     debug_printf("----should never happen ----\n");
+	     goto start;
+	     //return 1;//todo reset();
 }
 
 
 interrupt void rtc_isr(void)
 {
-
+	if(shutDownAsserted){
+		asm(" @#IFR1_L = #0xffff || mmap() "); // clear int flags
+		asm(" *port(#0x1920) = #0x803F "); // clear flags
+		asm(" *port(#0x1930) = #0x0006 "); //WU_DIR input & LDO & BG shutdown
+		asm(" *port(#0x1920) = #0x803F "); // clear flags
+		asm(" *port(#0x1924) = #0x8024 "); // enable external interrupt*
+	}
 #ifdef RTC_CALL_BACK
     CSL_RTCEventType rtcEventType;
 

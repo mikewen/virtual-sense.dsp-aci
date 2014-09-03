@@ -20,6 +20,7 @@
 #include "VirtualSense_ACIcfg.h"
 #include "psp_i2s.h"
 #include "lcd_osd.h"
+#include "i2c_display.h"
 //#include "gpio_control.h"
 
 #include "main_config.h"
@@ -147,6 +148,8 @@ void DataSaveTask(void)
 
 				sprintf(file_name, "%d__%d_%d_%d__%d-%d-%d.wav",ID, GetDate.day,GetDate.month,GetDate.year, GetTime.hours, GetTime.mins, GetTime.secs);
 				debug_printf("    Creating a new file %s\r\n",file_name);
+				LCD_Write("REC %d%d%d %d%d%d", GetDate.day,GetDate.month,GetDate.year, GetTime.hours, GetTime.mins, GetTime.secs);
+
 
 				//rc = open_wave_file(&wav_file, file_name, FREQUENCY, SECONDS);
 				rc = open_wave_file(&wav_file, file_name, frequency, seconds);
@@ -222,6 +225,9 @@ void DataSaveTask(void)
         debug_printf("   Going to sleep until: %d/%d/%d %d:%d:%d \r\n",
 					wakeupTime.day, wakeupTime.month, wakeupTime.year,
 					wakeupTime.hours, wakeupTime.mins, wakeupTime.secs);
+        LCD_Write("SLP %d%d%d %d%d%d",wakeupTime.day, wakeupTime.month, wakeupTime.year,
+				wakeupTime.hours, wakeupTime.mins, wakeupTime.secs);
+
         status = RTC_setAlarm(&wakeupTime);
         if(status != CSL_SOK)
 		{

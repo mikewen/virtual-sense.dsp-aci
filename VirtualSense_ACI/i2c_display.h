@@ -23,6 +23,7 @@
 #define I2C_DISPLAY_H
 
 void LCD_Init(int ContrastVoltage);
+void LCD_Write(const char *format, ...);
 PSP_Result display_Write_Byte(Uint8 byte, PSP_Handle hi2c);
 
 static inline void  _delay_ms(Uint16 ms){

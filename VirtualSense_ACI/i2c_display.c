@@ -22,7 +22,7 @@
  *
  */
 
-
+#include <stdio.h>
 #include "psp_i2c.h"
 //#include "dda_i2c.h"
 #include "csl_i2c.h"
@@ -53,6 +53,8 @@ extern PSP_Handle    hi2c;
 CSL_I2cSetup     i2cSetup;
 CSL_I2cConfig    i2cConfig;
 
+
+static char buffer[80];
 
 /*************************************************************************
  Writes a Command to the Midas MCCOG21605B6W-SPTLYI LCD display
@@ -118,7 +120,8 @@ void LCD_Init(int ContrastVoltage)
 	Uint16 startStop = ((CSL_I2C_START) | (CSL_I2C_STOP));
 	Uint16 onlyStart = CSL_I2C_START;
 	CSL_Status  status;
-	Uint16 vString[] = {'c', 'V', 'i','r','t','u','a','l','S','e','n','s','e'};
+	//Uint16 vString[] = {'c', 'V', 'i','r','t','u','a','l','S','e','n','s','e'};
+	char vString[] = "cVirtualSnesei";//{'c', 'V', 'i','r','t','u','a','l','S','e','n','s','e'};
 	status = I2C_init(CSL_I2C0);
 		if(status != CSL_SOK)
 		{
@@ -154,6 +157,12 @@ void LCD_Init(int ContrastVoltage)
 
 		//bToWrite = 0x00;
 
+		Uint16 ustr[sizeof(vString)];
+		int t;
+		for(t = 0; t < sizeof(vString); t++)
+		{
+			ustr[t] = (Uint16)vString[t];
+		}
 
 		Uint16 b = 0x00;
 		status = I2C_write(&b, 1, 0x00, TRUE, startStop, CSL_I2C_MAX_TIMEOUT);
@@ -165,7 +174,7 @@ void LCD_Init(int ContrastVoltage)
 		debug_printf("Write status %d\n",status);
 		_delay_ms(10);
 
-		status = I2C_write(vString, 13, I2C_DISPLAY_ADDRESS, TRUE, startStop, CSL_I2C_MAX_TIMEOUT);
+		status = I2C_write(ustr, sizeof(ustr), I2C_DISPLAY_ADDRESS, TRUE, startStop, CSL_I2C_MAX_TIMEOUT);
 		debug_printf("Write status %d\n",status);
 		_delay_ms(10);
 
@@ -239,6 +248,70 @@ void LCD_Init(int ContrastVoltage)
  Return:
 
 *************************************************************************/
+void LCD_Write(const char *format, ...){
+
+	va_list aptr;
+	int len;
+
+	va_start(aptr, format);
+	len = vsprintf(buffer, format, aptr);
+	//va_end(aptr);
+	//debug_printf("ritorna ret: %d\n", ret);
+
+	Uint16 res = 0;
+	Uint16 startStop = ((CSL_I2C_START) | (CSL_I2C_STOP));
+	Uint16 onlyStart = CSL_I2C_START;
+	CSL_Status  status;
+
+	status = I2C_init(CSL_I2C0);
+	if(status != CSL_SOK)
+	{
+		debug_printf("I2C Init Failed!!\n");
+	}
+
+	/* Setup I2C module */
+	i2cSetup.addrMode    = CSL_I2C_ADDR_7BIT;
+	i2cSetup.bitCount    = CSL_I2C_BC_8BITS;
+	i2cSetup.loopBack    = CSL_I2C_LOOPBACK_DISABLE;
+	i2cSetup.freeMode    = CSL_I2C_FREEMODE_DISABLE;
+	i2cSetup.repeatMode  = CSL_I2C_REPEATMODE_DISABLE;
+	i2cSetup.ownAddr     = CSL_I2C_OWN_ADDR;
+	i2cSetup.sysInputClk = CSL_I2C_SYS_CLK;
+	i2cSetup.i2cBusFreq  = CSL_I2C_BUS_FREQ;
+
+	status = I2C_setup(&i2cSetup);
+	if(status != CSL_SOK)
+	{
+		debug_printf("I2C Setup Failed!!\n");
+	}
+
+
+	int t;
+	Uint16 ustr[sizeof(buffer)+1];
+	ustr[0] = (Uint16)'c';
+	for(t = 0; t < len; t++)
+	{
+		ustr[t+1] = (Uint16)buffer[t];
+	}
+
+	Uint16 b = 0x00;
+	status = I2C_write(&b, 1, 0x00, TRUE, startStop, CSL_I2C_MAX_TIMEOUT);
+	debug_printf("Write status %d\n",status);
+	_delay_ms(10);
+
+	Uint16 bToWrite[] = {0x00, 0x38, 0x39, 0x14, 0x74, 0x54, 0x6F, 0x0F, 0x01};
+	status = I2C_write(bToWrite, 9, I2C_DISPLAY_ADDRESS, TRUE, startStop, CSL_I2C_MAX_TIMEOUT);
+	debug_printf("Write status %d\n",status);
+	_delay_ms(10);
+
+	status = I2C_write(ustr, len+1, I2C_DISPLAY_ADDRESS, TRUE, startStop, CSL_I2C_MAX_TIMEOUT);
+	debug_printf("Write status %d\n",status);
+	_delay_ms(10);
+}
+
+
+
+
 #if 0
 void LCD_Write_String(const char* dstring)
 {
