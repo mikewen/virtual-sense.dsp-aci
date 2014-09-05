@@ -233,6 +233,7 @@ void DataSaveTask(void)
 		{
 			debug_printf("    RTC: setAlarm Failed CPU remains active\r\n");
 		} else {
+			WDTIM_stop(hWdt); //LELE: to patch rtconlymode
 			RTC_shutdownToRTCOnlyMonde();
 		}
 

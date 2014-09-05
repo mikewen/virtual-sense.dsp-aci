@@ -367,7 +367,21 @@ void RTC_shutdownToRTCOnlyMonde(){
 	        unsigned int count = 0;
 	        start:
 	        debug_printf("   Set condec into low power mode\r\n");
+	        shutDownAsserted = 1;
+	        CSL_CPU_REGS->ST1_55 &= ~CSL_CPU_ST1_55_XF_MASK;
 	        codec_sleep_mode();
+	        //pll_sample_freq(12);
+
+	        asm(" bit(ST1,#11) = #0 "); // GLOBAL INTERRUPT ENABLE
+
+
+	        *(volatile ioport Uint16 *)(0x0001) = 0x000F;
+	         // execute idle instruction to make CPU idle
+	         asm("    idle");
+	        while(1){
+	        	 asm(" NOP "); // nop
+	        }
+
 
 	        dbgGpio1Write(0); // disable SD_1
 	        dbgGpio2Write(0); // disable OSCILLATOR
@@ -427,11 +441,8 @@ void RTC_shutdownToRTCOnlyMonde(){
 interrupt void rtc_isr(void)
 {
 	if(shutDownAsserted){
-		asm(" @#IFR1_L = #0xffff || mmap() "); // clear int flags
-		asm(" *port(#0x1920) = #0x803F "); // clear flags
-		asm(" *port(#0x1930) = #0x0006 "); //WU_DIR input & LDO & BG shutdown
-		asm(" *port(#0x1920) = #0x803F "); // clear flags
-		asm(" *port(#0x1924) = #0x8024 "); // enable external interrupt*
+		// sofware reset to reboot CPU
+		asm(" RESET "); // nop
 	}
 #ifdef RTC_CALL_BACK
     CSL_RTCEventType rtcEventType;
