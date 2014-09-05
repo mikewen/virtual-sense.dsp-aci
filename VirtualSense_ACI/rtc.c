@@ -204,6 +204,8 @@ void initRTC()
 	{
 		debug_printf("   RTC_eventEnable for ALARM EVENT Successful\n");
 	}
+
+#if 0
 	status = RTC_setPeriodicInterval(CSL_RTC_MINS_PERIODIC_INTERRUPT);
 	if(status != CSL_SOK)
 	{
@@ -227,6 +229,7 @@ void initRTC()
 		debug_printf("RTC_eventEnable for MINS EVENT Successful\n");
 	}
 
+#endif
 	//debug_printf("\nStarting the RTC\n\n");
 	/* Start the RTC */
 	RTC_start();
@@ -366,7 +369,7 @@ void RTC_shutdownToRTCOnlyMonde(){
 	        debug_printf("   Set condec into low power mode\r\n");
 	        codec_sleep_mode();
 
-	        dbgGpio1Write(1); // disable SD_1
+	        dbgGpio1Write(0); // disable SD_1
 	        dbgGpio2Write(0); // disable OSCILLATOR
 
 	        debug_printf("   Preparing RTCOnlyMode\r\n");
@@ -382,8 +385,8 @@ void RTC_shutdownToRTCOnlyMonde(){
 	    // RTC configure
 	    asm("    *port(#0x1920) = #0x803F "); //clear interrupt flags
 	    asm("    *port(#0x1900) = #0x0001 "); //RTCINTEN enabled
-	    //asm("    *port(#0x1924) = #0x8020 "); //EXTINTEN enabled ALARM INT
-	    asm("    *port(#0x1924) = #0x8024 "); //EXTINTEN enabled ALARM INT enabled MINUTES INT enabled
+	    asm("    *port(#0x1924) = #0x8020 "); //EXTINTEN enabled ALARM INT
+	    //asm("    *port(#0x1924) = #0x8024 "); //EXTINTEN enabled ALARM INT enabled MINUTES INT enabled
 	    asm("    *port(#0x1930) = #0x0000 "); //WU_DIR input
 	    count = 0;
 	    do // waiting until RTC interrupt is enabled in the RTC domain could take 2 RTC clocks for write to propagate
@@ -391,10 +394,10 @@ void RTC_shutdownToRTCOnlyMonde(){
 	        temp1924 = *(volatile ioport unsigned int *) (0x1924);
 	        count++;
 	        debug_printf("    count value1 %d\r\n",count);
-	    }while ((temp1924&0x0020)==0 && (count < 1000));
+	    }while ((temp1924&0x8020)==0 && (count < 1000));
 
 	    temp1920 = *(volatile ioport unsigned  int *) (0x1920);
-	    if ((temp1920&0x0020)!=0)
+	    if ((temp1920&0x8020)!=0)
 	    {
 	        asm("    *port(#0x1920) = #0x803F "); //clear interrupt flags
 	    }
@@ -406,7 +409,7 @@ void RTC_shutdownToRTCOnlyMonde(){
 	    while (count < 1000)
 	    {
 	        temp1920 = *(volatile ioport unsigned int *) (0x1920);
-	        if ((temp1920&0x0020)!=0)
+	        if ((temp1920&0x8020)!=0)
 	        {
 	                asm("    *port(#0x1920) = #0x803F "); //clear interrupt flags
 	                asm("    *port(#0x1930) = #0x0006 "); //WU_DIR input & LDO & BG shutdown

@@ -76,7 +76,7 @@ PLL_Handle hPll;
 
 #if ((defined(CHIP_5515)) || (defined(CHIP_5514)))
 
-//const PLL_Config pllCfg_12p288MHz   = {0x8173, 0x8000, 0x0806, 0x0000};
+const PLL_Config pllCfg_12p288MHz   = {0x8173, 0x8000, 0x0806, 0x0000};
 const PLL_Config pllCfg_40MHz       = {0x8988, 0x8000, 0x0806, 0x0201};
 //const PLL_Config pllCfg_50MHz       = {0x8BE8, 0x8000, 0x0806, 0x0201};
 //const PLL_Config pllCfg_60MHz       = {0x8724, 0x8000, 0x0806, 0x0000};
@@ -127,6 +127,8 @@ CSL_Status pll_sample_freq(Uint16 freq)
 
     /* Configure the PLL */
     switch(freq){
+    	case 12:
+        	pConfigInfo = (PLL_Config *)&pllCfg_12p288MHz;
     	case 40:
     		pConfigInfo = (PLL_Config *)&pllCfg_40MHz;
     		break;
