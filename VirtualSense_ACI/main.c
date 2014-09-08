@@ -277,9 +277,9 @@ void init_all_peripheral(void)
 
    //	debug_printf("Starting device....\r\n");
 
-   	debug_printf("Init RTC....\r\n");
+   	//debug_printf("Init RTC....\r\n");
 
-   	debug_printf("Init RTC now....\r\n");
+   	//debug_printf("Init RTC now....\r\n");
 
 
 

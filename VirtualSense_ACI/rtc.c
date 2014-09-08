@@ -13,6 +13,9 @@
 #include "ff.h"
 #include "main_config.h"
 #include "gpio_control.h"
+#include "psp_dma.h"
+#include "dda_dma.h"
+#include "i2s_sample.h"
 
 //#include "VC5505_CSL_BIOS_cfg.h"
 #include "VirtualSense_ACIcfg.h"
@@ -32,6 +35,9 @@ CSL_RtcIsrAddr   isrAddr;
 CSL_RtcIsrDispatchTable      rtcDispatchTable;
 
 extern CSL_RtcAlarm  stopWritingTime;
+
+extern PSP_Handle       i2sHandleTx;
+extern PSP_Handle       i2sHandleRx;
 
 Uint8 stopWriting = 0;
 Uint8 shutDownAsserted = 0;
@@ -365,14 +371,80 @@ Int16 RTC_initRtcFromFile() {
 void RTC_shutdownToRTCOnlyMonde(){
 	 unsigned int temp1920,temp1924;
 	        unsigned int count = 0;
+	        Uint16 pcgcr_value, clkstop_value;
 	        start:
+
 	        debug_printf("   Set condec into low power mode\r\n");
 	        shutDownAsserted = 1;
 	        CSL_CPU_REGS->ST1_55 &= ~CSL_CPU_ST1_55_XF_MASK;
 	        codec_sleep_mode();
-	        //pll_sample_freq(12);
+
+	        i2sStopTransfer(i2sHandleTx);
+	        i2sStopTransfer(i2sHandleRx);
+	        DMA_StopTransfer(hDmaRxLeft);
+
+
+
+
+#if 0
+	        // set PCGCR1
+	        pcgcr_value = 0;
+	        // clock gating SPI
+	        pcgcr_value |= CSL_FMKT(SYS_PCGCR1_SPICG, DISABLED);
+	        // clock gating SD/MMC
+	        pcgcr_value |= CSL_FMKT(SYS_PCGCR1_MMCSD0CG, DISABLED); //LELE to use SD on MMC0
+	        pcgcr_value |= CSL_FMKT(SYS_PCGCR1_MMCSD1CG, DISABLED);
+	        // clock stop request for UART
+	    #if DEBUG_LEVEL < 1
+	        clkstop_value = CSL_FMKT(SYS_CLKSTOP_URTCLKSTPREQ, REQ);
+	        // write to CLKSTOP
+	        CSL_FSET(CSL_SYSCTRL_REGS->CLKSTOP, 15, 0, clkstop_value);
+	        // wait for acknowledge
+	        while (CSL_FEXT(CSL_SYSCTRL_REGS->CLKSTOP, SYS_CLKSTOP_URTCLKSTPACK)==0);
+	        // clock gating UART
+	        pcgcr_value |= CSL_FMKT(SYS_PCGCR1_UARTCG, DISABLED);
+	    #endif
+	        // clock gating unused I2S (I2S 0, 1, 3)
+	        pcgcr_value |= CSL_FMKT(SYS_PCGCR1_I2S0CG, DISABLED);
+	        pcgcr_value |= CSL_FMKT(SYS_PCGCR1_I2S1CG, DISABLED);
+	        pcgcr_value |= CSL_FMKT(SYS_PCGCR1_I2S2CG, DISABLED);
+	        pcgcr_value |= CSL_FMKT(SYS_PCGCR1_I2S3CG, DISABLED);
+	        // clock gating DMA0
+	        pcgcr_value |= CSL_FMKT(SYS_PCGCR1_DMA0CG, DISABLED);
+	        // clock gating Timer 1
+	        pcgcr_value |= CSL_FMKT(SYS_PCGCR1_TMR1CG, DISABLED);
+	        // clock gating Timer 2
+	        pcgcr_value |= CSL_FMKT(SYS_PCGCR1_TMR2CG, DISABLED);
+	        // write to PCGCR1
+	        CSL_FSET(CSL_SYSCTRL_REGS->PCGCR1, 15, 0, pcgcr_value);
+
+	        // set PCGCR2
+	        pcgcr_value = 0;
+	        // clock gating LCD
+	        pcgcr_value |= CSL_FMKT(SYS_PCGCR2_LCDCG, DISABLED);
+	        // clock gating SAR
+	        pcgcr_value |= CSL_FMKT(SYS_PCGCR2_SARCG, DISABLED);
+	        // clock gating DMA1
+	        pcgcr_value |= CSL_FMKT(SYS_PCGCR2_DMA1CG, DISABLED);
+	        // clock gating DMA2
+	        pcgcr_value |= CSL_FMKT(SYS_PCGCR2_DMA2CG, DISABLED);
+	        // clock gating DMA3
+	        pcgcr_value |= CSL_FMKT(SYS_PCGCR2_DMA3CG, DISABLED);
+	        // clock analog registers
+	        pcgcr_value |= CSL_FMKT(SYS_PCGCR2_ANAREGCG, DISABLED);
+	        // write to PCGCR2
+	        CSL_FSET(CSL_SYSCTRL_REGS->PCGCR2, 15, 0, pcgcr_value);
+
+#endif
+
+
+	        *(volatile ioport Uint16 *)(0x1C1F) = 0x0000; // set CCR2 to bypass mode
+
 
 	        asm(" bit(ST1,#11) = #0 "); // GLOBAL INTERRUPT ENABLE
+
+	        *(volatile ioport Uint16 *)(0x7004) = 0x0002; // disable USB_LDO and set core voltage to 1.05V
+
 
 
 	        *(volatile ioport Uint16 *)(0x0001) = 0x000F;
@@ -443,6 +515,8 @@ interrupt void rtc_isr(void)
 	if(shutDownAsserted){
 		// sofware reset to reboot CPU
 		asm(" RESET "); // nop
+	}else {
+		stopWriting = 1;
 	}
 #ifdef RTC_CALL_BACK
     CSL_RTCEventType rtcEventType;

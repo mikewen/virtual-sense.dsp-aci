@@ -435,12 +435,12 @@ Int16 i2sStopTransfer(PSP_Handle    i2sHandle)
         status  |=  I2S_DMA_Deinit(hDmaTxRight);
 
         #ifdef ENABLE_RECORD
-    //    status   =  I2S_DMA_Deinit(hDmaRxLeft);
-    //    status  |=  I2S_DMA_Deinit(hDmaRxRight);
+        status   =  I2S_DMA_Deinit(hDmaRxLeft);
+       status  |=  I2S_DMA_Deinit(hDmaRxRight);
         #endif // ENABLE_RECORD
 
         /* Deinitialize the I2S instance */
-    //    status  |=  I2S_DeInit(i2sHandle);
+        status  |=  I2S_DeInit(i2sHandle);
     }
 
     return status;

@@ -85,7 +85,7 @@
 #define FILE_PROGRAM_COUNTER							 "programcounter.bin"
 #define FILE_LOG										 "log.log"
 
-#define FW_VER "1.1.contiguous.advanced.scheduler-05-08-2014"
+#define FW_VER "1.1.contiguous.advanced.scheduler-08-09-2014"
 
 #define MODE_ALWAYS_ON		1
 #define MODE_CALENDAR 		2
