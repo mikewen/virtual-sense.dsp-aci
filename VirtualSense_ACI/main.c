@@ -278,7 +278,7 @@ void init_all_peripheral(void)
 
    	debug_printf("Starting device....\r\n");
 
-   	//debug_printf("Init RTC....\r\n");
+   	debug_printf("Init RTC....\r\n");
 
    	//debug_printf("Init RTC now....\r\n");
 
@@ -343,8 +343,6 @@ void init_all_peripheral(void)
 		}*/
 
 
-	//debug_printf("Read Temperature %d\n", TUS_ReadTemp());
-
 	LCD_Write("VirtualSenseDSP");
 	_delay_ms(1000);
 
@@ -363,6 +361,10 @@ void init_all_peripheral(void)
 
 	debug_printf("Start configuration\r\n");
 	rc = updateTimeFromFile();
+
+	debug_printf(" Check sensors\r\n");
+	debug_printf("  Temperature: %dmC\n", THS_ReadTemp());
+	debug_printf("  Humidity:    %d%%\n", THS_ReadHumid());
 
 	current_pc =  readProgramCounter();
 	//debug_printf("readProgramCounter\r\n");

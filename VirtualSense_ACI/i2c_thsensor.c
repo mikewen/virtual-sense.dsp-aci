@@ -54,12 +54,15 @@
 extern PSP_Handle    hi2c;
 
 
+void ths_Delay(){
+	int d,e;
+	for (d=0; d<0x555; d++)
+		for (e=0; e<0xAAA; e++)
+			asm(" NOP ");
+}
 
 
-
-
-
-Uint16 TUS_ReadTemp() {
+Uint16 THS_ReadTemp() {
 	Uint16 startStop = ((CSL_I2C_START) | (CSL_I2C_STOP));
 	CSL_Status  status;
 	Uint16 ret = 0x00;
@@ -87,35 +90,27 @@ Uint16 TUS_ReadTemp() {
 		debug_printf("I2C Setup Failed!!\n");
 	}
 
+	// Write command to read temperature on SI7020
 	Uint16 b = I2C_THSENSOR_READ_TEMP;
 	status = I2C_write(&b, 1, I2C_THSENSOR_ADDRESS, TRUE, startStop, CSL_I2C_MAX_TIMEOUT);
-	debug_printf("Read status temp %d\n", status);
-	//lcd_Delay();
+	//debug_printf("Read status temp %d\n", status);
+	ths_Delay();
 
+	// Poll sensor for temperature sample (max 5 times)
 	Uint16 read[2];
-	do {
-
+	int i = 0;
+	do{
 		status = I2C_read(read, 2, I2C_THSENSOR_ADDRESS, NULL, 0, TRUE, startStop, CSL_I2C_MAX_TIMEOUT, FALSE);
-		debug_printf("Read after return %d\n", status);
-	}while(status == -200);
-
-	debug_printf("Esco e ho letto %x %x\n", read[0], read[1]);
-
-	//Uint16 bToWrite[] = {0x00, 0x38, 0x39, 0x14, 0x74, 0x54, 0x6F, 0x0F, 0x01};
-	//status = I2C_write(bToWrite, 9, I2C_DISPLAY_ADDRESS, TRUE, startStop, CSL_I2C_MAX_TIMEOUT);
-
-	long a = 17572;
-	long b1 = 26868;
-	long c = 6553600;
-	long d = 4685;
+		//debug_printf("Read status after temp %d\n", status);
+		ths_Delay();
+		i++;
+	}while(status == -200 && i < 5);
 
 	Uint16 r = (read[0] << 8) + read[1];
-	debug_printf("tshft: %d\n", r);
-
-
-
-	long test = (long)(r * 100);
-	debug_printf("test: %d\n", test);
+	if(status == 0 && r > 0x00){
+		// Conversion returned value
+		ret = (Uint16)((((long)r * 21965)/ 81920)-4685);	// °C = ((175,72*16bit_value)/65536)-46,85
+	}
 
 	return ret;
 }
@@ -123,7 +118,7 @@ Uint16 TUS_ReadTemp() {
 
 
 
-Uint16 TUS_ReadHumid() {
+Uint16 THS_ReadHumid() {
 	Uint16 startStop = ((CSL_I2C_START) | (CSL_I2C_STOP));
 	CSL_Status  status;
 	Uint16 ret = 0x00;
@@ -151,12 +146,27 @@ Uint16 TUS_ReadHumid() {
 		debug_printf("I2C Setup Failed!!\n");
 	}
 
-	Uint16 b = 0x00;
-	status = I2C_write(&b, 1, 0x00, TRUE, startStop, CSL_I2C_MAX_TIMEOUT);
-	//lcd_Delay();
+	// Write command to read humidity on SI7020
+	Uint16 b = I2C_THSENSOR_READ_HUMID;
+	status = I2C_write(&b, 1, I2C_THSENSOR_ADDRESS, TRUE, startStop, CSL_I2C_MAX_TIMEOUT);
+	//debug_printf("Read status humid %d\n", status);
+	ths_Delay();
 
-	//Uint16 bToWrite[] = {0x00, 0x38, 0x39, 0x14, 0x74, 0x54, 0x6F, 0x0F, 0x01};
-	//status = I2C_write(bToWrite, 9, I2C_DISPLAY_ADDRESS, TRUE, startStop, CSL_I2C_MAX_TIMEOUT);
+	// Poll sensor for humidity sample (max 5 times)
+	Uint16 read[2];
+	int i = 0;
+	do{
+		status = I2C_read(read, 2, I2C_THSENSOR_ADDRESS, NULL, 0, TRUE, startStop, CSL_I2C_MAX_TIMEOUT, FALSE);
+		//debug_printf("Read status after humid %d\n", status);
+		ths_Delay();
+		i++;
+	}while(status == -200 && i < 5);
+
+	Uint16 r = (read[0] << 8) + read[1];
+	if(status == 0 && r > 0x00){
+		// Conversion returned value in %RH
+		ret = (Uint16)((((long)r * 125)/ 65536)-6);		// %RH = ((16bit_value*125)/65536)-6
+	}
 
 	return ret;
 }

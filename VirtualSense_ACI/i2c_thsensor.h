@@ -23,8 +23,8 @@
 #define I2C_THSENSOR_H
 
 
-Uint16 TUS_ReadTemp();
-Uint16 TUS_ReadHumid();
+Uint16 THS_ReadTemp();
+Uint16 THS_ReadHumid();
 
 
 
