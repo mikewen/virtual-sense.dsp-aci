@@ -72,6 +72,7 @@
 #include "app_asrc.h"
 #include "sample_rate.h"
 #include "i2c_display.h"
+#include "i2c_thsensor.h"
 
 #ifdef C5535_EZDSP_DEMO
 #include "lcd_osd.h"
@@ -275,7 +276,7 @@ void init_all_peripheral(void)
 	// for debug LELE
 	//init_buffer();
 
-   //	debug_printf("Starting device....\r\n");
+   	debug_printf("Starting device....\r\n");
 
    	//debug_printf("Init RTC....\r\n");
 
@@ -340,6 +341,9 @@ void init_all_peripheral(void)
 				//f_unlink (RTC_FILE_CONFIG);
 				//debug_printf("time.rtc file deleted\r\n");
 		}*/
+
+
+	//debug_printf("Read Temperature %d\n", TUS_ReadTemp());
 
 	LCD_Write("VirtualSenseDSP");
 	_delay_ms(1000);
@@ -573,10 +577,13 @@ FRESULT initConfigFromSchedulerFile(Uint16 index){
 			nowDatetime.hours, nowDatetime.mins, nowDatetime.secs);
 	debug_printf("\r\n");
 
-	LCD_Write("NOW %d%d%d %d%d%d",
+	LCD_Write("Date-time:      %d/%d/%d %d:%d:%d",
 			nowDatetime.day, nowDatetime.month, nowDatetime.year,
 			nowDatetime.hours, nowDatetime.mins, nowDatetime.secs);
-	_delay_ms(3000);
+	int d,e;
+	for (d=0; d<0xFFF; d++)
+		for (e=0; e<0xFFF; e++)
+			asm(" NOP ");
 
 	//read config from file
 	//debug_printf("Read scheduler file\r\n");
@@ -653,6 +660,10 @@ FRESULT initConfigFromSchedulerFile(Uint16 index){
 					debug_printf("  Going to sleep until: %d/%d/%d %d:%d:%d \r\n",
 							datetime.day, datetime.month, datetime.year,
 							datetime.hours, datetime.mins,datetime.secs);
+
+					LCD_Write("LPMode wakeup:  %d/%d/%d %d:%d:%d",
+							  datetime.day, datetime.month, datetime.year,
+							  datetime.hours, datetime.mins,datetime.secs);
 				}
 				set_sampling_frequency_gain_impedence(frequency, gain, impedance);
 				RTC_shutdownToRTCOnlyMonde();
@@ -725,6 +736,10 @@ FRESULT initConfigFromSchedulerFile(Uint16 index){
 			stopWritingTime.hours	= stopTime.hours;
 			stopWritingTime.mins	= stopTime.mins;
 			stopWritingTime.secs	= stopTime.secs;
+
+			LCD_Write("M-ALWAYSON stop:%d/%d/%d %d:%d:%d",
+					  stopWritingTime.day, stopWritingTime.month, stopWritingTime.year,
+					  stopWritingTime.hours, stopWritingTime.mins,stopWritingTime.secs);
 
 			debug_printf("  STOP date time: %d/%d/%d %d:%d:%d \r\n",
 					stopWritingTime.day, stopWritingTime.month, stopWritingTime.year,
@@ -804,6 +819,10 @@ FRESULT initConfigFromSchedulerFile(Uint16 index){
 					debug_printf("  Going to sleep until: %d/%d/%d %d:%d:%d \r\n",
 									datetime.day, datetime.month, datetime.year,
 									datetime.hours, datetime.mins,datetime.secs);
+
+					LCD_Write("LPMode wakeup:  %d/%d/%d %d:%d:%d",
+							  datetime.day, datetime.month, datetime.year,
+							  datetime.hours, datetime.mins,datetime.secs);
 				}
 				set_sampling_frequency_gain_impedence(frequency, gain, impedance);
 				RTC_shutdownToRTCOnlyMonde();
@@ -877,6 +896,10 @@ FRESULT initConfigFromSchedulerFile(Uint16 index){
 			stopWritingTime.hours	= stopTime.hours;
 			stopWritingTime.mins	= stopTime.mins;
 			stopWritingTime.secs	= stopTime.secs;
+
+			LCD_Write("M-CALENDAR stop:%d/%d/%d %d:%d:%d",
+					  stopWritingTime.day, stopWritingTime.month, stopWritingTime.year,
+					  stopWritingTime.hours, stopWritingTime.mins,stopWritingTime.secs);
 
 			debug_printf("  STOP date time: %d/%d/%d %d:%d:%d \r\n",
 					stopWritingTime.day, stopWritingTime.month, stopWritingTime.year,

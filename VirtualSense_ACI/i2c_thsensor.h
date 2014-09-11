@@ -1,11 +1,11 @@
 /*****************************************************************************/
 /*                                                                           */
-/* FILENAME                                                                  */ 
-/* 	i2c_display.h                                                        */
+/* FILENAME                                                                  */
+/* 	i2c_thsensor.h                                                        */
 /*                                                                           */
-/*  \brief  MIDAS i2c display functions
+/*  \brief  Silicon Labs SI7020 temp-humid sensor
  *
- *   This file contains the APIs for I2C MIDA LCD Display
+ *   This file contains the APIs for I2C SI7020 sensor
  *
  *  (C) Copyright 2014, Emanuele Lattanzi
  *
@@ -19,24 +19,14 @@
  *
  */
 
-#ifndef I2C_DISPLAY_H
-#define I2C_DISPLAY_H
+#ifndef I2C_THSENSOR_H
+#define I2C_THSENSOR_H
 
 
-void LCD_Write(const char *format, ...);
-void LCD_Clear();
+Uint16 TUS_ReadTemp();
+Uint16 TUS_ReadHumid();
 
 
-static inline void  _delay_ms(Uint16 ms){
-	Uint16 looper = 0;
-	/* Give some delay */
-	for(looper = 0; looper < 0xFF; looper++){;}
-}
-static inline void  _delay_us(Uint16 us){
-	Uint16 looper = 0;
-	/* Give some delay */
-	for(looper = 0; looper < 0x0F; looper++){;}
-}
 
 #endif
 

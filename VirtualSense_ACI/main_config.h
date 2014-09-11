@@ -103,6 +103,7 @@ static inline FRESULT increaseProgramCounter(Uint16 pc){
 	FIL fileProgramCounter;
 	fatRes = f_open(&fileProgramCounter, FILE_PROGRAM_COUNTER, FA_WRITE | FA_CREATE_ALWAYS);
 	if(!fatRes) {
+		debug_printf("   Program counter was %d return code %d\r\n",pc);
 		fatRes = f_write (&fileProgramCounter, &newPc, 2, &bw);	/* Write data to a file */
 		debug_printf("   Program counter write %d return code %d\r\n", newPc, fatRes);
 		fatRes = f_close (&fileProgramCounter);
@@ -114,13 +115,16 @@ static inline FRESULT increaseProgramCounter(Uint16 pc){
 
 static inline Uint16 readProgramCounter(){
 	Uint16 line = 0;
+	Uint16 line2 = 0;
 	UINT bw = 0;
 	FRESULT fatRes;
 	FIL fileProgramCounter;
 	//debug_printf(" Opening program counter file %s\r\n", FILE_PROGRAM_COUNTER);
 	fatRes = f_open(&fileProgramCounter, FILE_PROGRAM_COUNTER, FA_READ);
 	if(!fatRes) {
-		fatRes = f_read(&fileProgramCounter,  &line, 2, &bw);
+		fatRes = f_read(&fileProgramCounter,  &line, 1, &bw);
+		fatRes = f_read(&fileProgramCounter,  &line2, 1, &bw);
+		line += (line2 << 8);
 		debug_printf(" Program counter is %d return code %d\r\n", line, fatRes);
 		fatRes = f_close (&fileProgramCounter);
 	}else{

@@ -148,7 +148,7 @@ void DataSaveTask(void)
 
 				sprintf(file_name, "%d__%d_%d_%d__%d-%d-%d.wav",ID, GetDate.day,GetDate.month,GetDate.year, GetTime.hours, GetTime.mins, GetTime.secs);
 				debug_printf("    Creating a new file %s\r\n",file_name);
-				LCD_Write("REC %d%d%d %d%d%d", GetDate.day,GetDate.month,GetDate.year, GetTime.hours, GetTime.mins, GetTime.secs);
+				LCD_Write("REC %d__%d_%d_%d__%d-%d-%d.wav", ID, GetDate.day, GetDate.month, GetDate.year, GetTime.hours, GetTime.mins, GetTime.secs);
 
 
 				//rc = open_wave_file(&wav_file, file_name, FREQUENCY, SECONDS);
@@ -225,10 +225,13 @@ void DataSaveTask(void)
         debug_printf("   Going to sleep until: %d/%d/%d %d:%d:%d \r\n",
 					wakeupTime.day, wakeupTime.month, wakeupTime.year,
 					wakeupTime.hours, wakeupTime.mins, wakeupTime.secs);
-        LCD_Write("SLP %d%d%d %d%d%d",wakeupTime.day, wakeupTime.month, wakeupTime.year,
-				wakeupTime.hours, wakeupTime.mins, wakeupTime.secs);
 
         status = RTC_setAlarm(&wakeupTime);
+
+        LCD_Write("LPMode wakeup:  %d/%d/%d %d:%d:%d",
+        		  wakeupTime.day, wakeupTime.month, wakeupTime.year,
+        		  wakeupTime.hours, wakeupTime.mins, wakeupTime.secs);
+
         if(status != CSL_SOK)
 		{
 			debug_printf("    RTC: setAlarm Failed CPU remains active\r\n");

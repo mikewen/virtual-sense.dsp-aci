@@ -446,11 +446,15 @@ void RTC_shutdownToRTCOnlyMonde(){
 	        *(volatile ioport Uint16 *)(0x7004) = 0x0002; // disable USB_LDO and set core voltage to 1.05V
 
 
+			asm(" bit(ST1,#11) = #0 "); // GLOBAL INTERRUPT ENABLE
 
-	        *(volatile ioport Uint16 *)(0x0001) = 0x000F;
+
+
+	        *(volatile ioport Uint16 *)(0x0001) = 0x01E1;
 	         // execute idle instruction to make CPU idle
-	         asm("    idle");
+	         asm("    IDLE");
 	        while(1){
+	        	//CSL_CPU_REGS->ST1_55 |= CSL_CPU_ST1_55_XF_MASK;
 	        	 asm(" NOP "); // nop
 	        }
 
@@ -463,7 +467,7 @@ void RTC_shutdownToRTCOnlyMonde(){
 	        // shutdown led to shutdown extrernal oscillator
 	        CSL_CPU_REGS->ST1_55 &= ~CSL_CPU_ST1_55_XF_MASK;
 
-	    asm("        @#IFR0_L = #0xffff || mmap() "); // clear int flags
+	    asm("    @#IFR0_L = #0xffff || mmap() "); // clear int flags
 	    asm("    @#IER0_L = #0x0000 || mmap() "); // set RTC int
 	    asm("    @#IFR1_L = #0xffff || mmap() "); // clear int flags
 	    asm("    @#IER1_L = #0x0004 || mmap() "); // set RTC int
