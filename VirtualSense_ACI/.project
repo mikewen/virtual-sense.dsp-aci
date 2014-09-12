@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>VirtualSense_ACI_new</name>
+	<name>VirtualSense_ACI_aci</name>
 	<comment></comment>
 	<projects>
 		<project>dma_bios_drv_lib</project>
