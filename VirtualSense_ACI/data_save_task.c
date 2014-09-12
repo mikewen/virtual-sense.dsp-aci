@@ -86,6 +86,9 @@ void DataSaveTask(void)
         Uint32 remainingSamples = 0;
         Int16 * bufferPointer = circular_buffer;
         Uint16 programCounter;
+        Uint16 temperature;
+        Uint16 tempC;
+        Uint16 tempM;
 
 
         /* Open the WDTIM module */
@@ -140,15 +143,18 @@ void DataSaveTask(void)
 
 				RTC_getDate(&GetDate);
 				RTC_getTime(&GetTime);
+				temperature = THS_ReadTemp();
+				tempC = temperature/100;
+				tempM = temperature % 100;
 				nowTime.day = GetDate.day;
 				nowTime.month = GetDate.month;
 				nowTime.year = GetDate.year;
 				nowTime.hours = GetTime.hours;
 				nowTime.mins = GetTime.mins;
 
-				sprintf(file_name, "%d__%d_%d_%d__%d-%d-%d.wav",ID, GetDate.day,GetDate.month,GetDate.year, GetTime.hours, GetTime.mins, GetTime.secs);
+				sprintf(file_name, "%d__%d_%d_%d__%d-%d-%d_%d.%d.wav",ID, GetDate.day,GetDate.month,GetDate.year, GetTime.hours, GetTime.mins, GetTime.secs,tempC,tempM);
 				debug_printf("    Creating a new file %s\r\n",file_name);
-				LCD_Write("REC %d__%d_%d_%d__%d-%d-%d.wav", ID, GetDate.day, GetDate.month, GetDate.year, GetTime.hours, GetTime.mins, GetTime.secs);
+				LCD_Write("REC %d__%d_%d_%d__%d-%d-%d_%d.%d.wav", ID, GetDate.day, GetDate.month, GetDate.year, GetTime.hours, GetTime.mins, GetTime.secs,tempC,tempM);
 
 
 				//rc = open_wave_file(&wav_file, file_name, FREQUENCY, SECONDS);
