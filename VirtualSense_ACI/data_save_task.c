@@ -20,7 +20,6 @@
 #include "VirtualSense_ACIcfg.h"
 #include "psp_i2s.h"
 #include "lcd_osd.h"
-#include "i2c_display.h"
 //#include "gpio_control.h"
 
 #include "main_config.h"
@@ -31,9 +30,39 @@
 
 #include "ff.h"
 #include "make_wav.h"
+#include "aci/ACI_LCR.h"
+
+#include "aci/hwafft.h"
+
+
+FIL spec_file;
+
+#pragma DATA_SECTION(spec_buffer, ".spec_buffer");
+static  char spec_buffer[1024];
 
 #define ICR 0x0001
 
+
+
+/* --- Special buffers required for HWAFFT ---*/
+#pragma DATA_SECTION(complex_buffer, "cmplxBuf");
+Int32 complex_buffer[WND_LEN];
+
+#pragma DATA_SECTION(bitreversed_buffer, "brBuf");
+#pragma DATA_ALIGN(bitreversed_buffer, 2*FFT_LENGTH);
+Int32 bitreversed_buffer[FFT_LENGTH];
+
+#pragma DATA_SECTION(temporary_buffer,"tmpBuf");
+Int32 temporary_buffer[FFT_LENGTH];
+
+#pragma DATA_SECTION(realR, "rfftR");
+Int16 realR[FFT_LENGTH];
+
+#pragma DATA_SECTION(imagR, "ifftR");
+Int16 imagR[FFT_LENGTH];
+
+#pragma DATA_SECTION(PSD_Result, "PSD");
+Int16 PSD_Result[FFT_LENGTH];
 
 //FRESULT rc;
 
@@ -46,8 +75,11 @@ CSL_RtcAlarm  wakeupTime;
 
 
 FRESULT putDataIntoOpenFile(const void *buff, unsigned int  number_of_bytes);
+Uint16 calculateACI(Int16 *dataPointer);
 
 extern FRESULT readNextWakeUpDateTimeFromScheduler(Uint16 i, CSL_RtcAlarm *nextAlarmTime);
+
+void myfprintf(FIL file, const char *format, ...);
 
 extern Int16 circular_buffer[PROCESS_BUFFER_SIZE];
 extern Uint32 bufferInIdx; //logical pointer
@@ -90,7 +122,7 @@ void DataSaveTask(void)
         Uint16 tempC;
         Uint16 tempM;
 
-
+        f_open(&spec_file, "spectrum.txt", FA_WRITE | FA_CREATE_ALWAYS);
         /* Open the WDTIM module */
 		hWdt = (CSL_WdtObj *)WDTIM_open(WDT_INST_0, &wdtObj, &status);
 		if(NULL == hWdt)
@@ -143,18 +175,14 @@ void DataSaveTask(void)
 
 				RTC_getDate(&GetDate);
 				RTC_getTime(&GetTime);
-				temperature = THS_ReadTemp();
-				tempC = temperature/100;
-				tempM = temperature % 100;
 				nowTime.day = GetDate.day;
 				nowTime.month = GetDate.month;
 				nowTime.year = GetDate.year;
 				nowTime.hours = GetTime.hours;
 				nowTime.mins = GetTime.mins;
 
-				sprintf(file_name, "%d__%d_%d_%d__%d-%d-%d_%d.%d.wav",ID, GetDate.day,GetDate.month,GetDate.year, GetTime.hours, GetTime.mins, GetTime.secs,tempC,tempM);
+				sprintf(file_name, "%d__%d_%d_%d__%d-%d-%d.wav",ID, GetDate.day,GetDate.month,GetDate.year, GetTime.hours, GetTime.mins, GetTime.secs);
 				debug_printf("    Creating a new file %s\r\n",file_name);
-				LCD_Write("REC %d__%d_%d_%d__%d-%d-%d_%d.%d.wav", ID, GetDate.day, GetDate.month, GetDate.year, GetTime.hours, GetTime.mins, GetTime.secs,tempC,tempM);
 
 
 				//rc = open_wave_file(&wav_file, file_name, FREQUENCY, SECONDS);
@@ -185,6 +213,10 @@ void DataSaveTask(void)
 						//writingSamples = writingSamples < remainingSamples?writingSamples:remainingSamples;
 
 						//debug_printf("writing samples %d from index %ld\r\n",writingSamples, bufferOutIdx );
+						// LELE: introducing ACI calculation..... over 512 sample
+						// TODO: repeat to cover all 4096 samples
+						calculateACI((Int16 *)(bufferPointer+bufferOutIdx));
+
 						write_result = putDataIntoOpenFile(((void *)(bufferPointer+bufferOutIdx)), (writingSamples*2));
 						if(!write_result)
 							WDTIM_service(hWdt);
@@ -202,7 +234,7 @@ void DataSaveTask(void)
 				}
 
 				// wave header is 44 bytes length
-				//clear_lcd();
+
 				//SEM_reset(&SEM_BufferFull,0);
 				SEM_pend(&SEM_CloseFile, SYS_FOREVER);
 				close_wave_file(&wav_file);
@@ -211,8 +243,32 @@ void DataSaveTask(void)
 				//directory_listing();
 				numberOfFiles--;
 				step = 0;
-                //clear_lcd();
+
                 debug_printf("    File saved %s\r\n",file_name);
+
+                Uint16 aci1, aci2, aci3, delay;
+                ACI(NULL, 10,10,10,10,10); // LINKING TEST LELE
+                debug_printf("ACI generate\r\n");
+
+                aci1 = 381;
+                aci2 = 0xFFFF;
+                aci3 = 65535;
+
+                debug_printf("ACI\r\n");
+                debug_printf("%x\n", aci1);
+                for(delay = 0; delay < 0xFFFF; delay++)
+                	asm(" NOP ");
+
+                debug_printf("%x0A", aci2);
+                for(delay = 0; delay < 0xFFFF; delay++)
+                 	asm(" NOP ");
+
+                debug_printf("%x\r\n", aci3);
+                for(delay = 0; delay < 0xFFFF; delay++)
+                 	asm(" NOP ");
+
+                while(1);
+
         }
         // read next wake-up datetime
 
@@ -234,9 +290,6 @@ void DataSaveTask(void)
 
         status = RTC_setAlarm(&wakeupTime);
 
-        LCD_Write("LPMode wakeup:  %d/%d/%d %d:%d:%d",
-        		  wakeupTime.day, wakeupTime.month, wakeupTime.year,
-        		  wakeupTime.hours, wakeupTime.mins, wakeupTime.secs);
 
         if(status != CSL_SOK)
 		{
@@ -267,3 +320,105 @@ FRESULT putDataIntoOpenFile(const void *buff, unsigned int number_of_bytes){
 	return  res;
 
 }
+
+
+Uint16 calculateACI(Int16 *dataPointer){
+	 // Perform FFT on windowed buffer
+	Int16 *data;
+	Int32 *complex_data, *bitrev_data, *temp_data, *fft_data;
+	int i = 0;
+	int j = 0;
+	int f = 0;
+	int Peak_Magnitude_Value = 0;
+	int Peak_Magnitude_Index = 0;
+	Uint16 data_selection;
+	/* Initialize relevant pointers */
+	data 		 = dataPointer;
+	bitrev_data  = bitreversed_buffer;
+	temp_data    = temporary_buffer;
+	complex_data = complex_buffer;
+
+	//debug_printf("    Calculating ACI\r\n");
+	debug_printf("\n\r\n\r.\n\r\n\r");
+	/* Convert real data to "pseudo"-complex data (real, 0) */
+	/* Int32 complex = Int16 real (MSBs) + Int16 imag (LSBs) */
+	for(f = 0; f < 8; f++){
+		for (i = 0; i < FFT_LENGTH; i++) {
+			*(complex_data + i) = ( (Int32) (*(data + i)) ) << 16;
+		}
+
+		/* Perform bit-reversing */
+		hwafft_br(complex_data, bitrev_data, FFT_LENGTH);
+
+		/* Perform FFT */
+		if (HWAFFT_SCALE) {
+			data_selection = hwafft_512pts(bitrev_data, temp_data, FFT_FLAG, SCALE_FLAG); // hwafft_#pts, where # = 2*HOP_SIZE
+		}
+		else {
+			data_selection = hwafft_512pts(bitrev_data, temp_data, FFT_FLAG, NOSCALE_FLAG);
+		}
+
+		/* Return appropriate data pointer */
+		if (data_selection == 1) {
+			fft_data = temp_data;	// results stored in this scratch vector
+		}
+		else {
+			fft_data = bitrev_data; // results stored in this data vector
+		}
+
+		myfprintf(spec_file,"\n\n");
+		myfprintf(spec_file,"data %x\t", *(fft_data + 64));
+		myfprintf(spec_file,"data %x\t", *(fft_data + 64));
+		myfprintf(spec_file,"\n\n");
+
+		/* Extract real and imaginary parts */
+		for (i = 0; i < FFT_LENGTH; i++) {
+			*(realR + i) = (Int16)((*(fft_data + i)) >> 16);
+			*(imagR + i) = (Int16)((*(fft_data + i)) & 0x0000FFFF);
+			//myfprintf(spec_file,"%d\t", *(realR + i));
+		}
+		//myfprintf(spec_file,"\n\n");
+
+
+		// Process freq. bins from 0Hz to Nyquist frequency
+		// Perform spectral processing here
+		//debug_printf(".");
+		PSD_Result[0] = sqrt((realR[0])^2 + (imagR[0])^2); // start the search at the first value in the Magnitude plot
+		Peak_Magnitude_Value = PSD_Result[0];
+		for( j = 1; j < NUM_BINS; j++ )
+		{
+			PSD_Result[j] = sqrt((realR[j])^2 + (imagR[j])^2); // Convert FFT to magnitude spectrum. Basically Find magnitude of FFT result for each index
+
+			//myfprintf(spec_file,"%d\t", PSD_Result[j]);
+			if( PSD_Result[j] > Peak_Magnitude_Value ) // Peak search on the magnitude of the FFT to find the fundamental frequency
+			{
+				Peak_Magnitude_Value = PSD_Result[j];
+				Peak_Magnitude_Index = j;
+			}
+		}
+		//myfprintf(spec_file,"\n\r");
+	}
+	f_sync(&spec_file);
+	data = data + FFT_LENGTH;
+	//debug_printf("BufferR[256]= %d \n", BufferR[256]);
+	/*debug_printf("realR[128] 	= %d \n", realR[128]);
+	debug_printf("PSD_Result[128] 	 = %d \n", PSD_Result[128]);
+	debug_printf("Peak_Magnitude_Value = %d \n", Peak_Magnitude_Value);
+	debug_printf("Peak_Magnitude_Index = %d \n\n", Peak_Magnitude_Index);*/
+
+
+}
+
+void myfprintf(FIL file, const char *format, ...){
+
+	va_list arg;
+	int done;
+	Uint bw = 0;
+	FRESULT fatRes;
+	va_start (arg, format);
+	done = vsprintf (spec_buffer, format, arg);
+    fatRes = f_write (&spec_file, &spec_buffer, done, &bw);	/* Write data to a file */
+    //f_sync(&spec_file);
+
+}
+

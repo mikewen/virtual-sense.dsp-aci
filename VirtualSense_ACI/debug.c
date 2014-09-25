@@ -9,7 +9,10 @@
 #include "psp_common.h"
 #include "csl_uart.h"
 #include "csl_uartAux.h"
-#include "csl_general.h"
+#include <csl_rtc.h>
+#include <csl_intc.h>
+#include <csl_general.h>
+
 
 #include "cslr_sysctrl.h"
 #include "main_config.h"
@@ -102,5 +105,63 @@ void printdebug(const char *format, ...){
     }
 #endif
 #endif
+}
+
+
+
+void UARTReader(void){ // the UART reader task
+	char readerBuff[6];
+
+	CSL_RtcTime	     InitTime;
+	CSL_RtcDate 	 InitDate;
+
+	debug_printf("UARTReader started ....\n");
+	//while(1){
+
+	// wait for 6 bytes on the UART (day-month-year-hour-min-sec)
+	status = UART_read(hUart, readerBuff, 6, 0);
+
+	InitDate.year  = readerBuff[2];;
+	InitDate.month = readerBuff[1];;
+	InitDate.day   = readerBuff[0];;
+
+	InitTime.hours = readerBuff[3];;
+	InitTime.mins  = readerBuff[4];;
+	InitTime.secs  = readerBuff[5];;
+	InitTime.mSecs = 00;
+
+
+	/* Set the RTC time */
+	debug_printf(" Setting Iternal RTC date time to %d-%d-%d_%d:%d:%d\r\n",
+			InitDate.day,InitDate.month,InitDate.year, InitTime.hours, InitTime.mins, InitTime.secs);
+	/* Set the RTC time */
+
+
+	/* Set the RTC date */
+	status = RTC_setDate(&InitDate);
+	if(status != CSL_SOK)
+	{
+			debug_printf(" RTC_setDate Failed\r\n");
+			return;
+	}
+	else
+	{
+			//debug_printf(" RTC_setDate Successful\r\n");
+	}
+
+	status = RTC_setTime(&InitTime);
+	if(status != CSL_SOK)
+	{
+			debug_printf(" RTC_setTime Failed\r\n");
+			return;
+	}
+	else
+	{
+			//debug_printf(" RTC_setTime Successful\r\n");
+	}
+
+
+	//}
+
 }
 

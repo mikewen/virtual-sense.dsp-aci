@@ -71,8 +71,6 @@
 #include "user_interface.h"
 #include "app_asrc.h"
 #include "sample_rate.h"
-#include "i2c_display.h"
-#include "i2c_thsensor.h"
 
 #ifdef C5535_EZDSP_DEMO
 #include "lcd_osd.h"
@@ -220,7 +218,7 @@ void main(void)
     C5515_reset();
 
     /* Initialize DSP PLL */
-    status = pll_sample_freq(40);
+    status = pll_sample_freq(100);
     if (status != CSL_SOK)
     {
         exit(EXIT_FAILURE);
@@ -234,11 +232,14 @@ void main(void)
     /* Enable the USB LDO */
     //*(volatile ioport unsigned int *)(0x7004) |= 0x0001;
 
-    init_debug(40);
+    init_debug(100);
 
     // set the GPIO pin 10 - 11 to output, set SYS_GPIO_DIR0 (0x1C06) bit 10 and 11 to 1
     //LELE *(volatile ioport unsigned int *)(0x1C06) |= 0x600;
     //mount sdcard: must be High capacity(>4GB), standard capacity have a problem
+
+
+
     init_all_peripheral();
 
 }
@@ -278,11 +279,11 @@ void init_all_peripheral(void)
 
    	debug_printf("Starting device....\r\n");
 
-   	debug_printf("Init RTC....\r\n");
+   	//debug_printf("Init RTC....\r\n");
 
-   	debug_printf("Init RTC now....\r\n");
+   	//debug_printf("Init RTC now....\r\n");
 
-   	debug_printf("Init RTC now..now..\r\n");
+   	//debug_printf("Init RTC now..now..\r\n");
 
 
 	//Initialize RTC
@@ -344,10 +345,12 @@ void init_all_peripheral(void)
 		}*/
 
 
-	LCD_Write("VirtualSenseDSP");
-	_delay_ms(1000);
+
 
 	start_log();
+
+    //UARTReader(); //LELE: blocking to read UART for test
+
 	debug_printf("\r\n");
 	debug_printf("Firmware version:");
 	debug_printf(FW_VER);
@@ -362,10 +365,6 @@ void init_all_peripheral(void)
 
 	debug_printf("Start configuration\r\n");
 	rc = updateTimeFromFile();
-
-	debug_printf(" Check sensors\r\n");
-	debug_printf("  Temperature: %dmC\n", THS_ReadTemp());
-	debug_printf("  Humidity:    %d%%\n", THS_ReadHumid());
 
 	current_pc =  readProgramCounter();
 	//debug_printf("readProgramCounter\r\n");
@@ -432,12 +431,9 @@ void init_all_peripheral(void)
     //ClockGating();
 
     //
-
-    // init lcd
-    //LCD_Init(0);
-    //int a = 2;
-    //LCD_Write("Sense %d\n 4", a);
-
+    //LELE: to reboot FFTHWA
+    /* *(ioport volatile unsigned *)0x0001 = 0x000E;
+     asm(" idle"); // must add at least one blank before idle in " ". */
 
     //debug_printf("ClokGating\r\n");
     DDC_I2S_transEnable((DDC_I2SHandle)i2sHandleTx, TRUE); /* enable I2S transmit and receive */
@@ -451,8 +447,6 @@ void init_all_peripheral(void)
     Set_Mute_State(TRUE);
 
 
-    // init lcd
-    //LCD_Init(0);
 
     debug_printf("Initialization completed\r\n");
     debug_printf("\r\n");
@@ -580,13 +574,6 @@ FRESULT initConfigFromSchedulerFile(Uint16 index){
 			nowDatetime.hours, nowDatetime.mins, nowDatetime.secs);
 	debug_printf("\r\n");
 
-	LCD_Write("Date-time:      %d/%d/%d %d:%d:%d",
-			nowDatetime.day, nowDatetime.month, nowDatetime.year,
-			nowDatetime.hours, nowDatetime.mins, nowDatetime.secs);
-	int d,e;
-	for (d=0; d<0xFFF; d++)
-		for (e=0; e<0xFFF; e++)
-			asm(" NOP ");
 
 	//read config from file
 	//debug_printf("Read scheduler file\r\n");
@@ -664,9 +651,7 @@ FRESULT initConfigFromSchedulerFile(Uint16 index){
 							datetime.day, datetime.month, datetime.year,
 							datetime.hours, datetime.mins,datetime.secs);
 
-					LCD_Write("LPMode wakeup:  %d/%d/%d %d:%d:%d",
-							  datetime.day, datetime.month, datetime.year,
-							  datetime.hours, datetime.mins,datetime.secs);
+
 				}
 				set_sampling_frequency_gain_impedence(frequency, gain, impedance);
 				RTC_shutdownToRTCOnlyMonde();
@@ -740,9 +725,6 @@ FRESULT initConfigFromSchedulerFile(Uint16 index){
 			stopWritingTime.mins	= stopTime.mins;
 			stopWritingTime.secs	= stopTime.secs;
 
-			LCD_Write("M-ALWAYSON stop:%d/%d/%d %d:%d:%d",
-					  stopWritingTime.day, stopWritingTime.month, stopWritingTime.year,
-					  stopWritingTime.hours, stopWritingTime.mins,stopWritingTime.secs);
 
 			debug_printf("  STOP date time: %d/%d/%d %d:%d:%d \r\n",
 					stopWritingTime.day, stopWritingTime.month, stopWritingTime.year,
@@ -823,9 +805,6 @@ FRESULT initConfigFromSchedulerFile(Uint16 index){
 									datetime.day, datetime.month, datetime.year,
 									datetime.hours, datetime.mins,datetime.secs);
 
-					LCD_Write("LPMode wakeup:  %d/%d/%d %d:%d:%d",
-							  datetime.day, datetime.month, datetime.year,
-							  datetime.hours, datetime.mins,datetime.secs);
 				}
 				set_sampling_frequency_gain_impedence(frequency, gain, impedance);
 				RTC_shutdownToRTCOnlyMonde();
@@ -900,9 +879,6 @@ FRESULT initConfigFromSchedulerFile(Uint16 index){
 			stopWritingTime.mins	= stopTime.mins;
 			stopWritingTime.secs	= stopTime.secs;
 
-			LCD_Write("M-CALENDAR stop:%d/%d/%d %d:%d:%d",
-					  stopWritingTime.day, stopWritingTime.month, stopWritingTime.year,
-					  stopWritingTime.hours, stopWritingTime.mins,stopWritingTime.secs);
 
 			debug_printf("  STOP date time: %d/%d/%d %d:%d:%d \r\n",
 					stopWritingTime.day, stopWritingTime.month, stopWritingTime.year,
@@ -928,11 +904,14 @@ FRESULT initConfigFromSchedulerFile(Uint16 index){
 		debug_printf(" Read config file error: default initialization value\r\n"); //error: file don't exist
 		mode = MODE_ALWAYS_ON;
 		frequency = 48000; // S_RATE_48KHZ
-		impedance = 0x20; // IMPEDANCE_20K
-		gain = 10;
-		seconds = 60;
+		impedance = 0x10; // IMPEDANCE_10K
+		gain = 15;
+		seconds = 10;
+		recTimeMinutes = 0;
 	}
 	numberOfFiles = (Uint16)((((long unsigned int )recTimeMinutes) * 60)/seconds);
+	if(numberOfFiles == 0)
+		numberOfFiles = 1; // lele to create just a file for VS ACI
 	if(frequency > 96000)
 		digital_gain = 40;
 	debug_printf(" Number of file to write...%d\r\n",numberOfFiles); //error: file don't exist

@@ -29,7 +29,7 @@
 void init_debug(Uint16 clock);
 void start_log();
 void printdebug(const char *format, ...);
-
+void UARTReader(void);
 #endif
 
 /*****************************************************************************/
