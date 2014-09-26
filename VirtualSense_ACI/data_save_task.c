@@ -20,6 +20,10 @@
 #include "VirtualSense_ACIcfg.h"
 #include "psp_i2s.h"
 #include "lcd_osd.h"
+
+#include <dsplib.h>
+
+
 //#include "gpio_control.h"
 
 #include "main_config.h"
@@ -45,8 +49,13 @@ static  char spec_buffer[1024];
 
 
 /* --- Special buffers required for HWAFFT ---*/
-#pragma DATA_SECTION(complex_buffer, "cmplxBuf");
-Int32 complex_buffer[WND_LEN];
+/*#pragma DATA_SECTION(complex_buffer, "cmplxBuf");
+Int32 complex_buffer[WND_LEN]; */
+
+/* --- Special buffers required for CFFT ---*/
+#pragma DATA_SECTION(complex_data,"cmplxBuf");
+LDATA complex_data[2*FFT_LENGTH];
+/* -------------------------------------------*/
 
 #pragma DATA_SECTION(bitreversed_buffer, "brBuf");
 #pragma DATA_ALIGN(bitreversed_buffer, 2*FFT_LENGTH);
@@ -215,7 +224,7 @@ void DataSaveTask(void)
 						//debug_printf("writing samples %d from index %ld\r\n",writingSamples, bufferOutIdx );
 						// LELE: introducing ACI calculation..... over 512 sample
 						// TODO: repeat to cover all 4096 samples
-						calculateACI((Int16 *)(bufferPointer+bufferOutIdx));
+						calculateACI(&bufferPointer[bufferOutIdx]);
 
 						write_result = putDataIntoOpenFile(((void *)(bufferPointer+bufferOutIdx)), (writingSamples*2));
 						if(!write_result)
@@ -336,61 +345,69 @@ Uint16 calculateACI(Int16 *dataPointer){
 	data 		 = dataPointer;
 	bitrev_data  = bitreversed_buffer;
 	temp_data    = temporary_buffer;
-	complex_data = complex_buffer;
+	//complex_data = complex_buffer;
 
 	//debug_printf("    Calculating ACI\r\n");
 	debug_printf("\n\r\n\r.\n\r\n\r");
 	/* Convert real data to "pseudo"-complex data (real, 0) */
 	/* Int32 complex = Int16 real (MSBs) + Int16 imag (LSBs) */
 	for(f = 0; f < 8; f++){
-		for (i = 0; i < FFT_LENGTH; i++) {
-			*(complex_data + i) = ( (Int32) (*(data + i)) ) << 16;
+		/* Convert real data to "pseudo"-complex data (real, 0) */
+		/* Int32 complex = Int16 real (MSBs) + Int16 imag (LSBs) */
+		for (i = 0; i < FFT_LENGTH; i++)
+		{
+			complex_data[2*i] = data[i]; // place audio data (Real) in each even index of complex_data
+			complex_data[2*i+1] = 0;		// place a 0 (Imag) in each odd index of complex_data
 		}
 
+		/*myfprintf(spec_file,"\n\n");
+		myfprintf(spec_file,"complex_data  %x\t", complex_data[64]);
+		myfprintf(spec_file,"\n\n");*/
+
 		/* Perform bit-reversing */
-		hwafft_br(complex_data, bitrev_data, FFT_LENGTH);
+		/*hwafft_br(complex_data, bitrev_data, FFT_LENGTH);*/
+
+		/*myfprintf(spec_file,"\n\n");
+		myfprintf(spec_file,"bit_rev_data  %x\t", bitrev_data[64]);
+		myfprintf(spec_file,"\n\n");*/
 
 		/* Perform FFT */
 		if (HWAFFT_SCALE) {
-			data_selection = hwafft_512pts(bitrev_data, temp_data, FFT_FLAG, SCALE_FLAG); // hwafft_#pts, where # = 2*HOP_SIZE
+			//data_selection = hwafft_512pts(&bitrev_data[0], &temp_data[0], FFT_FLAG, SCALE_FLAG); // hwafft_#pts, where # = 2*HOP_SIZE
+			cfft32_SCALE(&complex_data[0], FFT_LENGTH);
 		}
 		else {
-			data_selection = hwafft_512pts(bitrev_data, temp_data, FFT_FLAG, NOSCALE_FLAG);
+			//data_selection = hwafft_512pts(&bitrev_data[0], &temp_data[0], FFT_FLAG, NOSCALE_FLAG);
+			cfft32_NOSCALE(&complex_data[0], FFT_LENGTH);
 		}
 
-		/* Return appropriate data pointer */
-		if (data_selection == 1) {
-			fft_data = temp_data;	// results stored in this scratch vector
-		}
-		else {
-			fft_data = bitrev_data; // results stored in this data vector
-		}
+		cbrev32(complex_data, complex_data, FFT_LENGTH);
 
-		myfprintf(spec_file,"\n\n");
-		myfprintf(spec_file,"data %x\t", *(fft_data + 64));
-		myfprintf(spec_file,"data %x\t", *(fft_data + 64));
-		myfprintf(spec_file,"\n\n");
 
 		/* Extract real and imaginary parts */
 		for (i = 0; i < FFT_LENGTH; i++) {
-			*(realR + i) = (Int16)((*(fft_data + i)) >> 16);
-			*(imagR + i) = (Int16)((*(fft_data + i)) & 0x0000FFFF);
-			//myfprintf(spec_file,"%d\t", *(realR + i));
+			realR[i] = complex_data[2*i];
+			imagR[i] = complex_data[2*i+1];
 		}
-		//myfprintf(spec_file,"\n\n");
 
+		// Find the Power of the audio signal using the cfft results and scale by 1/2
+		for(i = 0; i < FFT_LENGTH; i++) { // square the real vector and the imaginary vector
+			realR[i] = realR[i] * realR[i];
+			imagR[i] = imagR[i] * imagR[i];
+		}
 
-		// Process freq. bins from 0Hz to Nyquist frequency
-		// Perform spectral processing here
-		//debug_printf(".");
-		PSD_Result[0] = sqrt((realR[0])^2 + (imagR[0])^2); // start the search at the first value in the Magnitude plot
-		Peak_Magnitude_Value = PSD_Result[0];
-		for( j = 1; j < NUM_BINS; j++ )
+		// ADD
+		for(i = 0; i < FFT_LENGTH; i++) {
+			PSD_Result[i] = realR[i] + imagR[i];
+		}
+
+		// Process freq. bins from 0Hz to Nyquist frequency (for efficiency)
+		Peak_Magnitude_Value =  PSD_Result[1]; // start the search at the first value in the Magnitude spectrum
+		Peak_Magnitude_Index = 1;
+		for( j = 2; j < NUM_BINS; j++ ) // go through useful frequency bins (FFT_LENGTH/2 +1) because the rest are symmetric
 		{
-			PSD_Result[j] = sqrt((realR[j])^2 + (imagR[j])^2); // Convert FFT to magnitude spectrum. Basically Find magnitude of FFT result for each index
-
 			//myfprintf(spec_file,"%d\t", PSD_Result[j]);
-			if( PSD_Result[j] > Peak_Magnitude_Value ) // Peak search on the magnitude of the FFT to find the fundamental frequency
+			if( PSD_Result[j] > Peak_Magnitude_Value ) // Peak search on the magnitude of the FFT to find the fundamental frequency - the frequency bin with the highest power value in it
 			{
 				Peak_Magnitude_Value = PSD_Result[j];
 				Peak_Magnitude_Index = j;
@@ -400,11 +417,12 @@ Uint16 calculateACI(Int16 *dataPointer){
 	}
 	f_sync(&spec_file);
 	data = data + FFT_LENGTH;
+
 	//debug_printf("BufferR[256]= %d \n", BufferR[256]);
 	/*debug_printf("realR[128] 	= %d \n", realR[128]);
-	debug_printf("PSD_Result[128] 	 = %d \n", PSD_Result[128]);
+	debug_printf("PSD_Result[128] 	 = %d \n", PSD_Result[128]); */
 	debug_printf("Peak_Magnitude_Value = %d \n", Peak_Magnitude_Value);
-	debug_printf("Peak_Magnitude_Index = %d \n\n", Peak_Magnitude_Index);*/
+	debug_printf("Peak_Magnitude_Index = %d \n\n", Peak_Magnitude_Index);
 
 
 }

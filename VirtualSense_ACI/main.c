@@ -178,6 +178,11 @@ void main(void)
     CSL_SYSCTRL_REGS->PCGCR1 = 0x7FFF;
     CSL_SYSCTRL_REGS->PCGCR2 = 0x007F;
 
+    //LELE: to reboot FFTHWA
+	*(ioport volatile unsigned *)0x0001 = 0x000E;
+	 asm(" idle"); // must add at least one blank before idle in " ".
+
+
     // turn on led to turn on oscillator
     CSL_CPU_REGS->ST1_55 |= CSL_CPU_ST1_55_XF_MASK;
 
@@ -279,7 +284,7 @@ void init_all_peripheral(void)
 
    	debug_printf("Starting device....\r\n");
 
-   	//debug_printf("Init RTC....\r\n");
+   	debug_printf("Init RTC....\r\n");
 
    	//debug_printf("Init RTC now....\r\n");
 
@@ -423,17 +428,15 @@ void init_all_peripheral(void)
     DMA_StartTransfer(hDmaRxLeft);
     debug_printf(" DMA Start Transfer\r\n");
     /* Set HWAI ICR */
-    *(volatile ioport Uint16 *)0x0001 = 0xFC0E | (1<<9);
-    asm("   idle");
+   /* *(volatile ioport Uint16 *)0x0001 = 0xFC0E | (1<<9);
+    asm("   idle"); */
 
     /* Clock gate usused peripherals */
 
     //ClockGating();
 
     //
-    //LELE: to reboot FFTHWA
-    /* *(ioport volatile unsigned *)0x0001 = 0x000E;
-     asm(" idle"); // must add at least one blank before idle in " ". */
+
 
     //debug_printf("ClokGating\r\n");
     DDC_I2S_transEnable((DDC_I2SHandle)i2sHandleTx, TRUE); /* enable I2S transmit and receive */
@@ -905,7 +908,7 @@ FRESULT initConfigFromSchedulerFile(Uint16 index){
 		mode = MODE_ALWAYS_ON;
 		frequency = 48000; // S_RATE_48KHZ
 		impedance = 0x10; // IMPEDANCE_10K
-		gain = 15;
+		gain = 35;
 		seconds = 10;
 		recTimeMinutes = 0;
 	}
