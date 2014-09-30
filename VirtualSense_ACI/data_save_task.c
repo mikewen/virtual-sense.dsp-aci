@@ -342,7 +342,7 @@ Uint16 calculateACI(Int16 *dataPointer){
 	debug_printf("\n\r\n\r.\n\r\n\r");
 	/* Convert real data to "pseudo"-complex data (real, 0) */
 	/* Int32 complex = Int16 real (MSBs) + Int16 imag (LSBs) */
-	for(f = 0; f < 8; f++){
+	for(f = 0; f < 4096/FFT_LENGTH; f++){
 		for (i = 0; i < FFT_LENGTH; i++) {
 			*(complex_data + i) = ( (Int32) (*(data + i)) ) << 16;
 		}
@@ -352,10 +352,10 @@ Uint16 calculateACI(Int16 *dataPointer){
 
 		/* Perform FFT */
 		if (HWAFFT_SCALE) {
-			data_selection = hwafft_512pts(bitrev_data, temp_data, FFT_FLAG, SCALE_FLAG); // hwafft_#pts, where # = 2*HOP_SIZE
+			data_selection = hwafft_512pts(bitrev_data, temp_data, temp_data, bitrev_data, FFT_FLAG, SCALE_FLAG); // hwafft_#pts, where # = 2*HOP_SIZE
 		}
 		else {
-			data_selection = hwafft_512pts(bitrev_data, temp_data, FFT_FLAG, NOSCALE_FLAG);
+			data_selection = hwafft_512pts(bitrev_data, temp_data, temp_data, bitrev_data, FFT_FLAG, NOSCALE_FLAG);
 		}
 
 		/* Return appropriate data pointer */
@@ -366,10 +366,10 @@ Uint16 calculateACI(Int16 *dataPointer){
 			fft_data = bitrev_data; // results stored in this data vector
 		}
 
-		myfprintf(spec_file,"\n\n");
+		/*myfprintf(spec_file,"\n\n");
 		myfprintf(spec_file,"data %x\t", *(fft_data + 64));
 		myfprintf(spec_file,"data %x\t", *(fft_data + 64));
-		myfprintf(spec_file,"\n\n");
+		myfprintf(spec_file,"\n\n"); */
 
 		/* Extract real and imaginary parts */
 		for (i = 0; i < FFT_LENGTH; i++) {
@@ -383,20 +383,20 @@ Uint16 calculateACI(Int16 *dataPointer){
 		// Process freq. bins from 0Hz to Nyquist frequency
 		// Perform spectral processing here
 		//debug_printf(".");
-		PSD_Result[0] = sqrt((realR[0])^2 + (imagR[0])^2); // start the search at the first value in the Magnitude plot
+		PSD_Result[0] = (realR[0])^2 + (imagR[0])^2; // start the search at the first value in the Magnitude plot
 		Peak_Magnitude_Value = PSD_Result[0];
 		for( j = 1; j < NUM_BINS; j++ )
 		{
-			PSD_Result[j] = sqrt((realR[j])^2 + (imagR[j])^2); // Convert FFT to magnitude spectrum. Basically Find magnitude of FFT result for each index
+			PSD_Result[j] = (realR[j])^2 + (imagR[j])^2; // Convert FFT to magnitude spectrum. Basically Find magnitude of FFT result for each index
 
-			//myfprintf(spec_file,"%d\t", PSD_Result[j]);
+			myfprintf(spec_file,"%d\t", PSD_Result[j]);
 			if( PSD_Result[j] > Peak_Magnitude_Value ) // Peak search on the magnitude of the FFT to find the fundamental frequency
 			{
 				Peak_Magnitude_Value = PSD_Result[j];
 				Peak_Magnitude_Index = j;
 			}
 		}
-		//myfprintf(spec_file,"\n\r");
+		myfprintf(spec_file,"\n\r");
 	}
 	f_sync(&spec_file);
 	data = data + FFT_LENGTH;

@@ -40,7 +40,7 @@ SECTIONS
 
 /* C5535 HWAFFT function addresses */
 /* C5535 HWAFFT ROM table addresses */
-/*_hwafft_br       = 0x00fefe9c;
+_hwafft_br       = 0x00fefe9c;
 _hwafft_8pts     = 0x00fefeb0;
 _hwafft_16pts    = 0x00feff9f;
 _hwafft_32pts    = 0x00ff00f5;
@@ -49,4 +49,4 @@ _hwafft_128pts   = 0x00ff0593;
 _hwafft_256pts   = 0x00ff07a4;
 _hwafft_512pts   = 0x00ff09a2;
 _hwafft_1024pts  = 0x00ff0c1c;
-*/
+

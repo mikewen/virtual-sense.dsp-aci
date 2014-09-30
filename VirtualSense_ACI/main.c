@@ -181,6 +181,16 @@ void main(void)
     // turn on led to turn on oscillator
     CSL_CPU_REGS->ST1_55 |= CSL_CPU_ST1_55_XF_MASK;
 
+
+
+  /* Set HWAI ICR */
+   *(volatile ioport Uint16 *)0x0001 = 0xFC0E /*| (1<<9)*/;
+   asm("   idle");
+
+    //LELE: to reboot FFTHWA
+    *(ioport volatile unsigned *)0x0001 = 0x000E;
+    asm(" idle"); // must add at least one blank before idle in " ".
+
     mmcStatus = MMC_init();
 	if (mmcStatus != CSL_SOK)
 	{
@@ -279,9 +289,9 @@ void init_all_peripheral(void)
 
    	debug_printf("Starting device....\r\n");
 
-   	//debug_printf("Init RTC....\r\n");
+   	debug_printf("Init RTC....\r\n");
 
-   	//debug_printf("Init RTC now....\r\n");
+   	debug_printf("Init RTC now....\r\n");
 
    	//debug_printf("Init RTC now..now..\r\n");
 
@@ -422,9 +432,6 @@ void init_all_peripheral(void)
     /* Start left Rx DMA */
     DMA_StartTransfer(hDmaRxLeft);
     debug_printf(" DMA Start Transfer\r\n");
-    /* Set HWAI ICR */
-    *(volatile ioport Uint16 *)0x0001 = 0xFC0E | (1<<9);
-    asm("   idle");
 
     /* Clock gate usused peripherals */
 
@@ -1142,8 +1149,8 @@ void ClockGating(void)
     *(volatile ioport unsigned int *)(0x1C0B) |= 0x0003;
 */
     //LELE: to reboot FFTHWA
-    *(ioport volatile unsigned *)0x0001 = 0x000E;
-    asm(" idle"); // must add at least one blank before idle in " ".
+   /* *(ioport volatile unsigned *)0x0001 = 0x000E;
+    asm(" idle"); // must add at least one blank before idle in " ". */
 #endif
 
     return;

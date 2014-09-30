@@ -54,6 +54,8 @@ void hwafft_br(
 Uint16 hwafft_8pts(
     Int32 *data,
     Int32 *scratch,
+    Int32 *duplicate_scratch,
+    Int32 * duplicate_data,
     Uint16 fft_flag,
     Uint16 scale_flag
 );
@@ -69,8 +71,11 @@ Uint16 hwafft_8pts(
 /*  Return value: (0/1) determines whether output in data or scratch vector */
 /*                                                                          */
 Uint16 hwafft_16pts(
-    Int32 *data,
-    Int32 *scratch,
+	Int32 *data,
+	Int32 *scratch,
+	Int32 *duplicate_scratch,
+	Int32 * duplicate_data,
+
     Uint16 fft_flag,
     Uint16 scale_flag
 );
@@ -86,8 +91,11 @@ Uint16 hwafft_16pts(
 /*  Return value: (0/1) determines whether output in data or scratch vector */
 /*                                                                          */
 Uint16 hwafft_32pts(
-    Int32 *data,
-    Int32 *scratch,
+	Int32 *data,
+	Int32 *scratch,
+	Int32 *duplicate_scratch,
+	Int32 * duplicate_data,
+
     Uint16 fft_flag,
     Uint16 scale_flag
 );
@@ -103,8 +111,10 @@ Uint16 hwafft_32pts(
 /*  Return value: (0/1) determines whether output in data or scratch vector */
 /*                                                                          */
 Uint16 hwafft_64pts(
-    Int32 *data,
-    Int32 *scratch,
+	Int32 *data,
+	Int32 *scratch,
+	Int32 *duplicate_scratch,
+	Int32 * duplicate_data,
     Uint16 fft_flag,
     Uint16 scale_flag
 );
@@ -120,8 +130,10 @@ Uint16 hwafft_64pts(
 /*  Return value: (0/1) determines whether output in data or scratch vector */
 /*                                                                          */
 Uint16 hwafft_128pts(
-    Int32 *data,
-    Int32 *scratch,
+	Int32 *data,
+	Int32 *scratch,
+	Int32 *duplicate_scratch,
+	Int32 * duplicate_data,
     Uint16 fft_flag,
     Uint16 scale_flag
 );
@@ -137,8 +149,10 @@ Uint16 hwafft_128pts(
 /*  Return value: (0/1) determines whether output in data or scratch vector */
 /*                                                                          */
 Uint16 hwafft_256pts(
-    Int32 *data,
-    Int32 *scratch,
+	Int32 *data,
+	Int32 *scratch,
+	Int32 *duplicate_scratch,
+	Int32 * duplicate_data,
     Uint16 fft_flag,
     Uint16 scale_flag
 );
@@ -154,8 +168,10 @@ Uint16 hwafft_256pts(
 /*  Return value: (0/1) determines whether output in data or scratch vector */
 /*                                                                          */
 Uint16 hwafft_512pts(
-    Int32 *data,
-    Int32 *scratch,
+	Int32 *data,
+	Int32 *scratch,
+	Int32 *duplicate_scratch,
+	Int32 * duplicate_data,
     Uint16 fft_flag,
     Uint16 scale_flag
 );
@@ -171,8 +187,10 @@ Uint16 hwafft_512pts(
 /*  Return value: (0/1) determines whether output in data or scratch vector */
 /*                                                                          */
 Uint16 hwafft_1024pts(
-    Int32 *data,
-    Int32 *scratch,
+	Int32 *data,
+	Int32 *scratch,
+	Int32 *duplicate_scratch,
+	Int32 * duplicate_data,
     Uint16 fft_flag,
     Uint16 scale_flag
 );
