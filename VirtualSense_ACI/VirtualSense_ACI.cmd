@@ -29,6 +29,7 @@ SECTIONS
 
 
      cmplxBuf  : > DARAM
+     windowBuf : > DARAM
 	 BufR      : > DARAM
 	 PSD	   : > DARAM
 	 tmpBuf	   : > DARAM

@@ -48,6 +48,9 @@ static  char spec_buffer[1024];
 #pragma DATA_SECTION(complex_buffer, "cmplxBuf");
 Int32 complex_buffer[WND_LEN];
 
+#pragma DATA_SECTION(window_buffer, "windowBuf");
+Int32 window_buffer[WND_LEN];
+
 #pragma DATA_SECTION(bitreversed_buffer, "brBuf");
 #pragma DATA_ALIGN(bitreversed_buffer, 2*FFT_LENGTH);
 Int32 bitreversed_buffer[FFT_LENGTH];
@@ -121,7 +124,7 @@ void DataSaveTask(void)
         Uint16 temperature;
         Uint16 tempC;
         Uint16 tempM;
-
+        Uint16 i = 0;
         f_open(&spec_file, "spectrum.txt", FA_WRITE | FA_CREATE_ALWAYS);
         /* Open the WDTIM module */
 		hWdt = (CSL_WdtObj *)WDTIM_open(WDT_INST_0, &wdtObj, &status);
@@ -167,6 +170,10 @@ void DataSaveTask(void)
 		//debug_printf("readProgramCounter\r\n");
 		debug_printf(" Program counter is %d\r\n",programCounter);
 		debug_printf("   Starting task\r\n");
+
+		//initialize window buffer
+		for(i = 0; i < WND_LEN; i++)
+			window_buffer[i] = 0;
     while (1)
     {
         //wait on semaphore released from a timer function
@@ -342,9 +349,17 @@ Uint16 calculateACI(Int16 *dataPointer){
 	debug_printf("\n\r\n\r.\n\r\n\r");
 	/* Convert real data to "pseudo"-complex data (real, 0) */
 	/* Int32 complex = Int16 real (MSBs) + Int16 imag (LSBs) */
-	for(f = 0; f < 4096/FFT_LENGTH; f++){
+	for(f = 0; f < 4096/HOP_SIZE; f++){
+
+		for (i = 0; i < HOP_SIZE; i++) {
+			/* Copy previous NEW data to current OLD data */
+			window_buffer[i] = window_buffer[i + HOP_SIZE];
+			/* Update NEW data with current audio in */
+			window_buffer[i + HOP_SIZE] = data[i+f*HOP_SIZE];
+		}
+
 		for (i = 0; i < FFT_LENGTH; i++) {
-			*(complex_data + i) = ( (Int32) (*(data + i)) ) << 16;
+			*(complex_data + i) = ( (Int32) ((*(window_buffer + i))*hamming[i]) ) << 16;
 		}
 
 		/* Perform bit-reversing */
@@ -383,11 +398,11 @@ Uint16 calculateACI(Int16 *dataPointer){
 		// Process freq. bins from 0Hz to Nyquist frequency
 		// Perform spectral processing here
 		//debug_printf(".");
-		PSD_Result[0] = (realR[0])^2 + (imagR[0])^2; // start the search at the first value in the Magnitude plot
+		PSD_Result[0] = ((realR[0]*realR[0]) + (imagR[0]*imagR[0]))/realR[0]; // start the search at the first value in the Magnitude plot
 		Peak_Magnitude_Value = PSD_Result[0];
 		for( j = 1; j < NUM_BINS; j++ )
 		{
-			PSD_Result[j] = (realR[j])^2 + (imagR[j])^2; // Convert FFT to magnitude spectrum. Basically Find magnitude of FFT result for each index
+			PSD_Result[j] = ((realR[j]*realR[j]) + (imagR[j]*imagR[j]))/realR[j]; // Convert FFT to magnitude spectrum. Basically Find magnitude of FFT result for each index
 
 			myfprintf(spec_file,"%d\t", PSD_Result[j]);
 			if( PSD_Result[j] > Peak_Magnitude_Value ) // Peak search on the magnitude of the FFT to find the fundamental frequency
@@ -396,10 +411,10 @@ Uint16 calculateACI(Int16 *dataPointer){
 				Peak_Magnitude_Index = j;
 			}
 		}
-		myfprintf(spec_file,"\n\r");
+		myfprintf(spec_file,"\n");
 	}
 	f_sync(&spec_file);
-	data = data + FFT_LENGTH;
+	//data = data + HOP_SIZE;
 	//debug_printf("BufferR[256]= %d \n", BufferR[256]);
 	/*debug_printf("realR[128] 	= %d \n", realR[128]);
 	debug_printf("PSD_Result[128] 	 = %d \n", PSD_Result[128]);

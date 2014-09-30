@@ -293,7 +293,7 @@ void init_all_peripheral(void)
 
    	debug_printf("Init RTC now....\r\n");
 
-   	//debug_printf("Init RTC now..now..\r\n");
+   	debug_printf("Init RTC now..now..\r\n");
 
 
 	//Initialize RTC
@@ -912,7 +912,7 @@ FRESULT initConfigFromSchedulerFile(Uint16 index){
 		mode = MODE_ALWAYS_ON;
 		frequency = 48000; // S_RATE_48KHZ
 		impedance = 0x10; // IMPEDANCE_10K
-		gain = 15;
+		gain = 45;
 		seconds = 10;
 		recTimeMinutes = 0;
 	}
