@@ -33,6 +33,7 @@
 #include "aci/ACI_LCR.h"
 
 #include "aci/hwafft.h"
+#include <dsplib.h>
 
 
 FIL spec_file;
@@ -65,7 +66,11 @@ Int16 realR[FFT_LENGTH];
 Int16 imagR[FFT_LENGTH];
 
 #pragma DATA_SECTION(PSD_Result, "PSD");
-Int16 PSD_Result[FFT_LENGTH];
+Int16 PSD_Result[NUM_BINS];
+
+#pragma DATA_SECTION(PSD_Result_sqrt, "PSDsqrt");
+Int16 PSD_Result_sqrt[NUM_BINS];
+
 
 //FRESULT rc;
 
@@ -398,16 +403,23 @@ Uint16 calculateACI(Int16 *dataPointer){
 		// Process freq. bins from 0Hz to Nyquist frequency
 		// Perform spectral processing here
 		//debug_printf(".");
-		PSD_Result[0] = ((realR[0]*realR[0]) + (imagR[0]*imagR[0]))/realR[0]; // start the search at the first value in the Magnitude plot
+		PSD_Result[0] = ((realR[0]*realR[0]) + (imagR[0]*imagR[0])); // start the search at the first value in the Magnitude plot
 		Peak_Magnitude_Value = PSD_Result[0];
 		for( j = 1; j < NUM_BINS; j++ )
 		{
-			PSD_Result[j] = ((realR[j]*realR[j]) + (imagR[j]*imagR[j]))/realR[j]; // Convert FFT to magnitude spectrum. Basically Find magnitude of FFT result for each index
+			PSD_Result[j] = ((realR[j]*realR[j]) + (imagR[j]*imagR[j])); // Convert FFT to magnitude spectrum. Basically Find magnitude of FFT result for each index
+		}
 
-			myfprintf(spec_file,"%d\t", PSD_Result[j]);
-			if( PSD_Result[j] > Peak_Magnitude_Value ) // Peak search on the magnitude of the FFT to find the fundamental frequency
+
+		sqrt_16(&PSD_Result[0], &PSD_Result_sqrt[0],NUM_BINS);
+
+		Peak_Magnitude_Value = PSD_Result_sqrt[0];
+		for( j = 1; j < NUM_BINS; j++ )
+		{
+			myfprintf(spec_file,"%d\t", PSD_Result_sqrt[j]);
+			if( PSD_Result_sqrt[j] > Peak_Magnitude_Value ) // Peak search on the magnitude of the FFT to find the fundamental frequency
 			{
-				Peak_Magnitude_Value = PSD_Result[j];
+				Peak_Magnitude_Value = PSD_Result_sqrt[j];
 				Peak_Magnitude_Index = j;
 			}
 		}

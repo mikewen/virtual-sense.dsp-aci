@@ -32,6 +32,7 @@ SECTIONS
      windowBuf : > DARAM
 	 BufR      : > DARAM
 	 PSD	   : > DARAM
+	 PSDsqrt   : > DARAM
 	 tmpBuf	   : > DARAM
 	 brBuf	   : > DARAM
 	 rfftR     : > DARAM
