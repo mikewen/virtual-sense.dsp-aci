@@ -51,13 +51,13 @@
                       ADC_FS = PLL_CLK/(2 * 7 * 128) = 16000
 
 *****************************************************************************/
-/*
+
 #define S_RATE_192KHZ										   (192000L)
 #define S_RATE_96KHZ										 	(96000L)
 #define S_RATE_48KHZ										 	(48000L)
 #define S_RATE_24KHZ										 	(24000L)
 #define S_RATE_16KHZ										 	(16000L)
-
+/*
 #define IMPEDANCE_10K											  (0x10)
 #define IMPEDANCE_20K											  (0x20)
 #define IMPEDANCE_40K											  (0x30)
@@ -68,7 +68,7 @@
 //#define GAIN														 (35)
 //#define IMPEDANCE										  (IMPEDANCE_40K)
 
-#define FFT_LENGHT                                            	   (1024)
+//#define FFT_LENGHT                                            	   (1024)
 
 //#define SECONDS                                                      (10)
 #define PROCESS_BUFFER_SIZE                              		   (32768L)// multiple of number of sample in fat sector
@@ -78,7 +78,7 @@
 
 #define DMA_BUFFER_SZ      					   				       (256L)
 #define DMA_TARNSFER_SZ            						(2*DMA_BUFFER_SZ)
-
+#define HW_FFT											1
 
 #define RTC_FILE_CONFIG           						 "updatetime.bin"
 #define FILE_SHEDULER                                    "scheduler.bin"
@@ -92,7 +92,7 @@
 #define MODE_EVERY_MINUT 	3
 
 
-#define DEBUG_LEVEL 2 			// 0 --- no debug; 1 --- debug over UART; --- 2 debug over log file
+#define DEBUG_LEVEL 0 			// 0 --- no debug; 1 --- debug over UART; --- 2 debug over log file
 #define debug_printf printdebug
 
 

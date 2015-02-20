@@ -130,7 +130,9 @@ void DataSaveTask(void)
         Uint16 tempC;
         Uint16 tempM;
         Uint16 i = 0;
+#ifdef WRITE_SPECTROGRAM
         f_open(&spec_file, "spectrum.txt", FA_WRITE | FA_CREATE_ALWAYS);
+#endif
         /* Open the WDTIM module */
 		hWdt = (CSL_WdtObj *)WDTIM_open(WDT_INST_0, &wdtObj, &status);
 		if(NULL == hWdt)
@@ -173,8 +175,8 @@ void DataSaveTask(void)
 
 		programCounter =  readProgramCounter();
 		//debug_printf("readProgramCounter\r\n");
-		debug_printf(" Program counter is %d\r\n",programCounter);
-		debug_printf("   Starting task\r\n");
+		//debug_printf(" Program counter is %d\r\n",programCounter);
+		//debug_printf("   Starting task\r\n");
 
 		//initialize window buffer
 		for(i = 0; i < WND_LEN; i++)
@@ -195,6 +197,9 @@ void DataSaveTask(void)
 
 				sprintf(file_name, "%d__%d_%d_%d__%d-%d-%d.wav",ID, GetDate.day,GetDate.month,GetDate.year, GetTime.hours, GetTime.mins, GetTime.secs);
 				debug_printf("    Creating a new file %s\r\n",file_name);
+				debug_printf("START %d-%d-%d-%d", GetTime.hours, GetTime.mins, GetTime.secs, GetTime.mSecs);
+
+
 
 
 				//rc = open_wave_file(&wav_file, file_name, FREQUENCY, SECONDS);
@@ -228,7 +233,7 @@ void DataSaveTask(void)
 						// LELE: introducing ACI calculation..... over 512 sample
 						// TODO: repeat to cover all 4096 samples
 						calculateACI((Int16 *)(bufferPointer+bufferOutIdx));
-
+						//LELE: to test
 						write_result = putDataIntoOpenFile(((void *)(bufferPointer+bufferOutIdx)), (writingSamples*2));
 						if(!write_result)
 							WDTIM_service(hWdt);
@@ -256,8 +261,14 @@ void DataSaveTask(void)
 				numberOfFiles--;
 				step = 0;
 
+				RTC_getTime(&GetTime);
+
+				debug_printf("END %d-%d-%d-%d", GetTime.hours, GetTime.mins, GetTime.secs, GetTime.mSecs);
+
+
                 debug_printf("    File saved %s\r\n",file_name);
 
+#if 0
                 Uint16 aci1, aci2, aci3, delay;
                 ACI(NULL, 10,10,10,10,10); // LINKING TEST LELE
                 debug_printf("ACI generate\r\n");
@@ -278,7 +289,9 @@ void DataSaveTask(void)
                 debug_printf("%x\r\n", aci3);
                 for(delay = 0; delay < 0xFFFF; delay++)
                  	asm(" NOP ");
+#endif
 
+            	RTC_shutdownToRTCOnlyMonde();
                 while(1);
 
         }
@@ -318,7 +331,7 @@ void DataSaveTask(void)
 FRESULT putDataIntoOpenFile(const void *buff, unsigned int number_of_bytes){
 	FRESULT res = 0;
 	if(file_is_open){
-		res = write_data_to_wave(&wav_file, buff, number_of_bytes);
+		//LELE: to test res = write_data_to_wave(&wav_file, buff, number_of_bytes);
 		my_step+=(number_of_bytes/512);
         //wdt_Refresh();
 	}
@@ -368,14 +381,30 @@ Uint16 calculateACI(Int16 *dataPointer){
 		}
 
 		/* Perform bit-reversing */
+#if HW_FFT
 		hwafft_br(complex_data, bitrev_data, FFT_LENGTH);
+#else
+		 cbrev ((DATA*)complex_data, (DATA *)bitrev_data,FFT_LENGTH);
+#endif
 
 		/* Perform FFT */
 		if (HWAFFT_SCALE) {
+#if HW_FFT
 			data_selection = hwafft_512pts(bitrev_data, temp_data, temp_data, bitrev_data, FFT_FLAG, SCALE_FLAG); // hwafft_#pts, where # = 2*HOP_SIZE
+#else
+			cfft ((DATA*)bitrev_data, FFT_LENGTH, SCALE);
+			data_selection = 1;
+#endif
+
 		}
 		else {
+#if HW_FFT
 			data_selection = hwafft_512pts(bitrev_data, temp_data, temp_data, bitrev_data, FFT_FLAG, NOSCALE_FLAG);
+#else
+			cfft ((DATA*)bitrev_data, FFT_LENGTH, NOSCALE);
+			data_selection = 1;
+#endif
+
 		}
 
 		/* Return appropriate data pointer */
@@ -416,16 +445,22 @@ Uint16 calculateACI(Int16 *dataPointer){
 		Peak_Magnitude_Value = PSD_Result_sqrt[0];
 		for( j = 1; j < NUM_BINS; j++ )
 		{
+#ifdef WRITE_SPECTROGRAM
 			myfprintf(spec_file,"%d\t", PSD_Result_sqrt[j]);
+#endif
 			if( PSD_Result_sqrt[j] > Peak_Magnitude_Value ) // Peak search on the magnitude of the FFT to find the fundamental frequency
 			{
 				Peak_Magnitude_Value = PSD_Result_sqrt[j];
 				Peak_Magnitude_Index = j;
 			}
 		}
+#ifdef WRITE_SPECTROGRAM
 		myfprintf(spec_file,"\n");
+#endif
 	}
+#ifdef WRITE_SPECTROGRAM
 	f_sync(&spec_file);
+#endif
 	//data = data + HOP_SIZE;
 	//debug_printf("BufferR[256]= %d \n", BufferR[256]);
 	/*debug_printf("realR[128] 	= %d \n", realR[128]);

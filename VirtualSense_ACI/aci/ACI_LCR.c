@@ -1,6 +1,6 @@
 #include <stdlib.h>     /* calloc, free */
 
-#include "ACI_LCR.h"
+//#include "ACI_LCR.h"
 
 double **aggSpect(double **spect, int aggregatore, int tInt, int nClassi) {
 	int i,j,agg;

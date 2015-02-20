@@ -228,7 +228,7 @@ void main(void)
     C5515_reset();
 
     /* Initialize DSP PLL */
-    status = pll_sample_freq(100);
+    status = pll_sample_freq(40);
     if (status != CSL_SOK)
     {
         exit(EXIT_FAILURE);
@@ -242,7 +242,7 @@ void main(void)
     /* Enable the USB LDO */
     //*(volatile ioport unsigned int *)(0x7004) |= 0x0001;
 
-    init_debug(100);
+    init_debug(40);
 
     // set the GPIO pin 10 - 11 to output, set SYS_GPIO_DIR0 (0x1C06) bit 10 and 11 to 1
     //LELE *(volatile ioport unsigned int *)(0x1C06) |= 0x600;
@@ -355,7 +355,8 @@ void init_all_peripheral(void)
 		}*/
 
 
-
+	debug_printf("\r\n");
+	debug_printf("\r\n");
 
 	start_log();
 
@@ -438,9 +439,11 @@ void init_all_peripheral(void)
     //ClockGating();
 
     //
-    //LELE: to reboot FFTHWA
-    /* *(ioport volatile unsigned *)0x0001 = 0x000E;
-     asm(" idle"); // must add at least one blank before idle in " ". */
+#if !HW_FFT
+    // shutdown FFTHWA
+     *(ioport volatile unsigned *)0x0001 = 0x000E;
+     asm(" idle"); // must add at least one blank before idle in " ".
+#endif
 
     //debug_printf("ClokGating\r\n");
     DDC_I2S_transEnable((DDC_I2SHandle)i2sHandleTx, TRUE); /* enable I2S transmit and receive */
@@ -910,11 +913,12 @@ FRESULT initConfigFromSchedulerFile(Uint16 index){
 	else{
 		debug_printf(" Read config file error: default initialization value\r\n"); //error: file don't exist
 		mode = MODE_ALWAYS_ON;
-		frequency = 48000; // S_RATE_48KHZ
+		frequency = S_RATE_96KHZ; // S_RATE_48KHZ
 		impedance = 0x10; // IMPEDANCE_10K
 		gain = 45;
 		seconds = 10;
 		recTimeMinutes = 0;
+		step_per_second = frequency/DMA_BUFFER_SZ;
 	}
 	numberOfFiles = (Uint16)((((long unsigned int )recTimeMinutes) * 60)/seconds);
 	if(numberOfFiles == 0)
